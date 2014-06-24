@@ -39,9 +39,9 @@
 				array_push($errors, "Please enable at least one authentication module via PLUGINS constant in config.php");
 			}
 
-			if (function_exists('posix_getuid') && posix_getuid() == 0) {
-				array_push($errors, "Please don't run this script as root.");
-			}
+			// if (function_exists('posix_getuid') && posix_getuid() == 0) {
+			// 	array_push($errors, "Please don't run this script as root.");
+			// }
 
 			if (version_compare(PHP_VERSION, '5.3.0', '<')) {
 				array_push($errors, "PHP version 5.3.0 or newer required.");
