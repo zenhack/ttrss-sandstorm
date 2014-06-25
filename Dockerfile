@@ -22,7 +22,7 @@ RUN apt-get -y install mysql-server
 RUN apt-get -y install php5 php5-mysql
 
 # minimize mysql allocations
-RUN echo '[mysqld]\ninnodb_data_file_path = ibdata1:10M:autoextend\ninnodb_log_file_size = 10KB' > /etc/mysql/conf.d/small.cnf
+RUN echo '[mysqld]\ninnodb_data_file_path = ibdata1:10M:autoextend\ninnodb_log_file_size = 10KB\ninnodb_file_per_table = 1' > /etc/mysql/conf.d/small.cnf
 RUN rm -rf /var/lib/mysql/* && mysql_install_db && chown -R mysql: /var/lib/mysql
 
 # Setup mysql//mysql user
@@ -37,10 +37,11 @@ RUN mkdir /etc/service/php
 ADD php.sh /etc/service/php/run
 
 ADD . /opt/app
+RUN rm -rf /opt/app/.git
 
 EXPOSE 33411
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN rm -rf /usr/share/vim /usr/share/doc /usr/share/man /var/lib/dpkg /var/lib/belocs /var/lib/ucf /var/cache/debconf
+RUN rm -rf /usr/share/vim /usr/share/doc /usr/share/man /var/lib/dpkg /var/lib/belocs /var/lib/ucf /var/cache/debconf /var/log/*.log

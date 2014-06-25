@@ -9,7 +9,7 @@ const pkgdef :Spk.PackageDefinition = (
   # The package definition. Note that the spk tool looks specifically for the
   # "pkgdef" constant.
 
-  id = "cv5k4tdmyz21x1xemtdv8k2m4j4cpr2zuj2rvktunvt1s24ht3vh",
+  id = "zj20q6pwy456cmq0k57n1mtqqtky664dfqnhsmf3t36khch5geph",
   # Your app ID is actually its public key. The private key was placed in
   # your keyring. All updates must be signed with the same key.
 
@@ -21,7 +21,7 @@ const pkgdef :Spk.PackageDefinition = (
 
     actions = [
       # Define your "new document" handlers here.
-      ( title = (defaultText = "New Example App Instance"),
+      ( title = (defaultText = "New TinyTinyRss"),
         command = .myCommand
         # The command to run when starting for the first time. (".myCommand"
         # is just a constant defined at the bottom of the file.)
@@ -41,14 +41,8 @@ const pkgdef :Spk.PackageDefinition = (
     # automatically by running it on a FUSE filesystem. So, the mappings
     # here are only to tell it where to find files that the app wants.
     searchPath = [
-      ( sourcePath = "./dockerenv" ),  # Search this directory first.
-      ( sourcePath = "." ),  # Search this directory first.
-      ( sourcePath = "/",    # Then search the system root directory.
-        hidePaths = [ "home", "proc", "sys" ]
-        # You probably don't want the app pulling files from these places,
-        # so we hide them. Note that /dev, /var, and /tmp are implicitly
-        # hidden because Sandstorm itself provides them.
-      )
+      ( sourcePath = "./dockerenv" ),
+      ( sourcePath = "." )
     ]
   ),
 
@@ -56,7 +50,7 @@ const pkgdef :Spk.PackageDefinition = (
   # `spk dev` will write a list of all the files your app uses to this file.
   # You should review it later, before shipping your app.
 
-  alwaysInclude = ["./dockerenv"]
+  alwaysInclude = ["./dockerenv/opt/app"]
   # Fill this list with more names of files or directories that should be
   # included in your package, even if not listed in sandstorm-files.list.
   # Use this to force-include stuff that you know you need but which may
@@ -66,7 +60,7 @@ const pkgdef :Spk.PackageDefinition = (
 
 const myCommand :Spk.Manifest.Command = (
   # Here we define the command used to start up your server.
-  argv = ["/sandstorm-http-bridge", "33411", "--", "/sbin/my_init"],
+  argv = ["/sandstorm-http-bridge", "33411", "--", "/bin/bash", "run_grain.sh"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
