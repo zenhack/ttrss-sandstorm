@@ -219,27 +219,7 @@ def install_insecure_key():
     info("Installing insecure SSH key for user root")
     run_command_killable("/usr/sbin/enable_insecure_key")
 
-def copy(src, dest):
-    copy = shutil.copy
-    if os.path.isdir(src):
-        dest = os.path.join(dest, os.path.basename(src))
-        copy = shutil.copytree
-    if os.path.exists(dest):
-        return
-
-    copy(src, dest)
 def main(args):
-    copy('/etc/service', '/tmp')
-    copy('/var_original/log', '/var')
-    copy('/var_original/lib', '/var')
-    copy('/var_original/run', '/var')
-
-    if not os.path.exists('/var/app'):
-        copy('/opt/app_original', '/var')
-        os.rename('/var/app_original', '/var/app')
-
-    if not os.path.exists('/var/run'):
-        os.mkdir('/var/run')
     import_envvars(False, False)
     export_envvars()
 
