@@ -443,6 +443,10 @@
 			curl_close($ch);
 
 			return $contents;
+		} else if (defined('SANDSTORM') and SANDSTORM) {
+			$fetch_curl_used = false;
+
+			return shell_exec('sandstorm-httpGet ' . escapeshellarg($url));
 		} else {
 
 			$fetch_curl_used = false;
