@@ -235,7 +235,6 @@ opt/app/plugins/updater/init.php
 opt/app/themes/default.css
 run_grain.sh
 sandstorm-http-bridge
-sandstorm-http-bridge.conf
 sandstorm-manifest
 sbin
 sbin/my_init
