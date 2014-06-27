@@ -13,6 +13,7 @@ bin/rm
 bin/sandstorm-httpGet
 bin/sh
 bin/sleep
+etc/alternatives/php
 etc/container_environment
 etc/container_environment/HOME
 etc/container_environment/HOSTNAME
@@ -147,6 +148,7 @@ opt/app/classes/plugin.php
 opt/app/classes/pluginhost.php
 opt/app/classes/pref/feeds.php
 opt/app/classes/rpc.php
+opt/app/classes/ttrssmailer.php
 opt/app/config.php
 opt/app/css
 opt/app/css/cdm.css
@@ -171,11 +173,13 @@ opt/app/images/indicator_white.gif
 opt/app/images/information.png
 opt/app/images/mark_unset.png
 opt/app/images/new_version.png
+opt/app/images/page_white_go.png
 opt/app/images/pub_set.png
 opt/app/images/pub_unset.png
 opt/app/images/score_neutral.png
 opt/app/images/star.png
 opt/app/images/tag.png
+opt/app/images/tick.png
 opt/app/images/time.png
 opt/app/images/treeExpandImages.png
 opt/app/images/untick.png
@@ -184,6 +188,7 @@ opt/app/include/ccache.php
 opt/app/include/colors.php
 opt/app/include/db-prefs.php
 opt/app/include/db.php
+opt/app/include/digest.php
 opt/app/include/errorhandler.php
 opt/app/include/functions.php
 opt/app/include/functions2.php
@@ -222,6 +227,7 @@ opt/app/lib/languagedetect/LanguageDetect.php
 opt/app/lib/languagedetect/Text/LanguageDetect/Exception.php
 opt/app/lib/languagedetect/Text/LanguageDetect/ISO639.php
 opt/app/lib/languagedetect/Text/LanguageDetect/Parser.php
+opt/app/lib/phpmailer/class.phpmailer.php
 opt/app/lib/prototype.js
 opt/app/lib/pubsubhubbub/publisher.php
 opt/app/lib/scriptaculous/controls.js
@@ -233,11 +239,14 @@ opt/app/plugins/note/note.js
 opt/app/plugins/note/note.png
 opt/app/plugins/updater/init.php
 opt/app/themes/default.css
+opt/app/update.php
 run_grain.sh
 sandstorm-http-bridge
+sandstorm-http-bridge.conf
 sandstorm-manifest
 sbin
 sbin/my_init
+usr/bin/php
 usr/bin/php5
 usr/bin/python3
 usr/bin/python3.4
@@ -815,8 +824,11 @@ var_original/log/apache2/other_vhosts_access.log
 var_original/log/apt
 var_original/log/apt/history.log
 var_original/log/apt/term.log
+var_original/log/auth.log
 var_original/log/btmp
+var_original/log/cron.log
 var_original/log/dmesg
+var_original/log/error
 var_original/log/faillog
 var_original/log/fsck
 var_original/log/fsck/checkfs
@@ -829,6 +841,7 @@ var_original/log/mysql.log
 var_original/log/mysql/error.log
 var_original/log/php.log
 var_original/log/syslog
+var_original/log/update_rss.log
 var_original/log/upstart
 var_original/log/wtmp
 var_original/run

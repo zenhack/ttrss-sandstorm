@@ -63,7 +63,7 @@ const myCommand :Spk.Manifest.Command = (
   argv = ["/sandstorm-http-bridge", "33411", "--", "/bin/bash", "run_grain.sh"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
-    (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
+    (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin:/opt/app/sandstorm/bin"),
     (key = "HOME", value = "/var")
   ]
 );

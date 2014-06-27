@@ -39,6 +39,8 @@ ADD php.sh /etc/service/php/run
 ADD . /opt/app
 RUN rm -rf /opt/app/.git
 
+RUN echo '*/5 * * * * root (/usr/bin/php /opt/app/update.php --feeds) >> /var/log/update_rss.log 2>&1' >> /etc/cron.d/update_rss
+
 EXPOSE 33411
 
 # Clean up APT when done.
