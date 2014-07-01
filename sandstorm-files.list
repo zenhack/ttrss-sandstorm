@@ -13,7 +13,6 @@ bin/rm
 bin/sandstorm-httpGet
 bin/sh
 bin/sleep
-etc/alternatives/php
 etc/container_environment
 etc/container_environment/HOME
 etc/container_environment/HOSTNAME
@@ -133,6 +132,7 @@ opt/app/classes/db.php
 opt/app/classes/db/mysqli.php
 opt/app/classes/db/prefs.php
 opt/app/classes/feeditem.php
+opt/app/classes/feeditem/atom.php
 opt/app/classes/feeditem/common.php
 opt/app/classes/feeditem/rss.php
 opt/app/classes/feedparser.php
@@ -156,10 +156,15 @@ opt/app/css/dijit.css
 opt/app/css/layout.css
 opt/app/css/prefs.css
 opt/app/css/tt-rss.css
+opt/app/css/utility.css
 opt/app/errors.php
 opt/app/feed-icons
+opt/app/feed-icons-old
+opt/app/feed-icons-old/.empty
+opt/app/feed-icons-old/index.html
 opt/app/feed-icons/.empty
 opt/app/feed-icons/index.html
+opt/app/images/alert.png
 opt/app/images/archive.png
 opt/app/images/blank_icon.gif
 opt/app/images/collapse.png
@@ -171,6 +176,7 @@ opt/app/images/fresh.png
 opt/app/images/indicator_tiny.gif
 opt/app/images/indicator_white.gif
 opt/app/images/information.png
+opt/app/images/logo_small.png
 opt/app/images/mark_unset.png
 opt/app/images/new_version.png
 opt/app/images/page_white_go.png
@@ -242,11 +248,9 @@ opt/app/themes/default.css
 opt/app/update.php
 run_grain.sh
 sandstorm-http-bridge
-sandstorm-http-bridge.conf
 sandstorm-manifest
 sbin
 sbin/my_init
-usr/bin/php
 usr/bin/php5
 usr/bin/python3
 usr/bin/python3.4
@@ -839,7 +843,6 @@ var_original/log/mysql
 var_original/log/mysql.err
 var_original/log/mysql.log
 var_original/log/mysql/error.log
-var_original/log/php.log
 var_original/log/syslog
 var_original/log/update_rss.log
 var_original/log/upstart

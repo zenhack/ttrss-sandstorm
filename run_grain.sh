@@ -5,6 +5,6 @@ test -d /var/lib || cp -r /var_original/lib /var
 test -d /var/run || cp -r /var_original/run /var
 test -f /var/lock || ln -s /var/run/lock /var/lock
 test -f /var/cache || cp -r /opt/app/cache /var
-test -f /var/feed-icons || cp -r /opt/app/feed-icons /var
+test -f /var/feed-icons || cp -r /opt/app/feed-icons-old /var
 
 /sbin/my_init
