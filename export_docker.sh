@@ -28,7 +28,7 @@ cd ..
 # cp sandstorm-httpGet to /bin and move config into place
 cd opt
 mv app/feed-icons app/feed-icons-old
-ln -s ../var/feed-icons app/feed-icons
+ln -s ../../var/feed-icons app/feed-icons
 cp app/sandstorm/bin/* ../bin
 cp app/config.php-sandstorm app/config.php
 cd ../..
