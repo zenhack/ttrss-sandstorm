@@ -39,7 +39,7 @@ ADD php.sh /etc/service/php/run
 ADD . /opt/app
 RUN rm -rf /opt/app/.git
 
-RUN echo '*/15 * * * * root (/usr/bin/php5 /opt/app/update.php --feeds --force-update) >> /var/log/update_rss.log 2>&1' >> /etc/cron.d/update_rss
+RUN echo '*/30 * * * * root (/usr/bin/php5 /opt/app/update.php --feeds --force-update) >> /var/log/update_rss.log 2>&1' >> /etc/cron.d/update_rss
 
 EXPOSE 33411
 
