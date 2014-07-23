@@ -446,6 +446,13 @@
 		} else if (defined('SANDSTORM') and SANDSTORM) {
 			$fetch_curl_used = false;
 
+			if (strpos($url, "http://") !== 0 and strpos($url, "https://") !== 0) {
+				if (strpos($url, "//") === 0) {
+					$url = "http:" . $url;
+				} else {
+					$url = "http://" . $url;
+				}
+			}
 			return shell_exec('sandstorm-httpGet ' . escapeshellarg($url));
 		} else {
 
