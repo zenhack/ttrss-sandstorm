@@ -23,7 +23,7 @@ RUN apt-get -y install php5 php5-mysql
 
 # minimize mysql allocations
 RUN echo '[mysqld]\ninnodb_data_file_path = ibdata1:10M:autoextend\ninnodb_log_file_size = 10KB\ninnodb_file_per_table = 1' > /etc/mysql/conf.d/small.cnf
-RUN sed -i 's_^socket\s*=.*_socket = /tmp/mysqld.sock_g' /etc/mysql/my.cnf
+RUN sed -i 's_^socket\s*=.*_socket = /tmp/mysqld.sock_g' /etc/mysql/*.cnf && ln -s /tmp/mysqld.sock /var/run/mysqld/mysqld.sock
 RUN rm -rf /var/lib/mysql/* && mysql_install_db && chown -R mysql: /var/lib/mysql
 
 # Setup mysql//mysql user

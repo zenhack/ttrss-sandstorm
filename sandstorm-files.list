@@ -162,8 +162,6 @@ opt/app/feed-icons
 opt/app/feed-icons-old
 opt/app/feed-icons-old/.empty
 opt/app/feed-icons-old/index.html
-opt/app/feed-icons/.empty
-opt/app/feed-icons/index.html
 opt/app/images/alert.png
 opt/app/images/archive.png
 opt/app/images/blank_icon.gif
@@ -248,6 +246,7 @@ opt/app/themes/default.css
 opt/app/update.php
 run_grain.sh
 sandstorm-http-bridge
+sandstorm-http-bridge-config
 sandstorm-manifest
 sbin
 sbin/my_init
@@ -828,11 +827,8 @@ var_original/log/apache2/other_vhosts_access.log
 var_original/log/apt
 var_original/log/apt/history.log
 var_original/log/apt/term.log
-var_original/log/auth.log
 var_original/log/btmp
-var_original/log/cron.log
 var_original/log/dmesg
-var_original/log/error
 var_original/log/faillog
 var_original/log/fsck
 var_original/log/fsck/checkfs
@@ -844,7 +840,6 @@ var_original/log/mysql.err
 var_original/log/mysql.log
 var_original/log/mysql/error.log
 var_original/log/syslog
-var_original/log/update_rss.log
 var_original/log/upstart
 var_original/log/wtmp
 var_original/run
@@ -854,6 +849,7 @@ var_original/run/lock
 var_original/run/lock/apache2
 var_original/run/motd.dynamic
 var_original/run/mysqld
+var_original/run/mysqld/mysqld.sock
 var_original/run/network
 var_original/run/resolvconf
 var_original/run/resolvconf/interface
