@@ -2,7 +2,7 @@
 # sure you lock down to a specific version, not to `latest`!
 # See https://github.com/phusion/baseimage-docker/blob/master/Changelog.md for
 # a list of version numbers.
-FROM phusion/baseimage:0.9.10
+FROM phusion/baseimage:0.9.16
 
 # Set correct environment variables.
 ENV HOME /root
@@ -21,6 +21,9 @@ RUN apt-get -y install mysql-server
 # Install php
 RUN apt-get -y install php5 php5-mysql
 
+# Install nginx
+RUN apt-get -y install php5-fpm nginx
+
 # minimize mysql allocations
 RUN echo '[mysqld]\ninnodb_data_file_path = ibdata1:10M:autoextend\ninnodb_log_file_size = 10KB\ninnodb_file_per_table = 1' > /etc/mysql/conf.d/small.cnf
 RUN sed -i 's_^socket\s*=.*_socket = /tmp/mysqld.sock_g' /etc/mysql/*.cnf && ln -s /tmp/mysqld.sock /var/run/mysqld/mysqld.sock
@@ -31,14 +34,25 @@ RUN /usr/sbin/mysqld & \
     sleep 10s &&\
     echo "GRANT ALL ON *.* TO mysql@'%' IDENTIFIED BY 'mysql' WITH GRANT OPTION; FLUSH PRIVILEGES; CREATE SCHEMA app;" | mysql
 
+# setup nginx
+ADD nginx.conf /etc/nginx/nginx.conf
+RUN echo "cgi.fix_pathinfo = 0;" >> /etc/php5/fpm/php.ini
+RUN sed -i 's_^listen\s*=\s*.*_listen = 127.0.0.1:9000_g' /etc/php5/fpm/pool.d/www.conf
+RUN sed -i 's_^user\s*=\s*.*_user = 1000_g' /etc/php5/fpm/pool.d/www.conf
+RUN sed -i 's_^group\s*=\s*.*_group = 1000_g' /etc/php5/fpm/pool.d/www.conf
+
 RUN mkdir /etc/service/mysql
 ADD mysql.sh /etc/service/mysql/run
 
 RUN mkdir /etc/service/php
 ADD php.sh /etc/service/php/run
 
+RUN mkdir /etc/service/nginx
+ADD nginx.sh /etc/service/nginx/run
+
 ADD . /opt/app
 RUN rm -rf /opt/app/.git
+RUN chmod -R 777 /opt/app
 
 RUN echo '*/30 * * * * root (/usr/bin/php5 /opt/app/update.php --feeds --force-update) >> /var/log/update_rss.log 2>&1' >> /etc/cron.d/update_rss
 
