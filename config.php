@@ -5,9 +5,9 @@
 
 	define('DB_TYPE', 'mysql');
 	define('DB_HOST', '');
-	define('DB_USER', 'mysql');
+	define('DB_USER', 'root');
 	define('DB_NAME', 'app');
-	define('DB_PASS', 'mysql');
+	define('DB_PASS', '');
 	define('DB_PORT', '');
 
 	define('MYSQL_CHARSET', 'UTF8');
@@ -30,7 +30,7 @@
 	// is not used. Requires mcrypt functions.
 	// Warning: changing this key will make your stored feed passwords impossible
 	// to decrypt.
-	
+
 	define('SINGLE_USER_MODE', true);
 	// Operate in single user mode, disables all functionality related to
 	// multiple users and authentication. Enabling this assumes you have
@@ -38,11 +38,11 @@
 
 	define('SIMPLE_UPDATE_MODE', false);
 	// Enables fallback update mode where tt-rss tries to update feeds in
-	// background while tt-rss is open in your browser. 
-	// If you don't have a lot of feeds and don't want to or can't run 
-	// background processes while not running tt-rss, this method is generally 
+	// background while tt-rss is open in your browser.
+	// If you don't have a lot of feeds and don't want to or can't run
+	// background processes while not running tt-rss, this method is generally
 	// viable to keep your feeds up to date.
-	// Still, there are more robust (and recommended) updating methods 
+	// Still, there are more robust (and recommended) updating methods
 	// available, you can read about them here: http://tt-rss.org/wiki/UpdatingFeeds
 
 	// *****************************
@@ -50,10 +50,10 @@
 	// *****************************
 
 	define('PHP_EXECUTABLE', '/usr/bin/php');
-	// Path to PHP *COMMAND LINE* executable, used for various command-line tt-rss 
-	// programs and update daemon. Do not try to use CGI binary here, it won't work. 
-	// If you see HTTP headers being displayed while running tt-rss scripts, 
-	// then most probably you are using the CGI binary. If you are unsure what to 
+	// Path to PHP *COMMAND LINE* executable, used for various command-line tt-rss
+	// programs and update daemon. Do not try to use CGI binary here, it won't work.
+	// If you see HTTP headers being displayed while running tt-rss scripts,
+	// then most probably you are using the CGI binary. If you are unsure what to
 	// put in here, ask your hosting provider.
 
 	define('LOCK_DIRECTORY', '/var/lock');
@@ -63,7 +63,7 @@
 	define('CACHE_DIR', '/var/cache');
 	// Local cache directory for RSS feed content.
 
-	define('ICONS_DIR', "feed-icons");
+	define('ICONS_DIR', "/var/feed-icons");
 	define('ICONS_URL', "feed-icons");
 	// Local and URL path to the directory, where feed favicons are stored.
 	// Unless you really know what you're doing, please keep those relative
@@ -91,7 +91,7 @@
 
 	define('FORCE_ARTICLE_PURGE', 0);
 	// When this option is not 0, users ability to control feed purging
-	// intervals is disabled and all articles (which are not starred) 
+	// intervals is disabled and all articles (which are not starred)
 	// older than this amount of days are purged.
 
 	// *** PubSubHubbub settings ***
@@ -136,9 +136,9 @@
 	// **********************************
 	// *** Cookies and login sessions ***
 	// **********************************
-	
+
 	define('SESSION_COOKIE_LIFETIME', 86400);
-	// Default lifetime of a session (e.g. login) cookie. In seconds, 
+	// Default lifetime of a session (e.g. login) cookie. In seconds,
 	// 0 means cookie will be deleted when browser closes.
 
 	define('SESSION_CHECK_ADDRESS', 1);
@@ -161,9 +161,9 @@
 	// Subject line for email digests
 
 	define('SMTP_SERVER', '');
-	// Hostname:port combination to send outgoing mail (i.e. localhost:25). 
+	// Hostname:port combination to send outgoing mail (i.e. localhost:25).
 	// Blank - use system MTA.
-	
+
 	define('SMTP_LOGIN', '');
 	define('SMTP_PASSWORD', '');
 	// These two options enable SMTP authentication when sending
@@ -172,7 +172,7 @@
 	define('SMTP_SECURE', '');
 	// Used to select a secure SMTP connection. Allowed values: ssl, tls,
 	// or empty.
-	
+
 	// ***************************************
 	// *** Other settings (less important) ***
 	// ***************************************
@@ -182,7 +182,7 @@
 
 	define('DETECT_ARTICLE_LANGUAGE', false);
 	// Detect article language when updating feeds, presently this is only
-	// used for hyphenation. This may increase amount of CPU time used by 
+	// used for hyphenation. This may increase amount of CPU time used by
 	// update processes, disable if necessary (i.e. you are being billed
 	// for CPU time).
 
@@ -201,11 +201,11 @@
 	// disable plugins specified in this list.
 	// Disabling auth_internal in this list would automatically disable
 	// reset password link on the login form.
-	
+
 	define('LOG_DESTINATION', 'sql');
 	// Log destination to use. Possible values: sql (uses internal logging
 	// you can read in Preferences -> System), syslog - logs to system log.
-	// Setting this to blank uses PHP logging (usually to http server 
+	// Setting this to blank uses PHP logging (usually to http server
 	// error.log).
 
 	define('CONFIG_VERSION', 26);
