@@ -19,7 +19,7 @@ const pkgdef :Spk.PackageDefinition = (
 
     appTitle = (defaultText = "Tiny Tiny RSS"),
 
-    appVersion = 3,  # Increment this for every release.
+    appVersion = 4,  # Increment this for every release.
 
     appMarketingVersion = (defaultText = "1.9.0"),
 
@@ -33,11 +33,42 @@ const pkgdef :Spk.PackageDefinition = (
       )
     ],
 
-    continueCommand = .myCommand
-    # This is the command called to start your app back up after it has been
-    # shut down for inactivity. Here we're using the same command as for
-    # starting a new instance, but you could use different commands for each
-    # case.
+    continueCommand = .myCommand,
+
+    metadata = (
+      icons = (
+        appGrid = (png = (
+          dpi1x = embed "app-graphics/tinytinyrss-128.png",
+          dpi2x = embed "app-graphics/tinytinyrss-256.png"
+        )),
+        grain = (png = (
+          dpi1x = embed "app-graphics/tinytinyrss-24.png",
+          dpi2x = embed "app-graphics/tinytinyrss-48.png"
+        )),
+        market = (png = (
+          dpi1x = embed "app-graphics/tinytinyrss-150.png",
+          dpi2x = embed "app-graphics/tinytinyrss-300.png"
+        )),
+      ),
+
+      website = "https://tt-rss.org",
+      codeUrl = "https://github.com/jparyani/Tiny-Tiny-RSS",
+      license = (openSource = gpl2),
+      categories = [media],
+
+      author = (
+        contactEmail = "jparyani@sandstorm.io",
+        pgpSignature = embed "pgp-signature",
+        upstreamAuthor = "TinyTinyRSS Team",
+      ),
+      pgpKeyring = embed "pgp-keyring",
+
+      description = (defaultText = embed "description.md"),
+
+      screenshots = [
+        (width = 448, height = 350, png = embed "sandstorm-screenshot.png")
+      ],
+    ),
   ),
 
   sourceMap = (
