@@ -5,6 +5,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y nginx php5-fpm php5-mysql php5-cli php5-curl git php5-dev mysql-server
+apt-get install -y clang pkg-config
+cd /tmp && git clone https://github.com/sandstorm-io/capnproto.git && cd capnproto/c++ && autoreconf -i && ./configure && make clean && sudo make -j6 install
 unlink /etc/nginx/sites-enabled/default
 cat > /etc/nginx/sites-available/sandstorm-php <<EOF
 server {

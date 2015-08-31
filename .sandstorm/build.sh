@@ -11,3 +11,9 @@ if [ -f /opt/app/composer.json ] ; then
     fi
     php composer.phar install
 fi
+
+test -e feed-icons.orig || mv feed-icons feed-icons.orig
+
+cd /opt/app/sandstorm
+make
+sudo cp bin/sandstorm-httpGet /usr/bin

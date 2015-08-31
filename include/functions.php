@@ -362,8 +362,18 @@
 		if (strpos($url, "//") === 0)
 			$url = 'http:' . $url;
 
-		if (!defined('NO_CURL') && function_exists('curl_init')) {
+	 	if (defined('SANDSTORM')) {
+			$fetch_curl_used = false;
 
+			if (strpos($url, "http://") !== 0 and strpos($url, "https://") !== 0) {
+				if (strpos($url, "//") === 0) {
+					$url = "http:" . $url;
+				} else {
+					$url = "http://" . $url;
+				}
+			}
+			return shell_exec('sandstorm-httpGet ' . escapeshellarg($url));
+		} else if (!defined('NO_CURL') && function_exists('curl_init')) {
 			$fetch_curl_used = true;
 
 			if (ini_get("safe_mode") || ini_get("open_basedir") || defined("FORCE_GETURL")) {
@@ -443,17 +453,6 @@
 			curl_close($ch);
 
 			return $contents;
-		} else if (defined('SANDSTORM') and SANDSTORM) {
-			$fetch_curl_used = false;
-
-			if (strpos($url, "http://") !== 0 and strpos($url, "https://") !== 0) {
-				if (strpos($url, "//") === 0) {
-					$url = "http:" . $url;
-				} else {
-					$url = "http://" . $url;
-				}
-			}
-			return shell_exec('sandstorm-httpGet ' . escapeshellarg($url));
 		} else {
 
 			$fetch_curl_used = false;
@@ -1694,7 +1693,6 @@
 			$auth_login = '', $auth_pass = '') {
 
 		global $fetch_last_error;
-
 		require_once "include/rssfuncs.php";
 
 		$url = fix_url($url);

@@ -63,7 +63,7 @@
 	define('CACHE_DIR', '/var/cache');
 	// Local cache directory for RSS feed content.
 
-	define('ICONS_DIR', "/var/feed-icons");
+	define('ICONS_DIR', "feed-icons");
 	define('ICONS_URL', "feed-icons");
 	// Local and URL path to the directory, where feed favicons are stored.
 	// Unless you really know what you're doing, please keep those relative
