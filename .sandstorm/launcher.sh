@@ -4,6 +4,7 @@ test -d /var/lib/mysql || cp -r /opt/app/.sandstorm/mysql /var/lib
 
 test -f /var/feed-icons || cp -r /opt/app/feed-icons /var
 test -f /var/cache || cp -r /opt/app/cache /var
+rm -rf /var/lock
 mkdir -p /var/lock
 mkdir -p /var/lib/php5/sessions
 
