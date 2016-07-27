@@ -5,7 +5,7 @@ class Pref_Mobile extends Handler_Protected {
       print "<p>You can easily use this app on your mobile device. Just follow the instructions for your device:</p>";
 	  print "<h2>Android</h2>";
       print "<ul>";
-      print "<li>Download an app.  The Tiny Tiny RSS authors maintain an app on <a href=\"https://play.google.com/store/apps/details?id=org.fox.ttrss\">Google Play</a>.</li>";
+      print "<li>Download the official Tiny Tiny RSS app on <a href=\"https://play.google.com/store/apps/details?id=org.fox.ttrss\">Google Play</a>.</li>";
       print "<li>In the header bar of this site, you should see a key icon (you may need to open the menu). Click the key icon and create a new key. Save the webkey URL it gives you.</li>";
       print "<li>Open the app.  Set the host to be the part of the webkey before the #.  Set the HTTP Authentication Login to \"sandstorm\" and the HTTP Authentication Password to the part of the webkey after the #.</li>";
       print "<li>You should now be good to go!</li>";
