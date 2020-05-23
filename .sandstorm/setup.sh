@@ -7,6 +7,11 @@ set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
+apt-get update
+apt-get install -y apt-transport-https
+
+curl -sL https://deb.nodesource.com/setup_12.x | bash -
+
 echo -e "deb http://repo.mysql.com/apt/debian/ stretch mysql-5.7\ndeb-src http://repo.mysql.com/apt/debian/ stretch mysql-5.7" > /etc/apt/sources.list.d/mysql.list
 wget -O /tmp/RPM-GPG-KEY-mysql https://repo.mysql.com/RPM-GPG-KEY-mysql
 apt-key add /tmp/RPM-GPG-KEY-mysql
@@ -16,6 +21,9 @@ apt-get install -y \
 	git \
 	mysql-server \
 	nginx \
+	nodejs \
+	golang \
+	\
 	php7.0-cli \
 	php7.0-curl \
 	php7.0-dev \

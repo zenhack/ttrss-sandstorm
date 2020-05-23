@@ -1,0 +1,1 @@
+/opt/app/.sandstorm/powerbox/client/build/index.js

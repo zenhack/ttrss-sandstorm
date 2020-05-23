@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "outDir": "build",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "lib": ["es2020", "dom"],
+    "target": "es2020",
+    "moduleResolution": "node"
+  }
+}

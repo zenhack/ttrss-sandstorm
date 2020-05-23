@@ -71,6 +71,7 @@
 			]
 		};
 	</script>
+	<script src="/js/sandstorm/index.js" defer></script>
 
 	<?php
 	foreach (array("lib/prototype.js",
