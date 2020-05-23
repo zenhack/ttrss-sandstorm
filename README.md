@@ -1,7 +1,21 @@
+Sandstorm TTRSS Port
+--------------------
+
+This repository contains a port of Tiny Tiny RSS to Sandstorm.
+
+The repository itself is a fork of TTRSS's git repo, but as much as
+possible all of the sandstorm specific bits are under `.sandstorm/`;
+we try to keep the TTRSS source as pristine as we can to make merging
+updates from upstream easier.
+
+TTRSS README below.
+
+---
+
 Tiny Tiny RSS
 =============
 
-Web-based news feed aggregator, designed to allow you to read news from 
+Web-based news feed aggregator, designed to allow you to read news from
 any location, while feeling as close to a real desktop application as possible.
 
 http://tt-rss.org
