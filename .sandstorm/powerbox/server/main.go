@@ -1,6 +1,7 @@
 package main
 
 import (
+	"golang.org/x/net/websocket"
 	"net/http"
 	"os"
 )
@@ -24,8 +25,10 @@ func newProxyServer() http.Handler {
 }
 
 func newWebSocketServer() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(401)
-		w.Write([]byte("TODO"))
-	})
+	m := http.NewServeMux()
+	m.Handle("/_sandstorm/websocket", websocket.Handler(func(conn *websocket.Conn) {
+		conn.Write([]byte("Hello!\n"))
+		conn.Close()
+	}))
+	return m
 }
