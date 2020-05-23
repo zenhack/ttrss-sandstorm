@@ -4,10 +4,8 @@
 # expect comments or ordering to be retained.
 bin/bash
 bin/cp
-bin/dash
 bin/mkdir
 bin/rm
-bin/sh
 bin/sleep
 bin/touch
 etc/bindresvport.blacklist
@@ -153,16 +151,6 @@ lib/x86_64-linux-gnu/libtinfo.so.5.9
 lib/x86_64-linux-gnu/libz.so.1
 lib/x86_64-linux-gnu/libz.so.1.2.8
 lib64/ld-linux-x86-64.so.2
-opt/app/.git/HEAD
-opt/app/.git/config
-opt/app/.git/objects/19
-opt/app/.git/objects/19/893d33e35d05eb104bfc53174b9f112318d479
-opt/app/.git/objects/eb/b373987a38d6109fb235c1e0722f5fd024d4ed
-opt/app/.git/objects/pack
-opt/app/.git/objects/pack/pack-1ff502800838739584a00482c1266ef391ae3fda.idx
-opt/app/.git/objects/pack/pack-41d6ef4e45e817ca85f1fcd6de20cb14e2942daf.idx
-opt/app/.git/packed-refs
-opt/app/.git/refs
 opt/app/.sandstorm/launcher.sh
 opt/app/.sandstorm/service-config/mime.types
 opt/app/.sandstorm/service-config/nginx.conf
@@ -170,6 +158,7 @@ opt/app/backend.php
 opt/app/classes/counters.php
 opt/app/classes/db.php
 opt/app/classes/db/prefs.php
+opt/app/classes/debug.php
 opt/app/classes/feeds.php
 opt/app/classes/handler.php
 opt/app/classes/handler/protected.php
@@ -244,7 +233,6 @@ proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
-usr/bin/git
 usr/bin/mysql
 usr/bin/touch
 usr/lib/locale/locale-archive
