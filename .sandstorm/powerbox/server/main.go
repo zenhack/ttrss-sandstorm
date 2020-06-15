@@ -1,11 +1,11 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
+	"log"
 	"net/http"
 	"os"
 
-	"log"
+	"github.com/gorilla/websocket"
 )
 
 const webSocketListenAddr = ":3000"
@@ -27,14 +27,21 @@ func newProxyServer() http.Handler {
 }
 
 func newWebSocketServer() http.Handler {
-	m := http.NewServeMux()
-	m.Handle("/_sandstorm/websocket", websocket.Handler(func(conn *websocket.Conn) {
-		log.Println("Got websocket conn,")
-		_, err := conn.Write([]byte(`{"message": 1221}`))
+	up := &websocket.Upgrader{}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		conn, err := up.Upgrade(w, req, nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		err = conn.WriteMessage(
+			websocket.TextMessage,
+			[]byte(`{"message": "Look the websocket works!"}`),
+		)
 		if err != nil {
 			log.Printf("Error writing to websocket: %q", err)
 		}
 		conn.Close()
-	}))
-	return m
+
+	})
 }
