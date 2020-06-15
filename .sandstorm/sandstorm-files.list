@@ -193,7 +193,7 @@ opt/app/include/sanity_config.php
 opt/app/include/sessions.php
 opt/app/index.php
 opt/app/js
-opt/app/js/AppBase.js
+opt/app/js/App.js
 opt/app/js/Article.js
 opt/app/js/CommonDialogs.js
 opt/app/js/CommonFilters.js
@@ -232,6 +232,7 @@ opt/app/plugins/note/init.php
 opt/app/plugins/note/note.js
 opt/app/schema/ttrss_schema_mysql.sql
 opt/app/themes/light.css
+opt/app/themes/light.css.map
 proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
