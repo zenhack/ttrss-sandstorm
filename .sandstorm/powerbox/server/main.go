@@ -10,7 +10,7 @@ import (
 
 const webSocketListenAddr = ":3000"
 
-var proxyListenAddr = ":" + os.Getenv("POWERBOXY_PROXY_PORT")
+var proxyListenAddr = ":" + os.Getenv("POWERBOX_PROXY_PORT")
 
 func main() {
 	go func() {
@@ -21,6 +21,7 @@ func main() {
 
 func newProxyServer() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		log.Println("Got proxy request:", req)
 		w.WriteHeader(401)
 		w.Write([]byte("TODO"))
 	})

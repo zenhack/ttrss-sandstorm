@@ -191,6 +191,6 @@ const myCommand :Spk.Manifest.Command = (
     # can detect if $SANDSTORM="1" at runtime, switching UI and/or backend to use
     # the app's Sandstorm-specific integration code.
 
-    (key = "POWERBOXY_PROXY_PORT", value = "4000"),
+    (key = "POWERBOX_PROXY_PORT", value = "4000"),
   ]
 );
