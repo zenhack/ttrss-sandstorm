@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Create a bunch of folders under the clean /var that php, nginx, and mysql expect to exist
 mkdir -p /var/lib/mysql
 mkdir -p /var/lib/mysql-files
@@ -29,7 +31,7 @@ mkdir -p /var/run/mysqld
 
 # Ensure mysql tables created
 # HOME=/etc/mysql /usr/bin/mysql_install_db
-HOME=/etc/mysql /usr/sbin/mysqld --initialize
+HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 
 # Spawn mysqld, php
 HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
