@@ -11,21 +11,15 @@ import (
 )
 
 func NewServer(storage Storage) Server {
-	srv := Server{
+	return Server{
 		storage: storage,
-		mu:      make(chan struct{}, 1),
+		pr:      NewPowerboxRequester(),
 	}
-	srv.mu <- struct{}{}
-	return srv
 }
 
 type Server struct {
 	storage Storage
-
-	// Protects fields below
-	mu       chan struct{}
-	wsConn   *websocket.Conn
-	cancelWs context.CancelFunc
+	pr      *PowerboxRequester
 }
 
 func (s Server) ProxyHandler() http.Handler {
@@ -56,6 +50,7 @@ func (s Server) ProxyHandler() http.Handler {
 func (s Server) getClientFor(url string) (*http.Client, error) {
 	token, err := s.storage.GetTokenFor(url)
 	if err != nil {
+		//claimToken, err := s.pbRequestUrl(url)
 		return nil, err
 	}
 	_ = token
@@ -71,26 +66,7 @@ func (s Server) WebSocketHandler() http.Handler {
 			return
 		}
 		ctx, cancel := context.WithCancel(req.Context())
-		s.newConn(conn, cancel)
+		s.pr.Connect(ctx, cancel, conn)
 		<-ctx.Done()
 	})
-}
-
-func (s Server) newConn(conn *websocket.Conn, cancel context.CancelFunc) {
-	s.withMu(func() {
-		if s.wsConn != nil {
-			s.wsConn.Close()
-			s.cancelWs()
-		}
-		s.wsConn = conn
-		s.cancelWs = cancel
-	})
-}
-
-func (s Server) withMu(fn func()) {
-	<-s.mu
-	defer func() {
-		s.mu <- struct{}{}
-	}()
-	fn()
 }
