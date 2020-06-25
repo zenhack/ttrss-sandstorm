@@ -42,8 +42,8 @@ while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
     sleep .2
 done
 if [ ! -e /var/.db-created ]; then
-    mysql --user root -e 'CREATE DATABASE app'
-    mysql --user root --database app < /opt/app/schema/ttrss_schema_mysql.sql
+    mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
+    mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
     touch /var/.db-created
 fi
 

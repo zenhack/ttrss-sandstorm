@@ -192,5 +192,8 @@ const myCommand :Spk.Manifest.Command = (
     # the app's Sandstorm-specific integration code.
 
     (key = "POWERBOX_PROXY_PORT", value = "4000"),
+
+    (key = "MYSQL_USER", value = "root"),
+    (key = "MYSQL_DATABASE", value = "app"),
   ]
 );
