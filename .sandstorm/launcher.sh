@@ -33,9 +33,8 @@ mkdir -p /var/run/mysqld
 # HOME=/etc/mysql /usr/bin/mysql_install_db
 HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 
-# Spawn mysqld, php
+# Spawn mysqld
 HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
-/usr/sbin/php-fpm7.0 --nodaemonize --fpm-config /etc/php/7.0/fpm/php-fpm.conf &
 
 # Wait until mysql has bound its socket, indicating readiness
 while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
@@ -54,7 +53,10 @@ fi
 export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 
-# Same for php:
+# Spawn php:
+/usr/sbin/php-fpm7.0 --nodaemonize --fpm-config /etc/php/7.0/fpm/php-fpm.conf &
+
+# Wait for it to start:
 while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
     echo "waiting for php-fpm7.0 to be available at /var/run/php/php7.0-fpm.sock"
     sleep .2
