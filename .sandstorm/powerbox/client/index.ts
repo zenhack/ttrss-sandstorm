@@ -1,21 +1,19 @@
-
 function getWebSocketUrl(): string {
   const protocol = window.location.protocol.replace('http', 'ws');
   return protocol + "//" + window.location.host + "/_sandstorm/websocket";
 }
 
-function connectWebSocket(onMessage: ((arg: object) => Promise<object>)): void {
+function connectWebSocket(): void {
   const socket = new WebSocket(getWebSocketUrl());
   socket.onmessage = (event) => {
-    onMessage(JSON.parse(event.data)).then((value) => {
-      socket.send(JSON.stringify(value))
-    }, (err) => {
-      console.error(err)
-    })
+    window.parent.postMessage(JSON.parse(event.data), '*');
   }
+  window.addEventListener('message', (event) => {
+    if(event.source !== window.parent) {
+      return;
+    }
+    socket.send(JSON.stringify(event.data));
+  });
 }
 
-connectWebSocket(async (value) => {
-  console.log(value);
-  return {ok: 1}
-})
+connectWebSocket();

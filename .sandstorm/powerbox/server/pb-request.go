@@ -2,16 +2,22 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"log"
+
+	"zenhack.net/go/sandstorm/capnp/powerbox"
 
 	"github.com/gorilla/websocket"
 )
 
 var ErrNoClient = errors.New("No client attached; can't make pb requests")
+var ErrDisconnected = errors.New("Disconnected from websocket while waiting for reply")
 
 type PowerboxRequester struct {
 	setConn   chan *powerboxConn
 	makePbReq chan *pbPostMsgReq
+	pbReplies chan *pbPostMsgResp
 }
 
 type powerboxConn struct {
@@ -20,15 +26,21 @@ type powerboxConn struct {
 	wsConn *websocket.Conn
 }
 
+type pbLocalizedText struct {
+	DefaultText string `json:"defaultText"`
+}
 type pbPostMsgReq struct {
-	Query     []string `json:"query"`
-	SaveLabel struct {
-		DefaultText string `json:"defaultText"`
-	} `json:"saveLabel"`
-	RpcId uint64 `json:"rpcId"`
+	Query     []string        `json:"query"`
+	SaveLabel pbLocalizedText `json:"saveLabel"`
+	RpcId     uint64          `json:"rpcId"`
 
 	replyOk  chan string
 	replyErr chan error
+}
+
+type pbPostMsgResp struct {
+	RpcId uint64 `json:"rpcId"`
+	Token string `json:"token"`
 }
 
 func (pr PowerboxRequester) Connect(
@@ -40,6 +52,38 @@ func (pr PowerboxRequester) Connect(
 		ctx:    ctx,
 		cancel: cancel,
 		wsConn: wsConn,
+	}
+}
+
+func (pr PowerboxRequester) Request(
+	label string,
+	descr []powerbox.PowerboxDescriptor,
+) (claimToken string, err error) {
+	query := make([]string, len(descr))
+	for i, v := range descr {
+		// Make sure this is the root of the message:
+		ptr := v.Struct.ToPtr()
+		msg := v.Struct.Segment().Message()
+		msg.SetRoot(ptr)
+
+		data, err := msg.MarshalPacked()
+		if err != nil {
+			return "", err
+		}
+		query[i] = base64.StdEncoding.EncodeToString(data)
+	}
+	req := &pbPostMsgReq{
+		Query:     query,
+		SaveLabel: pbLocalizedText{label},
+		replyOk:   make(chan string, 1),
+		replyErr:  make(chan error, 1),
+	}
+	pr.makePbReq <- req
+	select {
+	case token := <-req.replyOk:
+		return token, nil
+	case err := <-req.replyErr:
+		return "", err
 	}
 }
 
@@ -61,6 +105,10 @@ func (pr PowerboxRequester) run() {
 	rpcs := make(map[uint64]*pbPostMsgReq)
 
 	dropConn := func() {
+		for _, v := range rpcs {
+			v.replyErr <- ErrDisconnected
+		}
+		rpcs = make(map[uint64]*pbPostMsgReq)
 		if conn == nil {
 			return
 		}
@@ -83,6 +131,7 @@ func (pr PowerboxRequester) run() {
 		case newConn := <-pr.setConn:
 			dropConn()
 			conn = newConn
+			go recvMsgs(conn.ctx, conn.wsConn, pr.pbReplies)
 		case req := <-pr.makePbReq:
 			if conn == nil {
 				req.replyErr <- ErrNoClient
@@ -99,6 +148,29 @@ func (pr PowerboxRequester) run() {
 				req.replyErr <- err
 				delete(rpcs, req.RpcId)
 			}
+		case resp := <-pr.pbReplies:
+			req, ok := rpcs[resp.RpcId]
+			delete(rpcs, resp.RpcId)
+			if !ok {
+				log.Print("Reply to unknown rpc id: ", resp.RpcId)
+				continue
+			}
+			req.replyOk <- resp.Token
+		}
+	}
+}
+
+func recvMsgs(ctx context.Context, wsConn *websocket.Conn, dest chan *pbPostMsgResp) {
+	for ctx.Err() == nil {
+		var resp pbPostMsgResp
+		err := wsConn.ReadJSON(&resp)
+		if err != nil {
+			log.Print("Reading from websocket: ", err)
+			return
+		}
+		select {
+		case dest <- &resp:
+		case <-ctx.Done():
 		}
 	}
 }

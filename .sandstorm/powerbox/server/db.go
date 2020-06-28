@@ -31,3 +31,12 @@ func (s Storage) GetTokenFor(url string) (token string, err error) {
 	err = row.Scan(&token)
 	return token, err
 }
+
+func (s Storage) SetTokenFor(url, token string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO powerbox_proxy_tokens(url, token)
+		VALUES (?, ?)`,
+		url, token,
+	)
+	return err
+}

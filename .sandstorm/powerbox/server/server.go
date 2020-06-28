@@ -1,13 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+
+	"zombiezen.com/go/capnproto2"
+
+	"zenhack.net/go/sandstorm/capnp/apisession"
+	"zenhack.net/go/sandstorm/capnp/powerbox"
 )
 
 func NewServer(storage Storage) Server {
@@ -50,11 +57,72 @@ func (s Server) ProxyHandler() http.Handler {
 func (s Server) getClientFor(url string) (*http.Client, error) {
 	token, err := s.storage.GetTokenFor(url)
 	if err != nil {
+		token, err = s.requestTokenFor(url)
+		if err != nil {
+			return nil, err
+		}
+		err = s.storage.SetTokenFor(url, token)
 		//claimToken, err := s.pbRequestUrl(url)
 		return nil, err
 	}
-	_ = token
 	return nil, errors.New("TODO")
+}
+
+func (s Server) requestTokenFor(url string) (string, error) {
+	claimToken, err := s.pr.Request(
+		url,
+		[]powerbox.PowerboxDescriptor{powerboxDescriptorForUrl(url)},
+	)
+	if err != nil {
+		return "", err
+	}
+	_, _ = claim("TODO", claimToken)
+	panic("TODO")
+}
+
+func powerboxDescriptorForUrl(url string) powerbox.PowerboxDescriptor {
+	_, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+	chkfatal(err)
+	desc, err := powerbox.NewRootPowerboxDescriptor(seg)
+	chkfatal(err)
+
+	tags, err := desc.NewTags(1)
+	chkfatal(err)
+	tag := tags.At(0)
+
+	tag.SetId(apisession.ApiSession_TypeID)
+
+	tagValue, err := apisession.NewApiSession_PowerboxTag(seg)
+	chkfatal(err)
+	tagValue.SetCanonicalUrl(url)
+	tag.SetValue(tag.Struct.ToPtr())
+	return desc
+}
+
+func claim(sessionId, claimToken string) (string, error) {
+	var body struct {
+		RequestToken        string   `json:"requestToken"`
+		RequiredPermissions []string `json:"requiredPermissions"`
+	}
+	body.RequestToken = claimToken
+	bodyText, err := json.Marshal(&body)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.Post(
+		"http://http-bridge/session/"+sessionId+"/claim",
+		"application/octet-stream",
+		bytes.NewBuffer(bodyText),
+	)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	var respBody struct {
+		Cap string `json:"cap"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	return respBody.Cap, err
 }
 
 func (s Server) WebSocketHandler() http.Handler {
