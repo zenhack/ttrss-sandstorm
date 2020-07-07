@@ -8,7 +8,7 @@ class Opml extends Handler_Protected {
 	}
 
 	function export() {
-		$output_name = "tt-rss_".date("Y-m-d").".opml";
+		$output_name = sprintf("tt-rss_%s_%s.opml", $_SESSION["name"], date("Y-m-d"));
 		$include_settings = $_REQUEST["include_settings"] == "1";
 		$owner_uid = $_SESSION["uid"];
 
@@ -62,7 +62,7 @@ class Opml extends Handler_Protected {
 		$ttrss_specific_qpart = "";
 
 		if ($cat_id) {
-			$sth = $this->pdo->prepare("SELECT title,order_id 
+			$sth = $this->pdo->prepare("SELECT title,order_id
 				FROM ttrss_feed_categories WHERE id = ?
 					AND owner_uid = ?");
 			$sth->execute([$cat_id, $owner_uid]);
@@ -606,7 +606,7 @@ class Opml extends Handler_Protected {
 		if (is_file($tmp_file)) {
 			$doc = new DOMDocument();
 			libxml_disable_entity_loader(false);
-			$doc->load($tmp_file);
+			$loaded = $doc->load($tmp_file);
 			libxml_disable_entity_loader(true);
 			unlink($tmp_file);
 		} else if (!$doc) {
@@ -614,7 +614,7 @@ class Opml extends Handler_Protected {
 			return;
 		}
 
-		if ($doc) {
+		if ($loaded) {
 			$this->pdo->beginTransaction();
 			$this->opml_import_category($doc, false, $owner_uid, false);
 			$this->pdo->commit();

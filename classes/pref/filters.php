@@ -238,6 +238,7 @@ class Pref_Filters extends Handler_Protected {
 		$root = array();
 		$root['id'] = 'root';
 		$root['name'] = __('Filters');
+		$root['enabled'] = true;
 		$root['items'] = array();
 
 		$filter_search = $_SESSION["prefs_filter_search"];
@@ -302,7 +303,7 @@ class Pref_Filters extends Handler_Protected {
 			$filter['param'] = $name[1];
 			$filter['checkbox'] = false;
 			$filter['last_triggered'] = $line["last_triggered"] ? make_local_datetime($line["last_triggered"], false) : null;
-			$filter['enabled'] = $line["enabled"];
+			$filter['enabled'] = sql_bool_to_bool($line["enabled"]);
 			$filter['rules'] = $this->getfilterrules_list($line['id']);
 
 			if (!$filter_search || $match_ok) {
@@ -965,7 +966,7 @@ class Pref_Filters extends Handler_Protected {
 		print "<section>";
 
 		print "<textarea dojoType='fox.form.ValidationTextArea'
-			 required='true' id='filterDlg_regExp' 
+			 required='true' id='filterDlg_regExp'
 			 ValidRegExp='true'
 			 rows='4'
 			 style='font-size : 14px; width : 490px; word-break: break-all'
