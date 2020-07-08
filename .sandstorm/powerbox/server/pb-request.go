@@ -21,9 +21,10 @@ type PowerboxRequester struct {
 }
 
 type powerboxConn struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-	wsConn *websocket.Conn
+	ctx       context.Context
+	cancel    context.CancelFunc
+	wsConn    *websocket.Conn
+	sessionId string
 }
 
 type pbLocalizedText struct {
@@ -39,7 +40,7 @@ type pbReq struct {
 type pbPostMsgReq struct {
 	PowerboxRequest pbReq `json:"powerboxRequest"`
 
-	replyOk  chan string
+	replyOk  chan *PowerboxResult
 	replyErr chan error
 }
 
@@ -52,19 +53,26 @@ func (pr PowerboxRequester) Connect(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	wsConn *websocket.Conn,
+	sessionId string,
 ) {
 	log.Print("Called Connect()")
 	pr.setConn <- &powerboxConn{
-		ctx:    ctx,
-		cancel: cancel,
-		wsConn: wsConn,
+		ctx:       ctx,
+		cancel:    cancel,
+		wsConn:    wsConn,
+		sessionId: sessionId,
 	}
+}
+
+type PowerboxResult struct {
+	ClaimToken string
+	SessionId  string
 }
 
 func (pr PowerboxRequester) Request(
 	label string,
 	descr []powerbox.PowerboxDescriptor,
-) (claimToken string, err error) {
+) (*PowerboxResult, error) {
 	log.Print("Called Request()")
 	query := make([]string, len(descr))
 	for i, v := range descr {
@@ -75,7 +83,7 @@ func (pr PowerboxRequester) Request(
 
 		data, err := msg.MarshalPacked()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		query[i] = base64.StdEncoding.EncodeToString(data)
 	}
@@ -84,15 +92,15 @@ func (pr PowerboxRequester) Request(
 			Query:     query,
 			SaveLabel: pbLocalizedText{label},
 		},
-		replyOk:  make(chan string, 1),
+		replyOk:  make(chan *PowerboxResult, 1),
 		replyErr: make(chan error, 1),
 	}
 	pr.makePbReq <- req
 	select {
-	case token := <-req.replyOk:
-		return token, nil
+	case res := <-req.replyOk:
+		return res, nil
 	case err := <-req.replyErr:
-		return "", err
+		return nil, err
 	}
 }
 
@@ -172,7 +180,10 @@ func (pr PowerboxRequester) run() {
 				log.Print("Reply to unknown rpc id: ", resp.RpcId)
 				continue
 			}
-			req.replyOk <- resp.Token
+			req.replyOk <- &PowerboxResult{
+				ClaimToken: resp.Token,
+				SessionId:  conn.sessionId,
+			}
 		}
 	}
 }

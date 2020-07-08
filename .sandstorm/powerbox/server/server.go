@@ -69,15 +69,14 @@ func (s Server) getClientFor(url string) (*http.Client, error) {
 }
 
 func (s Server) requestTokenFor(url string) (string, error) {
-	claimToken, err := s.pr.Request(
+	res, err := s.pr.Request(
 		url,
 		[]powerbox.PowerboxDescriptor{powerboxDescriptorForUrl(url)},
 	)
 	if err != nil {
 		return "", err
 	}
-	_, _ = claim("TODO", claimToken)
-	panic("TODO")
+	return claim(res)
 }
 
 func powerboxDescriptorForUrl(url string) powerbox.PowerboxDescriptor {
@@ -99,18 +98,18 @@ func powerboxDescriptorForUrl(url string) powerbox.PowerboxDescriptor {
 	return desc
 }
 
-func claim(sessionId, claimToken string) (string, error) {
+func claim(res *PowerboxResult) (string, error) {
 	var body struct {
 		RequestToken        string   `json:"requestToken"`
 		RequiredPermissions []string `json:"requiredPermissions"`
 	}
-	body.RequestToken = claimToken
+	body.RequestToken = res.ClaimToken
 	bodyText, err := json.Marshal(&body)
 	if err != nil {
 		return "", err
 	}
 	resp, err := http.Post(
-		"http://http-bridge/session/"+sessionId+"/claim",
+		"http://http-bridge/session/"+res.SessionId+"/claim",
 		"application/octet-stream",
 		bytes.NewBuffer(bodyText),
 	)
@@ -128,13 +127,14 @@ func claim(sessionId, claimToken string) (string, error) {
 func (s Server) WebSocketHandler() http.Handler {
 	up := &websocket.Upgrader{}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		sessionId := req.Header.Get("X-Sandstorm-Session-Id")
 		conn, err := up.Upgrade(w, req, nil)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		ctx, cancel := context.WithCancel(req.Context())
-		s.pr.Connect(ctx, cancel, conn)
+		s.pr.Connect(ctx, cancel, conn, sessionId)
 		<-ctx.Done()
 	})
 }
