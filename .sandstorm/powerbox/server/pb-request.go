@@ -180,14 +180,14 @@ func recvMsgs(ctx context.Context, wsConn *websocket.Conn, dest chan *pbPostMsgR
 	log.Print("Receiving pb messages.")
 	defer log.Print("ceasing to receive pb messages")
 	for ctx.Err() == nil {
-		var resp pbPostMsgResp
-		err := wsConn.ReadJSON(&resp)
+		resp := &pbPostMsgResp{}
+		err := wsConn.ReadJSON(resp)
 		if err != nil {
 			log.Print("Reading from websocket: ", err)
 			return
 		}
 		select {
-		case dest <- &resp:
+		case dest <- resp:
 		case <-ctx.Done():
 		}
 	}
