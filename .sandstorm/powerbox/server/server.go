@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -62,10 +61,17 @@ func (s Server) getClientFor(url string) (*http.Client, error) {
 			return nil, err
 		}
 		err = s.storage.SetTokenFor(url, token)
-		//claimToken, err := s.pbRequestUrl(url)
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
-	return nil, errors.New("TODO")
+	client := &http.Client{
+		Transport: tokenRoundTripper{
+			token:      token,
+			underlying: http.DefaultTransport,
+		},
+	}
+	return client, nil
 }
 
 func (s Server) requestTokenFor(url string) (string, error) {
