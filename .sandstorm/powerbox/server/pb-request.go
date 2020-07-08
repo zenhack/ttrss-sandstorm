@@ -29,10 +29,15 @@ type powerboxConn struct {
 type pbLocalizedText struct {
 	DefaultText string `json:"defaultText"`
 }
-type pbPostMsgReq struct {
+
+type pbReq struct {
 	Query     []string        `json:"query"`
 	SaveLabel pbLocalizedText `json:"saveLabel"`
 	RpcId     uint64          `json:"rpcId"`
+}
+
+type pbPostMsgReq struct {
+	PowerboxRequest pbReq `json:"powerboxRequest"`
 
 	replyOk  chan string
 	replyErr chan error
@@ -48,6 +53,7 @@ func (pr PowerboxRequester) Connect(
 	cancel context.CancelFunc,
 	wsConn *websocket.Conn,
 ) {
+	log.Print("Called Connect()")
 	pr.setConn <- &powerboxConn{
 		ctx:    ctx,
 		cancel: cancel,
@@ -59,6 +65,7 @@ func (pr PowerboxRequester) Request(
 	label string,
 	descr []powerbox.PowerboxDescriptor,
 ) (claimToken string, err error) {
+	log.Print("Called Request()")
 	query := make([]string, len(descr))
 	for i, v := range descr {
 		// Make sure this is the root of the message:
@@ -73,10 +80,12 @@ func (pr PowerboxRequester) Request(
 		query[i] = base64.StdEncoding.EncodeToString(data)
 	}
 	req := &pbPostMsgReq{
-		Query:     query,
-		SaveLabel: pbLocalizedText{label},
-		replyOk:   make(chan string, 1),
-		replyErr:  make(chan error, 1),
+		PowerboxRequest: pbReq{
+			Query:     query,
+			SaveLabel: pbLocalizedText{label},
+		},
+		replyOk:  make(chan string, 1),
+		replyErr: make(chan error, 1),
 	}
 	pr.makePbReq <- req
 	select {
@@ -127,28 +136,35 @@ func (pr PowerboxRequester) run() {
 
 		select {
 		case <-connCtx.Done():
+			log.Print("Connection closed")
 			dropConn()
 		case newConn := <-pr.setConn:
+			log.Print("New connection")
 			dropConn()
 			conn = newConn
 			go recvMsgs(conn.ctx, conn.wsConn, pr.pbReplies)
 		case req := <-pr.makePbReq:
+			log.Print("Got pb request: ", req)
 			if conn == nil {
+				log.Print("No client.")
 				req.replyErr <- ErrNoClient
 				continue
 			}
 
-			req.RpcId = nextRpcId
+			req.PowerboxRequest.RpcId = nextRpcId
 			nextRpcId++
-			rpcs[req.RpcId] = req
+			rpcs[req.PowerboxRequest.RpcId] = req
 
 			err := conn.wsConn.WriteJSON(req)
 
 			if err != nil {
+				log.Print("Error sending to client: ", err)
 				req.replyErr <- err
-				delete(rpcs, req.RpcId)
+				delete(rpcs, req.PowerboxRequest.RpcId)
 			}
+			log.Print("Send request to client")
 		case resp := <-pr.pbReplies:
+			log.Print("Got response: ", resp)
 			req, ok := rpcs[resp.RpcId]
 			delete(rpcs, resp.RpcId)
 			if !ok {
@@ -161,6 +177,8 @@ func (pr PowerboxRequester) run() {
 }
 
 func recvMsgs(ctx context.Context, wsConn *websocket.Conn, dest chan *pbPostMsgResp) {
+	log.Print("Receiving pb messages.")
+	defer log.Print("ceasing to receive pb messages")
 	for ctx.Err() == nil {
 		var resp pbPostMsgResp
 		err := wsConn.ReadJSON(&resp)
