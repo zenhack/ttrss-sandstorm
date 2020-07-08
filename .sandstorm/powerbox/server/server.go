@@ -43,6 +43,10 @@ func (s Server) ProxyHandler() http.Handler {
 			w.WriteHeader(500)
 			return
 		}
+		if req.Method == "CONNECT" {
+			log.Printf("can't handle connect: %v", req)
+			panic("TODO")
+		}
 		defer resp.Body.Close()
 		wh := w.Header()
 		for k, v := range resp.Header {
