@@ -100,6 +100,7 @@ func NewPowerboxRequester() *PowerboxRequester {
 	pr := &PowerboxRequester{
 		setConn:   make(chan *powerboxConn),
 		makePbReq: make(chan *pbPostMsgReq),
+		pbReplies: make(chan *pbPostMsgResp),
 	}
 	go pr.run()
 	return pr
