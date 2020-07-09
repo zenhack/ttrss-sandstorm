@@ -19,9 +19,8 @@
 	require_once "functions.php";
 	require_once "sessions.php";
 
+	ini_set('session.use_cookies', 0);
 	ini_set("session.gc_maxlifetime", 86400);
-
-	define('AUTH_DISABLE_OTP', true);
 
 	if (defined('ENABLE_GZIP_OUTPUT') && ENABLE_GZIP_OUTPUT &&
 			function_exists("ob_gzhandler")) {
@@ -53,7 +52,23 @@
 		@session_start();
 	}
 
+	startup_gettext();
+
 	if (!init_plugins()) return;
+
+	if ($_SESSION["uid"]) {
+		if (!validate_session()) {
+			header("Content-Type: text/json");
+
+			print json_encode(array("seq" => -1,
+				"status" => 1,
+				"content" => array("error" => "NOT_LOGGED_IN")));
+
+			return;
+		}
+
+		load_user_plugins( $_SESSION["uid"]);
+	}
 
 	$method = strtolower($_REQUEST["op"]);
 
@@ -71,4 +86,4 @@
 	header("Api-Content-Length: " . ob_get_length());
 
 	ob_end_flush();
-?>
+

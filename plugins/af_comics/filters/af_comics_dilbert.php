@@ -1,4 +1,5 @@
 <?php
+
 class Af_Comics_Dilbert extends Af_ComicFilter {
 
 	function supported() {
@@ -6,10 +7,12 @@ class Af_Comics_Dilbert extends Af_ComicFilter {
 	}
 
 	function process(&$article) {
-		if (strpos($article["guid"], "dilbert.com") !== FALSE) {
+		if (strpos($article["link"], "dilbert.com") !== FALSE ||
+			strpos($article["link"], "/DilbertDailyStrip") !== FALSE) {
+
 				$res = fetch_file_contents($article["link"], false, false, false,
 					 false, false, 0,
-					 "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)");
+					 "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0");
 
 				global $fetch_last_error_content;
 
@@ -17,35 +20,48 @@ class Af_Comics_Dilbert extends Af_ComicFilter {
 					$res = $fetch_last_error_content;
 
 				$doc = new DOMDocument();
-				@$doc->loadHTML($res);
 
-				$basenode = false;
-
-				if ($doc) {
+				if (@$doc->loadHTML($res)) {
 					$xpath = new DOMXPath($doc);
 
-					$basenode = $xpath->query('//div[@class="STR_Image"]')->item(0);
+					// Get the image container
+					$basenode = $xpath->query('(//div[@class="img-comic-container"]/a[@class="img-comic-link"])')->item(0);
 
-					/* $entries = $xpath->query('(//img[@src])'); // we might also check for img[@class='strip'] I guess...
+					// Get the comic title
+					$comic_title = $xpath->query('(//span[@class="comic-title-name"])')->item(0)->textContent;
 
-					$matches = array();
+					// Get tags from the article
+					$matches = $xpath->query('(//p[contains(@class, "comic-tags")][1]//a)');
+					$tags = array();
 
-					foreach ($entries as $entry) {
-
-						if (preg_match("/dyn\/str_strip\/.*strip\.gif$/", $entry->getAttribute("src"), $matches)) {
-
-							$entry->setAttribute("src",
-								rewrite_relative_url("http://dilbert.com/",
-								$matches[0]));
-
-							$basenode = $entry;
-							break;
+					foreach ($matches as $tag) {
+						// Only strings starting with a number sign are considered tags
+						if ( substr($tag->textContent, 0, 1) == '#' ) {
+							$tags[] = mb_strtolower(substr($tag->textContent, 1), 'utf-8');
 						}
-					} */
+					}
+
+					// Get the current comics transcript and set it
+					// as the title so it will be visible on mousover
+					$transcript = $xpath->query('(//div[starts-with(@id, "js-toggle-transcript-")]//p)')->item(0);
+					if ($transcript) {
+						$basenode->setAttribute("title", $transcript->textContent);
+					}
 
 					if ($basenode) {
-						$article["content"] = $doc->saveXML($basenode);
+						$article["content"] = $doc->saveHTML($basenode);
 					}
+
+					// Add comic title to article type if not empty (mostly Sunday strips)
+					if ($comic_title) {
+						$article["title"] = $article["title"] . " - " . $comic_title;
+					}
+
+					if (!empty($tags)) {
+						// Ignore existing tags and just replace them all
+						$article["tags"] = array_unique($tags);
+					}
+
 				}
 
 			return true;

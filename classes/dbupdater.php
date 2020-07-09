@@ -1,19 +1,19 @@
 <?php
 class DbUpdater {
 
-	private $dbh;
+	private $pdo;
 	private $db_type;
 	private $need_version;
 
-	function __construct($dbh, $db_type, $need_version) {
-		$this->dbh = $dbh;
+	function __construct($pdo, $db_type, $need_version) {
+		$this->pdo = Db::pdo(); //$pdo;
 		$this->db_type = $db_type;
 		$this->need_version = (int) $need_version;
 	}
 
 	function getSchemaVersion() {
-		$result = db_query("SELECT schema_version FROM ttrss_version");
-		return (int) db_fetch_result($result, 0, "schema_version");
+		$row = $this->pdo->query("SELECT schema_version FROM ttrss_version")->fetch();
+		return (int) $row['schema_version'];
 	}
 
 	function isUpdateRequired() {
@@ -26,40 +26,58 @@ class DbUpdater {
 		if (file_exists($filename)) {
 			return explode(";", preg_replace("/[\r\n]/", "", file_get_contents($filename)));
 		} else {
+			user_error("DB Updater: schema file for version $version is not found.");
 			return false;
 		}
 	}
 
-	function performUpdateTo($version) {
+	function performUpdateTo($version, $html_output = true) {
 		if ($this->getSchemaVersion() == $version - 1) {
 
 			$lines = $this->getSchemaLines($version);
 
 			if (is_array($lines)) {
 
-				db_query("BEGIN");
+				$this->pdo->beginTransaction();
 
 				foreach ($lines as $line) {
 					if (strpos($line, "--") !== 0 && $line) {
-						db_query($line);
+
+						if ($html_output)
+							print "<pre>$line</pre>";
+						else
+							Debug::log("> $line");
+
+						try {
+							$this->pdo->query($line); // PDO returns errors as exceptions now
+						} catch (PDOException $e) {
+							if ($html_output) {
+								print "<div class='text-error'>Error: " . $e->getMessage() . "</div>";
+							} else {
+								Debug::log("Error: " . $e->getMessage());
+							}
+
+							$this->pdo->rollBack();
+							return false;
+						}
 					}
 				}
 
 				$db_version = $this->getSchemaVersion();
 
 				if ($db_version == $version) {
-					db_query("COMMIT");
+					$this->pdo->commit();
 					return true;
 				} else {
-					db_query("ROLLBACK");
+					$this->pdo->rollBack();
 					return false;
 				}
 			} else {
-				return true;
+				return false;
 			}
 		} else {
 			return false;
 		}
 	}
 
-} ?>
+}

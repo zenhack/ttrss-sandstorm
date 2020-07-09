@@ -1,88 +1,80 @@
-function shareArticle(id) {
-	try {
+Plugins.Share = {
+	shareArticle: function(id) {
 		if (dijit.byId("shareArticleDlg"))
 			dijit.byId("shareArticleDlg").destroyRecursive();
 
-		var query = "backend.php?op=pluginhandler&plugin=share&method=shareArticle&param=" + param_escape(id);
+		const query = "backend.php?op=pluginhandler&plugin=share&method=shareArticle&param=" + encodeURIComponent(id);
 
-		dialog = new dijit.Dialog({
+		const dialog = new dijit.Dialog({
 			id: "shareArticleDlg",
 			title: __("Share article by URL"),
 			style: "width: 600px",
-			newurl: function() {
+			newurl: function () {
+				if (confirm(__("Generate new share URL for this article?"))) {
 
-				var ok = confirm(__("Generate new share URL for this article?"));
+					Notify.progress("Trying to change URL...", true);
 
-				if (ok) {
+					const query = {op: "pluginhandler", plugin: "share", method: "newkey", id: id};
 
-					notify_progress("Trying to change URL...", true);
+					xhrJson("backend.php", query, (reply) => {
+						if (reply) {
+							const new_link = reply.link;
+							const e = $('gen_article_url');
 
-					var query = "op=pluginhandler&plugin=share&method=newkey&id=" + param_escape(id);
+							if (new_link) {
 
-					new Ajax.Request("backend.php", {
-						parameters: query,
-						onComplete: function(transport) {
-								var reply = JSON.parse(transport.responseText);
-								var new_link = reply.link;
+								e.innerHTML = e.innerHTML.replace(/\&amp;key=.*$/,
+									"&amp;key=" + new_link);
 
-								var e = $('gen_article_url');
+								e.href = e.href.replace(/\&key=.*$/,
+									"&key=" + new_link);
 
-								if (new_link) {
+								new Effect.Highlight(e);
 
-									e.innerHTML = e.innerHTML.replace(/\&amp;key=.*$/,
-										"&amp;key=" + new_link);
+								const img = $("SHARE-IMG-" + id);
+								img.addClassName("shared");
 
-									e.href = e.href.replace(/\&key=.*$/,
-										"&key=" + new_link);
+								Notify.close();
 
-									new Effect.Highlight(e);
-
-									var img = $("SHARE-IMG-" + id);
-									if (img) img.src = img.src.replace("notshared.png", "share.png");
-
-									notify('');
-
-								} else {
-									notify_error("Could not change URL.");
-								}
-						} });
-
+							} else {
+								Notify.error("Could not change URL.");
+							}
+						}
+					});
 				}
 
 			},
-			unshare: function() {
+			unshare: function () {
+				if (confirm(__("Remove sharing for this article?"))) {
 
-				var ok = confirm(__("Remove sharing for this article?"));
+					const query = {op: "pluginhandler", plugin: "share", method: "unshare", id: id};
 
-				if (ok) {
+					xhrPost("backend.php", query, () => {
+						try {
+							const img = $("SHARE-IMG-" + id);
 
-					notify_progress("Trying to unshare...", true);
-
-					var query = "op=pluginhandler&plugin=share&method=unshare&id=" + param_escape(id);
-
-					new Ajax.Request("backend.php", {
-						parameters: query,
-						onComplete: function(transport) {
-							notify("Article unshared.");
-
-							var img = $("SHARE-IMG-" + id);
-							if (img) img.src = img.src.replace("share.png", "notshared.png");
+							if (img) {
+								img.removeClassName("shared");
+								img.up("div[id*=RROW]").removeClassName("shared");
+							}
 
 							dialog.hide();
-						} });
+						} catch (e) {
+							console.error(e);
+						}
+					});
 				}
 
 			},
-			href: query});
+			href: query
+		});
 
 		dialog.show();
 
-		var img = $("SHARE-IMG-" + id);
-		if (img) img.src = img.src.replace("notshared.png", "share.png");
-
-	} catch (e) {
-		exception_error("shareArticle", e);
+		const img = $("SHARE-IMG-" + id);
+		img.addClassName("shared");
 	}
-}
+};
+
 
 

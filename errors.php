@@ -34,6 +34,12 @@
 
 	$ERRORS[12] = __("SQL escaping test failed, check your database and PHP configuration");
 
+	$ERRORS[13] = __("Method not found");
+
+	$ERRORS[14] = __("Plugin not found");
+
+	$ERRORS[15] = __("Encoding data as JSON failed");
+
 	if ($_REQUEST['mode'] == 'js') {
 		header("Content-Type: text/javascript; charset=UTF-8");
 

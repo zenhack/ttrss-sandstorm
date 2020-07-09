@@ -18,17 +18,17 @@ class GoogleReaderKeys extends Plugin {
 
 		$hotkeys["j"]		= "next_article_noscroll";
 		$hotkeys["k"]		= "prev_article_noscroll";
-		$hotkeys["*n"]		= "next_feed";
-		$hotkeys["*p"]		= "prev_feed";
+		$hotkeys["N"]		= "next_feed";
+		$hotkeys["P"]		= "prev_feed";
 		$hotkeys["v"]		= "open_in_new_window";
 		$hotkeys["r"]		= "feed_refresh";
 		$hotkeys["m"]		= "toggle_unread";
 		$hotkeys["o"]		= "toggle_expand";
-		$hotkeys["(13)|enter"]	= "toggle_expand";
-		$hotkeys["*(191)|?"]    = "help_dialog";
-		$hotkeys["(32)|space"]	= "next_article";
-		$hotkeys["(38)|up"]	= "article_scroll_up";
-		$hotkeys["(40)|down"]	= "article_scroll_down";
+		$hotkeys["\r|Enter"]	= "toggle_expand";
+		$hotkeys["?"]		= "help_dialog";
+		$hotkeys[" |Space"]	= "next_article";
+		$hotkeys["(38)|Up"]	= "article_scroll_up";
+		$hotkeys["(40)|Down"]	= "article_scroll_down";
 
 		return $hotkeys;
 	}
@@ -38,4 +38,3 @@ class GoogleReaderKeys extends Plugin {
 	}
 
 }
-?>

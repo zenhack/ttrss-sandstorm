@@ -4,8 +4,12 @@ class Af_Tumblr_1280 extends Plugin {
 
 	function about() {
 		return array(1.0,
-			"Replace Tumblr pictures with largest size if available",
+			"Replace Tumblr pictures and videos with largest size if available (requires CURL)",
 			"fox");
+	}
+
+	function flags() {
+		return array("needs_curl" => true);
 	}
 
 	function init($host) {
@@ -18,14 +22,11 @@ class Af_Tumblr_1280 extends Plugin {
 
 	function hook_article_filter($article) {
 
-		$owner_uid = $article["owner_uid"];
-
-		$charset_hack = '<head>
-			<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-		</head>';
+		if (!function_exists("curl_init") || ini_get("open_basedir"))
+			return $article;
 
 		$doc = new DOMDocument();
-		$doc->loadHTML($charset_hack . $article["content"]);
+		$doc->loadHTML('<?xml encoding="UTF-8">' . $article["content"]);
 
 		$found = false;
 
@@ -46,8 +47,7 @@ class Af_Tumblr_1280 extends Plugin {
 					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 					curl_setopt($ch, CURLOPT_HEADER, true);
 					curl_setopt($ch, CURLOPT_NOBODY, true);
-					curl_setopt($ch, CURLOPT_FOLLOWLOCATION,
-						!ini_get("safe_mode") && !ini_get("open_basedir"));
+					curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 					curl_setopt($ch, CURLOPT_USERAGENT, SELF_USER_AGENT);
 
 					@$result = curl_exec($ch);
@@ -57,6 +57,19 @@ class Af_Tumblr_1280 extends Plugin {
 						$img->setAttribute("src", $test_src);
 						$found = true;
 					}
+				}
+			}
+
+			$video_sources = $xpath->query('//video/source[contains(@src, \'.tumblr.com/video_file\')]');
+
+			foreach ($video_sources as $source) {
+				$src = $source->getAttribute("src");
+
+				$new_src = preg_replace("/\/\d{3}$/", "", $src);
+
+				if ($src != $new_src) {
+					$source->setAttribute("src", $new_src);
+					$found = true;
 				}
 			}
 
@@ -76,4 +89,3 @@ class Af_Tumblr_1280 extends Plugin {
 	}
 
 }
-?>

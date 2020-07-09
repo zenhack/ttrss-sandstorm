@@ -1,6 +1,5 @@
 <?php
-	/*
-	 * WARNING!
+	/* WARNING!
 	 *
 	 * If you modify this file, you are ON YOUR OWN!
 	 *
@@ -15,12 +14,38 @@
 	 * If you come crying when stuff inevitably breaks, you will be mocked and told
 	 * to get out. */
 
+	function make_self_url() {
+		$proto = is_server_https() ? 'https' : 'http';
+
+		return $proto . '://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+	}
+
 	function make_self_url_path() {
-		$url_path = ($_SERVER['HTTPS'] != "on" ? 'http://' :  'https://') . $_SERVER["HTTP_HOST"] . parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+		$proto = is_server_https() ? 'https' : 'http';
+		$url_path = $proto . '://' . $_SERVER["HTTP_HOST"] . parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
 		return $url_path;
 	}
 
+	function check_mysql_tables() {
+		$pdo = Db::pdo();
+
+		$sth = $pdo->prepare("SELECT engine, table_name FROM information_schema.tables WHERE
+				table_schema = ? AND table_name LIKE 'ttrss_%' AND engine != 'InnoDB'");
+		$sth->execute([DB_NAME]);
+
+		$bad_tables = [];
+
+		while ($line = $sth->fetch()) {
+			array_push($bad_tables, $line);
+		}
+
+		return $bad_tables;
+	}
+
+/**
+	 * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+	 */
 	function initial_sanity_check() {
 
 		$errors = array();
@@ -43,8 +68,12 @@
 			// 	array_push($errors, "Please don't run this script as root.");
 			// }
 
-			if (version_compare(PHP_VERSION, '5.3.0', '<')) {
-				array_push($errors, "PHP version 5.3.0 or newer required.");
+			if (version_compare(PHP_VERSION, '5.6.0', '<')) {
+				array_push($errors, "PHP version 5.6.0 or newer required. You're using " . PHP_VERSION . ".");
+			}
+
+			if (!class_exists("UConverter")) {
+				array_push($errors, "PHP UConverter class is missing, it's provided by the Internationalization (intl) module.");
 			}
 
 			if (CONFIG_VERSION != EXPECTED_CONFIG_VERSION) {
@@ -63,43 +92,41 @@
 				array_push($errors, "Data export cache is not writable (chmod -R 777 ".CACHE_DIR."/export)");
 			}
 
-			if (!is_writable(CACHE_DIR . "/js")) {
-				array_push($errors, "Javascript cache is not writable (chmod -R 777 ".CACHE_DIR."/js)");
-			}
-
-			if (strlen(FEED_CRYPT_KEY) > 0 && strlen(FEED_CRYPT_KEY) != 24) {
-				array_push($errors, "FEED_CRYPT_KEY should be exactly 24 characters in length.");
-			}
-
-			if (strlen(FEED_CRYPT_KEY) > 0 && !function_exists("mcrypt_decrypt")) {
-				array_push($errors, "FEED_CRYPT_KEY requires mcrypt functions which are not found.");
-			}
-
 			if (GENERATED_CONFIG_CHECK != EXPECTED_CONFIG_VERSION) {
 				array_push($errors,
 					"Configuration option checker sanity_config.php is outdated, please recreate it using ./utils/regen_config_checks.sh");
 			}
 
-			foreach ($requred_defines as $d) {
+			foreach ($required_defines as $d) {
 				if (!defined($d)) {
 					array_push($errors,
 						"Required configuration file parameter $d is not defined in config.php. You might need to copy it from config.php-dist.");
 				}
 			}
 
-			if (SINGLE_USER_MODE) {
-				$result = db_query("SELECT id FROM ttrss_users WHERE id = 1");
+			if (SINGLE_USER_MODE && class_exists("PDO")) {
+			    $pdo = DB::pdo();
 
-				if (db_num_rows($result) != 1) {
+				$res = $pdo->query("SELECT id FROM ttrss_users WHERE id = 1");
+
+				if (!$res->fetch()) {
 					array_push($errors, "SINGLE_USER_MODE is enabled in config.php but default admin account is not found.");
 				}
 			}
 
-			if (SELF_URL_PATH == "http://example.org/tt-rss/") {
-				$urlpath = preg_replace("/\w+\.php$/", "", make_self_url_path());
+			$ref_self_url_path = make_self_url_path();
+			$ref_self_url_path = preg_replace("/\w+\.php$/", "", $ref_self_url_path);
 
+			if (SELF_URL_PATH == "http://example.org/tt-rss/") {
 				array_push($errors,
-						"Please set SELF_URL_PATH to the correct value for your server (possible value: <b>$urlpath</b>)");
+						"Please set SELF_URL_PATH to the correct value for your server (possible value: <b>$ref_self_url_path</b>)");
+			}
+
+			if (isset($_SERVER["HTTP_HOST"]) &&
+				(!defined('_SKIP_SELF_URL_PATH_CHECKS') || !_SKIP_SELF_URL_PATH_CHECKS) &&
+				SELF_URL_PATH != $ref_self_url_path && SELF_URL_PATH != mb_substr($ref_self_url_path, 0, mb_strlen($ref_self_url_path)-1)) {
+				array_push($errors,
+					"Please set SELF_URL_PATH to the correct value detected for your server: <b>$ref_self_url_path</b>");
 			}
 
 			if (!is_writable(ICONS_DIR)) {
@@ -118,12 +145,16 @@
 				array_push($errors, "PHP support for JSON is required, but was not found.");
 			}
 
-			if (DB_TYPE == "mysql" && !function_exists("mysql_connect") && !function_exists("mysqli_connect")) {
+			if (DB_TYPE == "mysql" && !function_exists("mysqli_connect")) {
 				array_push($errors, "PHP support for MySQL is required for configured DB_TYPE in config.php.");
 			}
 
 			if (DB_TYPE == "pgsql" && !function_exists("pg_connect")) {
 				array_push($errors, "PHP support for PostgreSQL is required for configured DB_TYPE in config.php");
+			}
+
+			if (!class_exists("PDO")) {
+				array_push($errors, "PHP support for PDO is required but was not found.");
 			}
 
 			if (!function_exists("mb_strlen")) {
@@ -134,32 +165,51 @@
 				array_push($errors, "PHP support for hash() function is required but was not found.");
 			}
 
-			if (!function_exists("ctype_lower")) {
-				array_push($errors, "PHP support for ctype functions are required by HTMLPurifier.");
+			if (ini_get("safe_mode")) {
+				array_push($errors, "PHP safe mode setting is obsolete and not supported by tt-rss.");
 			}
 
-			/* if (ini_get("safe_mode")) {
-				array_push($errors, "PHP safe mode setting is not supported.");
-			} */
-
-			if ((PUBSUBHUBBUB_HUB || PUBSUBHUBBUB_ENABLED) && !function_exists("curl_init")) {
-				array_push($errors, "PHP support for CURL is required for PubSubHubbub.");
+			if (!function_exists("mime_content_type")) {
+				array_push($errors, "PHP function mime_content_type() is missing, try enabling fileinfo module.");
 			}
 
 			if (!class_exists("DOMDocument")) {
 				array_push($errors, "PHP support for DOMDocument is required, but was not found.");
 			}
+
+			if (DB_TYPE == "mysql") {
+				$bad_tables = check_mysql_tables();
+
+				if (count($bad_tables) > 0) {
+					$bad_tables_fmt = [];
+
+					foreach ($bad_tables as $bt) {
+						array_push($bad_tables_fmt, sprintf("%s (%s)", $bt['table_name'], $bt['engine']));
+					}
+
+					$msg = "<p>The following tables use an unsupported MySQL engine: <b>" .
+						implode(", ", $bad_tables_fmt) . "</b>.</p>";
+
+					$msg .= "<p>The only supported engine on MySQL is InnoDB. MyISAM lacks functionality to run
+						tt-rss.
+						Please backup your data (via OPML) and re-import the schema before continuing.</p>
+						<p><b>WARNING: importing the schema would mean LOSS OF ALL YOUR DATA.</b></p>";
+
+
+					array_push($errors, $msg);
+				}
+			}
 		}
 
 		if (count($errors) > 0 && $_SERVER['REQUEST_URI']) { ?>
+			<!DOCTYPE html>
 			<html>
 			<head>
 			<title>Startup failed</title>
 				<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-				<link rel="stylesheet" type="text/css" href="css/utility.css">
+				<link rel="stylesheet" type="text/css" href="themes/light.css">
 			</head>
-		<body>
-		<div class="floatingLogo"><img src="images/logo_small.png"></div>
+		<body class='sanity_failed claro ttrss_utility'>
 			<div class="content">
 
 			<h1>Startup failed</h1>

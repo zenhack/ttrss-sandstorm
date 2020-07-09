@@ -3,21 +3,22 @@ class Pref_Filters extends Handler_Protected {
 
 	function csrf_ignore($method) {
 		$csrf_ignored = array("index", "getfiltertree", "edit", "newfilter", "newrule",
-			"newaction", "savefilterorder");
+			"newaction", "savefilterorder", "testfilterdlg");
 
 		return array_search($method, $csrf_ignored) !== false;
 	}
 
 	function filtersortreset() {
-		$this->dbh->query("UPDATE ttrss_filters2
-				SET order_id = 0 WHERE owner_uid = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("UPDATE ttrss_filters2
+				SET order_id = 0 WHERE owner_uid = ?");
+		$sth->execute([$_SESSION['uid']]);
 		return;
 	}
 
 	function savefilterorder() {
 		$data = json_decode($_POST['payload'], true);
 
-		#file_put_contents("/tmp/saveorder.json", $_POST['payload']);
+		#file_put_contents("/tmp/saveorder.json", clean($_POST['payload']));
 		#$data = json_decode(file_get_contents("/tmp/saveorder.json"), true);
 
 		if (!is_array($data['items']))
@@ -26,15 +27,16 @@ class Pref_Filters extends Handler_Protected {
 		$index = 0;
 
 		if (is_array($data) && is_array($data['items'])) {
+
+			$sth = $this->pdo->prepare("UPDATE ttrss_filters2 SET
+						order_id = ? WHERE id = ? AND
+						owner_uid = ?");
+
 			foreach ($data['items'][0]['items'] as $item) {
 				$filter_id = (int) str_replace("FILTER:", "", $item['_reference']);
 
 				if ($filter_id > 0) {
-
-					$this->dbh->query("UPDATE ttrss_filters2 SET
-						order_id = $index WHERE id = '$filter_id' AND
-						owner_uid = " .$_SESSION["uid"]);
-
+					$sth->execute([$index, $filter_id, $_SESSION['uid']]);
 					++$index;
 				}
 			}
@@ -43,37 +45,50 @@ class Pref_Filters extends Handler_Protected {
 		return;
 	}
 
+	function testFilterDo() {
+		$offset = (int) clean($_REQUEST["offset"]);
+		$limit = (int) clean($_REQUEST["limit"]);
 
-	function testFilter() {
 		$filter = array();
 
 		$filter["enabled"] = true;
-		$filter["match_any_rule"] = sql_bool_to_bool(
-			checkbox_to_sql_bool($this->dbh->escape_string($_REQUEST["match_any_rule"])));
-		$filter["inverse"] = sql_bool_to_bool(
-			checkbox_to_sql_bool($this->dbh->escape_string($_REQUEST["inverse"])));
+		$filter["match_any_rule"] = checkbox_to_sql_bool(clean($_REQUEST["match_any_rule"]));
+		$filter["inverse"] = checkbox_to_sql_bool(clean($_REQUEST["inverse"]));
 
 		$filter["rules"] = array();
+		$filter["actions"] = array("dummy-action");
 
-		$result = $this->dbh->query("SELECT id,name FROM ttrss_filter_types");
+		$res = $this->pdo->query("SELECT id,name FROM ttrss_filter_types");
 
 		$filter_types = array();
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $res->fetch()) {
 			$filter_types[$line["id"]] = $line["name"];
 		}
 
+		$scope_qparts = array();
+
 		$rctr = 0;
-		foreach ($_REQUEST["rule"] AS $r) {
+		foreach (clean($_REQUEST["rule"]) AS $r) {
 			$rule = json_decode($r, true);
 
 			if ($rule && $rctr < 5) {
 				$rule["type"] = $filter_types[$rule["filter_type"]];
 				unset($rule["filter_type"]);
 
-				if (strpos($rule["feed_id"], "CAT:") === 0) {
-					$rule["cat_id"] = (int) substr($rule["feed_id"], 4);
-					unset($rule["feed_id"]);
-				}
+				$scope_inner_qparts = [];
+				foreach ($rule["feed_id"] as $feed_id) {
+
+                    if (strpos($feed_id, "CAT:") === 0) {
+                        $cat_id = (int) substr($feed_id, 4);
+                        array_push($scope_inner_qparts, "cat_id = " . $this->pdo->quote($cat_id));
+                    } else if ($feed_id > 0) {
+                        array_push($scope_inner_qparts, "feed_id = " . $this->pdo->quote($feed_id));
+                    }
+                }
+
+                if (count($scope_inner_qparts) > 0) {
+				    array_push($scope_qparts, "(" . implode(" OR ", $scope_inner_qparts) . ")");
+                }
 
 				array_push($filter["rules"], $rule);
 
@@ -83,73 +98,86 @@ class Pref_Filters extends Handler_Protected {
 			}
 		}
 
-		$qfh_ret = queryFeedHeadlines(-4, 30, "", false, false, false,
-			"date_entered DESC", 0, $_SESSION["uid"], $filter);
+		if (count($scope_qparts) == 0) $scope_qparts = ["true"];
 
-		$result = $qfh_ret[0];
+		$glue = $filter['match_any_rule'] ? " OR " :  " AND ";
+		$scope_qpart = join($glue, $scope_qparts);
 
-		$found = 0;
+		if (!$scope_qpart) $scope_qpart = "true";
 
-		print __("Articles matching this filter:");
+		$rv = array();
 
-		print "<div class=\"filterTestHolder\">";
-		print "<table width=\"100%\" cellspacing=\"0\" id=\"prefErrorFeedList\">";
+		//while ($found < $limit && $offset < $limit * 1000 && time() - $started < ini_get("max_execution_time") * 0.7) {
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
-			$line["content_preview"] = truncate_string(strip_tags($line["content"]), 100, '...');
+		$sth = $this->pdo->prepare("SELECT ttrss_entries.id,
+				ttrss_entries.title,
+				ttrss_feeds.id AS feed_id,
+				ttrss_feeds.title AS feed_title,
+				ttrss_feed_categories.id AS cat_id,
+				content,
+				date_entered,
+				link,
+				author,
+				tag_cache
+			FROM
+				ttrss_entries, ttrss_user_entries
+					LEFT JOIN ttrss_feeds ON (feed_id = ttrss_feeds.id)
+					LEFT JOIN ttrss_feed_categories ON (ttrss_feeds.cat_id = ttrss_feed_categories.id)
+			WHERE
+				ref_id = ttrss_entries.id AND
+				($scope_qpart) AND
+				ttrss_user_entries.owner_uid = ?
+			ORDER BY date_entered DESC LIMIT $limit OFFSET $offset");
 
-			foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
+		$sth->execute([$_SESSION['uid']]);
+
+		while ($line = $sth->fetch()) {
+
+			$rc = RSSUtils::get_article_filters(array($filter), $line['title'], $line['content'], $line['link'],
+				$line['author'], explode(",", $line['tag_cache']));
+
+			if (count($rc) > 0) {
+
+				$line["content_preview"] = truncate_string(strip_tags($line["content"]), 200, '&hellip;');
+
+				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
 					$line = $p->hook_query_headlines($line, 100);
 				}
 
-			$content_preview = $line["content_preview"];
+				$content_preview = $line["content_preview"];
 
-			if ($line["feed_title"])
-				$feed_title = $line["feed_title"];
+				$tmp = "<li><span class='title'>" . $line["title"] . "</span><br/>" .
+					"<span class='feed'>" . $line['feed_title'] . "</span>, <span class='date'>" . mb_substr($line["date_entered"], 0, 16) . "</span>" .
+					"<div class='preview text-muted'>" . $content_preview . "</div>" .
+					"</li>";
 
-			print "<tr>";
+				array_push($rv, $tmp);
 
-			print "<td width='5%' align='center'><input
-				dojoType=\"dijit.form.CheckBox\" checked=\"1\"
-				disabled=\"1\" type=\"checkbox\"></td>";
-			print "<td>";
-
-			print $line["title"];
-			print "&nbsp;(";
-			print "<b>" . $feed_title . "</b>";
-			print "):&nbsp;";
-			print "<span class=\"insensitive\">" . $content_preview . "</span>";
-			print " " . mb_substr($line["date_entered"], 0, 16);
-
-			print "</td></tr>";
-
-			$found++;
+			}
 		}
 
-		if ($found == 0) {
-			print "<tr><td align='center'>" .
-				__("No recent articles matching this filter have been found.");
-
-			print "</td></tr><tr><td class='insensitive' align='center'>";
-
-			print __("Complex expressions might not give results while testing due to issues with database server regexp implementation.");
-
-			print "</td></tr>";
-
-		}
-
-		print "</table></div>";
-
-		print "<div style='text-align : center'>";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('filterTestDlg').hide()\">".
-			__('Close this window')."</button>";
-		print "</div>";
-
+		print json_encode($rv);
 	}
 
-	private function getfilterrules_concise($filter_id) {
-		$result = $this->dbh->query("SELECT reg_exp,
+	function testFilterDlg() {
+		?>
+			<div>
+				<img id='prefFilterLoadingIndicator' src='images/indicator_tiny.gif'>&nbsp;
+				<span id='prefFilterProgressMsg'>Looking for articles...</span>
+			</div>
+
+			<ul class='panel panel-scrollable list list-unstyled' id='prefFilterTestResultList'></ul>
+
+			<footer class='text-center'>
+				<button dojoType='dijit.form.Button' onclick="dijit.byId('filterTestDlg').hide()"><?php echo __('Close this window') ?></button>
+			</footer>
+		<?php
+	}
+
+	private function getfilterrules_list($filter_id) {
+		$sth = $this->pdo->prepare("SELECT reg_exp,
 			inverse,
+			match_on,
 			feed_id,
 			cat_id,
 			cat_filter,
@@ -157,26 +185,50 @@ class Pref_Filters extends Handler_Protected {
 			FROM
 				ttrss_filters2_rules, ttrss_filter_types
 			WHERE
-				filter_id = '$filter_id' AND filter_type = ttrss_filter_types.id");
+				filter_id = ? AND filter_type = ttrss_filter_types.id
+			ORDER BY reg_exp");
+		$sth->execute([$filter_id]);
 
 		$rv = "";
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
-			$where = sql_bool_to_bool($line["cat_filter"]) ?
-				getCategoryTitle($line["cat_id"]) :
-				($line["feed_id"] ?
-					getFeedTitle($line["feed_id"]) : __("All feeds"));
+		    if ($line["match_on"]) {
+		        $feeds = json_decode($line["match_on"], true);
+		        $feeds_fmt = [];
+
+                foreach ($feeds as $feed_id) {
+
+                    if (strpos($feed_id, "CAT:") === 0) {
+                        $feed_id = (int)substr($feed_id, 4);
+                        array_push($feeds_fmt, Feeds::getCategoryTitle($feed_id));
+                    } else {
+                        if ($feed_id)
+                            array_push($feeds_fmt, Feeds::getFeedTitle((int)$feed_id));
+                        else
+                            array_push($feeds_fmt, __("All feeds"));
+                    }
+                }
+
+                $where = implode(", ", $feeds_fmt);
+
+            } else {
+
+                $where = $line["cat_filter"] ?
+                    Feeds::getCategoryTitle($line["cat_id"]) :
+                    ($line["feed_id"] ?
+                        Feeds::getFeedTitle($line["feed_id"]) : __("All feeds"));
+            }
 
 #			$where = $line["cat_id"] . "/" . $line["feed_id"];
 
-			$inverse = sql_bool_to_bool($line["inverse"]) ? "inverse" : "";
+			$inverse = $line["inverse"] ? "inverse" : "";
 
-			$rv .= "<span class='$inverse'>" . T_sprintf("%s on %s in %s %s",
-				strip_tags($line["reg_exp"]),
+			$rv .= "<li class='$inverse'>" . T_sprintf("%s on %s in %s %s",
+				htmlspecialchars($line["reg_exp"]),
 				$line["field"],
 				$where,
-				sql_bool_to_bool($line["inverse"]) ? __("(inverse)") : "") . "</span>";
+				$line["inverse"] ? __("(inverse)") : "") . "</li>";
 		}
 
 		return $rv;
@@ -186,11 +238,12 @@ class Pref_Filters extends Handler_Protected {
 		$root = array();
 		$root['id'] = 'root';
 		$root['name'] = __('Filters');
+		$root['enabled'] = true;
 		$root['items'] = array();
 
 		$filter_search = $_SESSION["prefs_filter_search"];
 
-		$result = $this->dbh->query("SELECT *,
+		$sth = $this->pdo->prepare("SELECT *,
 			(SELECT action_param FROM ttrss_filters2_actions
 				WHERE filter_id = ttrss_filters2.id ORDER BY id LIMIT 1) AS action_param,
 			(SELECT action_id FROM ttrss_filters2_actions
@@ -201,22 +254,27 @@ class Pref_Filters extends Handler_Protected {
 			(SELECT reg_exp FROM ttrss_filters2_rules
 				WHERE filter_id = ttrss_filters2.id ORDER BY id LIMIT 1) AS reg_exp
 			FROM ttrss_filters2 WHERE
-			owner_uid = ".$_SESSION["uid"]." ORDER BY order_id, title");
-
+			owner_uid = ? ORDER BY order_id, title");
+		$sth->execute([$_SESSION['uid']]);
 
 		$folder = array();
 		$folder['items'] = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			$name = $this->getFilterName($line["id"]);
 
 			$match_ok = false;
 			if ($filter_search) {
-				$rules_result = $this->dbh->query(
-					"SELECT reg_exp FROM ttrss_filters2_rules WHERE filter_id = ".$line["id"]);
+				if (mb_strpos($line['title'], $filter_search) !== false) {
+					$match_ok = true;
+				}
 
-				while ($rule_line = $this->dbh->fetch_assoc($rules_result)) {
+				$rules_sth = $this->pdo->prepare("SELECT reg_exp
+					FROM ttrss_filters2_rules WHERE filter_id = ?");
+				$rules_sth->execute([$line['id']]);
+
+				while ($rule_line = $rules_sth->fetch()) {
 					if (mb_strpos($rule_line['reg_exp'], $filter_search) !== false) {
 						$match_ok = true;
 						break;
@@ -225,15 +283,16 @@ class Pref_Filters extends Handler_Protected {
 			}
 
 			if ($line['action_id'] == 7) {
-				$label_result = $this->dbh->query("SELECT fg_color, bg_color
-					FROM ttrss_labels2 WHERE caption = '".$this->dbh->escape_string($line['action_param'])."' AND
-						owner_uid = " . $_SESSION["uid"]);
+				$label_sth = $this->pdo->prepare("SELECT fg_color, bg_color
+					FROM ttrss_labels2 WHERE caption = ? AND
+						owner_uid = ?");
+				$label_sth->execute([$line['action_param'], $_SESSION['uid']]);
 
-				if ($this->dbh->num_rows($label_result) > 0) {
-					$fg_color = $this->dbh->fetch_result($label_result, 0, "fg_color");
-					$bg_color = $this->dbh->fetch_result($label_result, 0, "bg_color");
+				if ($label_row = $label_sth->fetch()) {
+					//$fg_color = $label_row["fg_color"];
+					$bg_color = $label_row["bg_color"];
 
-					$name[1] = "<span class=\"labelColorIndicator\" id=\"label-editor-indicator\" style='color : $fg_color; background-color : $bg_color; margin-right : 4px'>&alpha;</span>" . $name[1];
+					$name[1] = "<i class=\"material-icons\" style='color : $bg_color; margin-right : 4px'>label</i>" . $name[1];
 				}
 			}
 
@@ -243,17 +302,14 @@ class Pref_Filters extends Handler_Protected {
 			$filter['name'] = $name[0];
 			$filter['param'] = $name[1];
 			$filter['checkbox'] = false;
+			$filter['last_triggered'] = $line["last_triggered"] ? make_local_datetime($line["last_triggered"], false) : null;
 			$filter['enabled'] = sql_bool_to_bool($line["enabled"]);
-			$filter['rules'] = $this->getfilterrules_concise($line['id']);
+			$filter['rules'] = $this->getfilterrules_list($line['id']);
 
 			if (!$filter_search || $match_ok) {
 				array_push($folder['items'], $filter);
 			}
 		}
-
-		/* if (count($folder['items']) > 0) {
-			array_push($root['items'], $folder);
-		} */
 
 		$root['items'] = $folder['items'];
 
@@ -268,254 +324,322 @@ class Pref_Filters extends Handler_Protected {
 
 	function edit() {
 
-		$filter_id = $this->dbh->escape_string($_REQUEST["id"]);
+		$filter_id = clean($_REQUEST["id"]);
 
-		$result = $this->dbh->query(
-			"SELECT * FROM ttrss_filters2 WHERE id = '$filter_id' AND owner_uid = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2
+			WHERE id = ? AND owner_uid = ?");
+		$sth->execute([$filter_id, $_SESSION['uid']]);
 
-		$enabled = sql_bool_to_bool($this->dbh->fetch_result($result, 0, "enabled"));
-		$match_any_rule = sql_bool_to_bool($this->dbh->fetch_result($result, 0, "match_any_rule"));
-		$inverse = sql_bool_to_bool($this->dbh->fetch_result($result, 0, "inverse"));
-		$title = htmlspecialchars($this->dbh->fetch_result($result, 0, "title"));
+		if ($row = $sth->fetch()) {
 
-		print "<form id=\"filter_edit_form\" onsubmit='return false'>";
+			$enabled = $row["enabled"];
+			$match_any_rule = $row["match_any_rule"];
+			$inverse = $row["inverse"];
+			$title = htmlspecialchars($row["title"]);
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-filters\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"id\" value=\"$filter_id\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"editSave\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"csrf_token\" value=\"".$_SESSION['csrf_token']."\">";
+			print "<form id='filter_edit_form' onsubmit='return false'>";
 
-		print "<div class=\"dlgSec\">".__("Caption")."</div>";
+			print_hidden("op", "pref-filters");
+			print_hidden("id", "$filter_id");
+			print_hidden("method", "editSave");
+			print_hidden("csrf_token", $_SESSION['csrf_token']);
 
-		print "<input required=\"true\" dojoType=\"dijit.form.ValidationTextBox\" style=\"width : 20em;\" name=\"title\" value=\"$title\">";
+			print "<header>".__("Caption")."</header>";
+			print "<section>";
+			print "<input required=\"true\" dojoType=\"dijit.form.ValidationTextBox\" style=\"width : 20em;\" name=\"title\" value=\"$title\">";
+			print "</section>";
 
-		print "</div>";
+			print "<header class='horizontal'>".__("Match")."</header>";
+			print "<section>";
 
-		print "<div class=\"dlgSec\">".__("Match")."</div>";
+			print "<div dojoType=\"fox.Toolbar\">";
 
-		print "<div dojoType=\"dijit.Toolbar\">";
-
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+			print "<div dojoType=\"fox.form.DropDownButton\">".
 				"<span>" . __('Select')."</span>";
-		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
-		print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(true)\"
+			print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
+			print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(true)\"
 			dojoType=\"dijit.MenuItem\">".__('All')."</div>";
-		print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(false)\"
+			print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(false)\"
 			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
-		print "</div></div>";
+			print "</div></div>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addRule()\">".
-			__('Add')."</button> ";
+			print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addRule()\">".
+				__('Add')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteRule()\">".
-			__('Delete')."</button> ";
+			print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteRule()\">".
+				__('Delete')."</button> ";
 
-		print "</div>";
+			print "</div>";
 
-		print "<ul id='filterDlg_Matches'>";
+			print "<ul id='filterDlg_Matches'>";
 
-		$rules_result = $this->dbh->query("SELECT * FROM ttrss_filters2_rules
-			WHERE filter_id = '$filter_id' ORDER BY reg_exp, id");
+			$rules_sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2_rules
+				  WHERE filter_id = ? ORDER BY reg_exp, id");
+			$rules_sth->execute([$filter_id]);
 
-		while ($line = $this->dbh->fetch_assoc($rules_result)) {
-			if (sql_bool_to_bool($line["cat_filter"])) {
-				$line["feed_id"] = "CAT:" . (int)$line["cat_id"];
+			while ($line = $rules_sth->fetch()) {
+				if ($line["match_on"]) {
+					$line["feed_id"] = json_decode($line["match_on"], true);
+				} else {
+					if ($line["cat_filter"]) {
+						$feed_id = "CAT:" . (int)$line["cat_id"];
+					} else {
+						$feed_id = (int)$line["feed_id"];
+					}
+
+					$line["feed_id"] = ["" . $feed_id]; // set item type to string for in_array()
+				}
+
+				unset($line["cat_filter"]);
+				unset($line["cat_id"]);
+				unset($line["filter_id"]);
+				unset($line["id"]);
+				if (!$line["inverse"]) unset($line["inverse"]);
+				unset($line["match_on"]);
+
+				$data = htmlspecialchars(json_encode($line));
+
+				print "<li><input dojoType='dijit.form.CheckBox' type='checkbox' onclick='Lists.onRowChecked(this)'>".
+					"<span onclick=\"dijit.byId('filterEditDlg').editRule(this)\">".$this->getRuleName($line)."</span>".
+					"<input type='hidden' name='rule[]' value=\"$data\"/></li>";
 			}
 
-			unset($line["cat_filter"]);
-			unset($line["cat_id"]);
-			unset($line["filter_id"]);
-			unset($line["id"]);
-			if (!sql_bool_to_bool($line["inverse"])) unset($line["inverse"]);
+			print "</ul>";
 
-			$data = htmlspecialchars(json_encode($line));
+			print "</section>";
 
-			print "<li><input dojoType='dijit.form.CheckBox' type='checkbox' onclick='toggleSelectListRow2(this)'>".
-				"<span onclick=\"dijit.byId('filterEditDlg').editRule(this)\">".$this->getRuleName($line)."</span>".
-				"<input type='hidden' name='rule[]' value=\"$data\"/></li>";
-		}
+			print "<header class='horizontal'>".__("Apply actions")."</header>";
 
-		print "</ul>";
+			print "<section>";
 
-		print "</div>";
+			print "<div dojoType=\"fox.Toolbar\">";
 
-		print "<div class=\"dlgSec\">".__("Apply actions")."</div>";
-
-		print "<div dojoType=\"dijit.Toolbar\">";
-
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+			print "<div dojoType=\"fox.form.DropDownButton\">".
 				"<span>" . __('Select')."</span>";
-		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
-		print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(true)\"
+			print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
+			print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(true)\"
 			dojoType=\"dijit.MenuItem\">".__('All')."</div>";
-		print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(false)\"
+			print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(false)\"
 			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
-		print "</div></div>";
+			print "</div></div>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addAction()\">".
-			__('Add')."</button> ";
+			print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addAction()\">".
+				__('Add')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteAction()\">".
-			__('Delete')."</button> ";
+			print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteAction()\">".
+				__('Delete')."</button> ";
 
-		print "</div>";
+			print "</div>";
 
-		print "<ul id='filterDlg_Actions'>";
+			print "<ul id='filterDlg_Actions'>";
 
-		$actions_result = $this->dbh->query("SELECT * FROM ttrss_filters2_actions
-			WHERE filter_id = '$filter_id' ORDER BY id");
+			$actions_sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2_actions
+				WHERE filter_id = ? ORDER BY id");
+			$actions_sth->execute([$filter_id]);
 
-		while ($line = $this->dbh->fetch_assoc($actions_result)) {
-			$line["action_param_label"] = $line["action_param"];
+			while ($line = $actions_sth->fetch()) {
+				$line["action_param_label"] = $line["action_param"];
 
-			unset($line["filter_id"]);
-			unset($line["id"]);
+				unset($line["filter_id"]);
+				unset($line["id"]);
 
-			$data = htmlspecialchars(json_encode($line));
+				$data = htmlspecialchars(json_encode($line));
 
-			print "<li><input dojoType='dijit.form.CheckBox' type='checkbox' onclick='toggleSelectListRow2(this)'>".
-				"<span onclick=\"dijit.byId('filterEditDlg').editAction(this)\">".$this->getActionName($line)."</span>".
-				"<input type='hidden' name='action[]' value=\"$data\"/></li>";
+				print "<li><input dojoType='dijit.form.CheckBox' type='checkbox' onclick='Lists.onRowChecked(this)'>".
+					"<span onclick=\"dijit.byId('filterEditDlg').editAction(this)\">".$this->getActionName($line)."</span>".
+					"<input type='hidden' name='action[]' value=\"$data\"/></li>";
+			}
+
+			print "</ul>";
+
+			print "</section>";
+
+			print "<header>".__("Options")."</header>";
+			print "<section>";
+
+			if ($enabled) {
+				$checked = "checked=\"1\"";
+			} else {
+				$checked = "";
+			}
+
+			print "<fieldset class='narrow'>";
+			print "<label class='checkbox'><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"enabled\" id=\"enabled\" $checked>
+				".__('Enabled')."</label>";
+
+			if ($match_any_rule) {
+				$checked = "checked=\"1\"";
+			} else {
+				$checked = "";
+			}
+
+			print "</fieldset><fieldset class='narrow'>";
+
+			print "<label class='checkbox'><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"match_any_rule\" id=\"match_any_rule\" $checked>
+				".__('Match any rule')."</label>";
+
+			print "</fieldset><fieldset class='narrow'>";
+
+			if ($inverse) {
+				$checked = "checked=\"1\"";
+			} else {
+				$checked = "";
+			}
+
+			print "<label class='checkbox'><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"inverse\" id=\"inverse\" $checked>
+				".__('Inverse matching')."</label>";
+
+			print "</fieldset>";
+
+			print "</section>";
+
+			print "<footer>";
+
+			print "<div style=\"float : left\">";
+			print "<button dojoType=\"dijit.form.Button\" class=\"alt-danger\" onclick=\"return dijit.byId('filterEditDlg').removeFilter()\">".
+				__('Remove')."</button>";
+			print "</div>";
+
+			print "<button dojoType=\"dijit.form.Button\" class=\"alt-info\" onclick=\"return dijit.byId('filterEditDlg').test()\">".
+				__('Test')."</button> ";
+
+			print "<button dojoType=\"dijit.form.Button\" type=\"submit\" class=\"alt-primary\" onclick=\"return dijit.byId('filterEditDlg').execute()\">".
+				__('Save')."</button> ";
+
+			print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').hide()\">".
+				__('Cancel')."</button>";
+
+			print "</footer>";
+			print "</form>";
+
 		}
-
-		print "</ul>";
-
-		print "</div>";
-
-		if ($enabled) {
-			$checked = "checked=\"1\"";
-		} else {
-			$checked = "";
-		}
-
-		print "<input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"enabled\" id=\"enabled\" $checked>
-				<label for=\"enabled\">".__('Enabled')."</label>";
-
-		if ($match_any_rule) {
-			$checked = "checked=\"1\"";
-		} else {
-			$checked = "";
-		}
-
-		print "<br/><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"match_any_rule\" id=\"match_any_rule\" $checked>
-				<label for=\"match_any_rule\">".__('Match any rule')."</label>";
-
-		if ($inverse) {
-			$checked = "checked=\"1\"";
-		} else {
-			$checked = "";
-		}
-
-		print "<br/><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"inverse\" id=\"inverse\" $checked>
-				<label for=\"inverse\">".__('Inverse matching')."</label>";
-
-		print "<p/>";
-
-		print "<div class=\"dlgButtons\">";
-
-		print "<div style=\"float : left\">";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').removeFilter()\">".
-			__('Remove')."</button>";
-		print "</div>";
-
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').test()\">".
-			__('Test')."</button> ";
-
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').execute()\">".
-			__('Save')."</button> ";
-
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').hide()\">".
-			__('Cancel')."</button>";
-
-		print "</div>";
 	}
 
 	private function getRuleName($rule) {
-		if (!$rule) $rule = json_decode($_REQUEST["rule"], true);
+		if (!$rule) $rule = json_decode(clean($_REQUEST["rule"]), true);
 
-		$feed_id = $rule["feed_id"];
+		$feeds = $rule["feed_id"];
+		$feeds_fmt = [];
 
-		if (strpos($feed_id, "CAT:") === 0) {
-			$feed_id = (int) substr($feed_id, 4);
-			$feed = getCategoryTitle($feed_id);
+		if (!is_array($feeds)) $feeds = [$feeds];
+
+		foreach ($feeds as $feed_id) {
+
+            if (strpos($feed_id, "CAT:") === 0) {
+                $feed_id = (int)substr($feed_id, 4);
+                array_push($feeds_fmt, Feeds::getCategoryTitle($feed_id));
+            } else {
+                if ($feed_id)
+                    array_push($feeds_fmt, Feeds::getFeedTitle((int)$feed_id));
+                else
+                    array_push($feeds_fmt, __("All feeds"));
+            }
+        }
+
+        $feed = implode(", ", $feeds_fmt);
+
+		$sth = $this->pdo->prepare("SELECT description FROM ttrss_filter_types
+			WHERE id = ?");
+		$sth->execute([(int)$rule["filter_type"]]);
+
+		if ($row = $sth->fetch()) {
+			$filter_type = $row["description"];
 		} else {
-			$feed_id = (int) $feed_id;
-
-			if ($rule["feed_id"])
-				$feed = getFeedTitle((int)$rule["feed_id"]);
-			else
-				$feed = __("All feeds");
+			$filter_type = "?UNKNOWN?";
 		}
-
-		$result = $this->dbh->query("SELECT description FROM ttrss_filter_types
-			WHERE id = ".(int)$rule["filter_type"]);
-		$filter_type = $this->dbh->fetch_result($result, 0, "description");
 
 		$inverse = isset($rule["inverse"]) ? "inverse" : "";
 
 		return "<span class='filterRule $inverse'>" .
-			T_sprintf("%s on %s in %s %s", strip_tags($rule["reg_exp"]),
+			T_sprintf("%s on %s in %s %s", htmlspecialchars($rule["reg_exp"]),
 			$filter_type, $feed, isset($rule["inverse"]) ? __("(inverse)") : "") . "</span>";
 	}
 
 	function printRuleName() {
-		print $this->getRuleName(json_decode($_REQUEST["rule"], true));
+		print $this->getRuleName(json_decode(clean($_REQUEST["rule"]), true));
 	}
 
 	private function getActionName($action) {
-		$result = $this->dbh->query("SELECT description FROM
-			ttrss_filter_actions WHERE id = " .(int)$action["action_id"]);
+		$sth = $this->pdo->prepare("SELECT description FROM
+			ttrss_filter_actions WHERE id = ?");
+		$sth->execute([(int)$action["action_id"]]);
 
-		$title = __($this->dbh->fetch_result($result, 0, "description"));
+		$title = "";
 
-		if ($action["action_id"] == 4 || $action["action_id"] == 6 ||
-			$action["action_id"] == 7)
+		if ($row = $sth->fetch()) {
+
+			$title = __($row["description"]);
+
+			if ($action["action_id"] == 4 || $action["action_id"] == 6 ||
+				$action["action_id"] == 7)
 				$title .= ": " . $action["action_param"];
+
+			if ($action["action_id"] == 9) {
+				list ($pfclass, $pfaction) = explode(":", $action["action_param"]);
+
+				$filter_actions = PluginHost::getInstance()->get_filter_actions();
+
+				foreach ($filter_actions as $fclass => $factions) {
+					foreach ($factions as $faction) {
+						if ($pfaction == $faction["action"] && $pfclass == $fclass) {
+							$title .= ": " . $fclass . ": " . $faction["description"];
+							break;
+						}
+					}
+				}
+			}
+		}
 
 		return $title;
 	}
 
 	function printActionName() {
-		print $this->getActionName(json_decode($_REQUEST["action"], true));
+		print $this->getActionName(json_decode(clean($_REQUEST["action"]), true));
 	}
 
 	function editSave() {
-		if ($_REQUEST["savemode"] && $_REQUEST["savemode"] == "test") {
-			return $this->testFilter();
-		}
+		$filter_id = clean($_REQUEST["id"]);
+		$enabled = checkbox_to_sql_bool(clean($_REQUEST["enabled"]));
+		$match_any_rule = checkbox_to_sql_bool(clean($_REQUEST["match_any_rule"]));
+		$inverse = checkbox_to_sql_bool(clean($_REQUEST["inverse"]));
+		$title = clean($_REQUEST["title"]);
 
-#		print_r($_REQUEST);
+		$this->pdo->beginTransaction();
 
-		$filter_id = $this->dbh->escape_string($_REQUEST["id"]);
-		$enabled = checkbox_to_sql_bool($this->dbh->escape_string($_REQUEST["enabled"]));
-		$match_any_rule = checkbox_to_sql_bool($this->dbh->escape_string($_REQUEST["match_any_rule"]));
-		$inverse = checkbox_to_sql_bool($this->dbh->escape_string($_REQUEST["inverse"]));
-		$title = $this->dbh->escape_string($_REQUEST["title"]);
+		$sth = $this->pdo->prepare("UPDATE ttrss_filters2 SET enabled = ?,
+			match_any_rule = ?,
+			inverse = ?,
+			title = ?
+			WHERE id = ? AND owner_uid = ?");
 
-		$this->dbh->query("UPDATE ttrss_filters2 SET enabled = $enabled,
-			match_any_rule = $match_any_rule,
-			inverse = $inverse,
-			title = '$title'
-			WHERE id = '$filter_id'
-			AND owner_uid = ". $_SESSION["uid"]);
+		$sth->execute([$enabled, $match_any_rule, $inverse, $title, $filter_id, $_SESSION['uid']]);
 
 		$this->saveRulesAndActions($filter_id);
 
+		$this->pdo->commit();
 	}
 
 	function remove() {
 
-		$ids = explode(",", $this->dbh->escape_string($_REQUEST["ids"]));
+		$ids = explode(",", clean($_REQUEST["ids"]));
+		$ids_qmarks = arr_qmarks($ids);
 
-		foreach ($ids as $id) {
-			$this->dbh->query("DELETE FROM ttrss_filters2 WHERE id = '$id' AND owner_uid = ". $_SESSION["uid"]);
-		}
+		$sth = $this->pdo->prepare("DELETE FROM ttrss_filters2 WHERE id IN ($ids_qmarks)
+			AND owner_uid = ?");
+		$sth->execute(array_merge($ids, [$_SESSION['uid']]));
 	}
 
-	private function saveRulesAndActions($filter_id) {
+	private function saveRulesAndActions($filter_id)
+	{
 
-		$this->dbh->query("DELETE FROM ttrss_filters2_rules WHERE filter_id = '$filter_id'");
-		$this->dbh->query("DELETE FROM ttrss_filters2_actions WHERE filter_id = '$filter_id'");
+		$sth = $this->pdo->prepare("DELETE FROM ttrss_filters2_rules WHERE filter_id = ?");
+		$sth->execute([$filter_id]);
+
+		$sth = $this->pdo->prepare("DELETE FROM ttrss_filters2_actions WHERE filter_id = ?");
+		$sth->execute([$filter_id]);
+
+		if (!is_array(clean($_REQUEST["rule"]))) $_REQUEST["rule"] = [];
+		if (!is_array(clean($_REQUEST["action"]))) $_REQUEST["action"] = [];
 
 		if ($filter_id) {
 			/* create rules */
@@ -523,7 +647,7 @@ class Pref_Filters extends Handler_Protected {
 			$rules = array();
 			$actions = array();
 
-			foreach ($_REQUEST["rule"] as $rule) {
+			foreach (clean($_REQUEST["rule"]) as $rule) {
 				$rule = json_decode($rule, true);
 				unset($rule["id"]);
 
@@ -532,7 +656,7 @@ class Pref_Filters extends Handler_Protected {
 				}
 			}
 
-			foreach ($_REQUEST["action"] as $action) {
+			foreach (clean($_REQUEST["action"]) as $action) {
 				$action = json_decode($action, true);
 				unset($action["id"]);
 
@@ -541,104 +665,79 @@ class Pref_Filters extends Handler_Protected {
 				}
 			}
 
+			$rsth = $this->pdo->prepare("INSERT INTO ttrss_filters2_rules
+						(filter_id, reg_exp,filter_type,feed_id,cat_id,match_on,inverse) VALUES
+						(?, ?, ?, NULL, NULL, ?, ?)");
+
 			foreach ($rules as $rule) {
 				if ($rule) {
 
-					$reg_exp = strip_tags($this->dbh->escape_string(trim($rule["reg_exp"])));
-					$inverse = isset($rule["inverse"]) ? "true" : "false";
+					$reg_exp = trim($rule["reg_exp"]);
+					$inverse = isset($rule["inverse"]) ? 1 : 0;
 
-					$filter_type = (int) $this->dbh->escape_string(trim($rule["filter_type"]));
-					$feed_id = $this->dbh->escape_string(trim($rule["feed_id"]));
+					$filter_type = (int)trim($rule["filter_type"]);
+					$match_on = json_encode($rule["feed_id"]);
 
-					if (strpos($feed_id, "CAT:") === 0) {
-
-						$cat_filter = bool_to_sql_bool(true);
-						$cat_id = (int) substr($feed_id, 4);
-						$feed_id = "NULL";
-
-						if (!$cat_id) $cat_id = "NULL"; // Uncategorized
-					} else {
-						$cat_filter = bool_to_sql_bool(false);
-						$feed_id = (int) $feed_id;
-						$cat_id = "NULL";
-
-						if (!$feed_id) $feed_id = "NULL"; // Uncategorized
-					}
-
-					$query = "INSERT INTO ttrss_filters2_rules
-						(filter_id, reg_exp,filter_type,feed_id,cat_id,cat_filter,inverse) VALUES
-						('$filter_id', '$reg_exp', '$filter_type', $feed_id, $cat_id, $cat_filter, $inverse)";
-
-					$this->dbh->query($query);
+					$rsth->execute([$filter_id, $reg_exp, $filter_type, $match_on, $inverse]);
 				}
 			}
+
+			$asth = $this->pdo->prepare("INSERT INTO ttrss_filters2_actions
+						(filter_id, action_id, action_param) VALUES
+						(?, ?, ?)");
 
 			foreach ($actions as $action) {
 				if ($action) {
 
-					$action_id = (int) $this->dbh->escape_string($action["action_id"]);
-					$action_param = $this->dbh->escape_string($action["action_param"]);
-					$action_param_label = $this->dbh->escape_string($action["action_param_label"]);
+					$action_id = (int)$action["action_id"];
+					$action_param = $action["action_param"];
+					$action_param_label = $action["action_param_label"];
 
 					if ($action_id == 7) {
 						$action_param = $action_param_label;
 					}
 
 					if ($action_id == 6) {
-						$action_param = (int) str_replace("+", "", $action_param);
+						$action_param = (int)str_replace("+", "", $action_param);
 					}
 
-					$query = "INSERT INTO ttrss_filters2_actions
-						(filter_id, action_id, action_param) VALUES
-						('$filter_id', '$action_id', '$action_param')";
-
-					$this->dbh->query($query);
+					$asth->execute([$filter_id, $action_id, $action_param]);
 				}
 			}
 		}
-
-
 	}
 
 	function add() {
-		if ($_REQUEST["savemode"] && $_REQUEST["savemode"] == "test") {
-			return $this->testFilter();
-		}
+		$enabled = checkbox_to_sql_bool(clean($_REQUEST["enabled"]));
+		$match_any_rule = checkbox_to_sql_bool(clean($_REQUEST["match_any_rule"]));
+		$title = clean($_REQUEST["title"]);
+		$inverse = checkbox_to_sql_bool(clean($_REQUEST["inverse"]));
 
-#		print_r($_REQUEST);
-
-		$enabled = checkbox_to_sql_bool($_REQUEST["enabled"]);
-		$match_any_rule = checkbox_to_sql_bool($_REQUEST["match_any_rule"]);
-		$title = $this->dbh->escape_string($_REQUEST["title"]);
-		$inverse = checkbox_to_sql_bool($_REQUEST["inverse"]);
-
-		$this->dbh->query("BEGIN");
+		$this->pdo->beginTransaction();
 
 		/* create base filter */
 
-		$result = $this->dbh->query("INSERT INTO ttrss_filters2
+		$sth = $this->pdo->prepare("INSERT INTO ttrss_filters2
 			(owner_uid, match_any_rule, enabled, title, inverse) VALUES
-			(".$_SESSION["uid"].",$match_any_rule,$enabled, '$title', $inverse)");
+			(?, ?, ?, ?, ?)");
 
-		$result = $this->dbh->query("SELECT MAX(id) AS id FROM ttrss_filters2
-			WHERE owner_uid = ".$_SESSION["uid"]);
+		$sth->execute([$_SESSION['uid'], $match_any_rule, $enabled, $title, $inverse]);
 
-		$filter_id = $this->dbh->fetch_result($result, 0, "id");
+		$sth = $this->pdo->prepare("SELECT MAX(id) AS id FROM ttrss_filters2
+			WHERE owner_uid = ?");
+		$sth->execute([$_SESSION['uid']]);
 
-		$this->saveRulesAndActions($filter_id);
+		if ($row = $sth->fetch()) {
+			$filter_id = $row['id'];
+			$this->saveRulesAndActions($filter_id);
+		}
 
-		$this->dbh->query("COMMIT");
+		$this->pdo->commit();
 	}
 
 	function index() {
 
-		$sort = $this->dbh->escape_string($_REQUEST["sort"]);
-
-		if (!$sort || $sort == "undefined") {
-			$sort = "reg_exp";
-		}
-
-		$filter_search = $this->dbh->escape_string($_REQUEST["search"]);
+		$filter_search = clean($_REQUEST["search"]);
 
 		if (array_key_exists("search", $_REQUEST)) {
 			$_SESSION["prefs_filter_search"] = $filter_search;
@@ -646,11 +745,9 @@ class Pref_Filters extends Handler_Protected {
 			$filter_search = $_SESSION["prefs_filter_search"];
 		}
 
-		print "<div id=\"pref-filter-wrap\" dojoType=\"dijit.layout.BorderContainer\" gutters=\"false\">";
-		print "<div id=\"pref-filter-header\" dojoType=\"dijit.layout.ContentPane\" region=\"top\">";
-		print "<div id=\"pref-filter-toolbar\" dojoType=\"dijit.Toolbar\">";
-
-		$filter_search = $this->dbh->escape_string($_REQUEST["search"]);
+		print "<div dojoType='dijit.layout.BorderContainer' gutters='false'>";
+		print "<div style='padding : 0px' dojoType='dijit.layout.ContentPane' region='top'>";
+		print "<div dojoType='fox.Toolbar'>";
 
 		if (array_key_exists("search", $_REQUEST)) {
 			$_SESSION["prefs_filter_search"] = $filter_search;
@@ -661,11 +758,11 @@ class Pref_Filters extends Handler_Protected {
 		print "<div style='float : right; padding-right : 4px;'>
 			<input dojoType=\"dijit.form.TextBox\" id=\"filter_search\" size=\"20\" type=\"search\"
 				value=\"$filter_search\">
-			<button dojoType=\"dijit.form.Button\" onclick=\"updateFilterList()\">".
+			<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('filterTree').reload()\">".
 				__('Search')."</button>
 			</div>";
 
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+		print "<div dojoType=\"fox.form.DropDownButton\">".
 				"<span>" . __('Select')."</span>";
 		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
 		print "<div onclick=\"dijit.byId('filterTree').model.setAllChecked(true)\"
@@ -674,32 +771,27 @@ class Pref_Filters extends Handler_Protected {
 			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
 		print "</div></div>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return quickAddFilter()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"return Filters.quickAddFilter()\">".
 			__('Create filter')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return joinSelectedFilters()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterTree').joinSelectedFilters()\">".
 			__('Combine')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return editSelectedFilter()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterTree').editSelectedFilter()\">".
 			__('Edit')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return resetFilterOrder()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterTree').resetFilterOrder()\">".
 			__('Reset sort order')."</button> ";
 
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return removeSelectedFilters()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterTree').removeSelectedFilters()\">".
 			__('Remove')."</button> ";
-
-		if (defined('_ENABLE_FEED_DEBUGGING')) {
-			print "<button dojoType=\"dijit.form.Button\" onclick=\"rescore_all_feeds()\">".
-				__('Rescore articles')."</button> ";
-		}
 
 		print "</div>"; # toolbar
 		print "</div>"; # toolbar-frame
-		print "<div id=\"pref-filter-content\" dojoType=\"dijit.layout.ContentPane\" region=\"center\">";
+		print "<div style='padding : 0px' dojoType='dijit.layout.ContentPane' region='center'>";
 
-		print "<div id=\"filterlistLoading\">
+		print "<div id='filterlistLoading'>
 		<img src='images/indicator_tiny.gif'>".
 		 __("Loading, please wait...")."</div>";
 
@@ -722,7 +814,7 @@ class Pref_Filters extends Handler_Protected {
 			var bare_id = id.substr(id.indexOf(':')+1);
 
 			if (id.match('FILTER:')) {
-				editFilter(bare_id);
+				dijit.byId('filterTree').editFilter(bare_id);
 			}
 		</script>
 
@@ -739,33 +831,36 @@ class Pref_Filters extends Handler_Protected {
 
 	function newfilter() {
 
-		print "<form name='filter_new_form' id='filter_new_form'>";
+		print "<form name='filter_new_form' id='filter_new_form' onsubmit='return false'>";
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-filters\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"add\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"csrf_token\" value=\"".$_SESSION['csrf_token']."\">";
+		print_hidden("op", "pref-filters");
+		print_hidden("method", "add");
+		print_hidden("csrf_token", $_SESSION['csrf_token']);
 
-		print "<div class=\"dlgSec\">".__("Caption")."</div>";
+		print "<header>".__("Caption")."</header>";
 
-		print "<input required=\"true\" dojoType=\"dijit.form.ValidationTextBox\" style=\"width : 20em;\" name=\"title\" value=\"\">";
+		print "<section>";
+		print "<input required='true' dojoType='dijit.form.ValidationTextBox' style='width : 20em;' name='title' value=''>";
+		print "</section>";
 
-		print "<div class=\"dlgSec\">".__("Match")."</div>";
+		print "<header class='horizontal'>".__("Match")."</header >";
+		print "<section>";
 
-		print "<div dojoType=\"dijit.Toolbar\">";
+		print "<div dojoType='fox.Toolbar'>";
 
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+		print "<div dojoType='fox.form.DropDownButton'>".
 				"<span>" . __('Select')."</span>";
-		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
+		print "<div dojoType='dijit.Menu' style='display: none'>";
 		print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(true)\"
-			dojoType=\"dijit.MenuItem\">".__('All')."</div>";
+			dojoType='dijit.MenuItem'>".__('All')."</div>";
 		print "<div onclick=\"dijit.byId('filterEditDlg').selectRules(false)\"
-			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
+			dojoType='dijit.MenuItem'>".__('None')."</div>";
 		print "</div></div>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addRule()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterEditDlg').addRule()\">".
 			__('Add')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteRule()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterEditDlg').deleteRule()\">".
 			__('Delete')."</button> ";
 
 		print "</div>";
@@ -774,25 +869,27 @@ class Pref_Filters extends Handler_Protected {
 #		print "<li>No rules</li>";
 		print "</ul>";
 
-		print "</div>";
+		print "</section>";
 
-		print "<div class=\"dlgSec\">".__("Apply actions")."</div>";
+		print "<header class='horizontal'>".__("Apply actions")."</header>";
 
-		print "<div dojoType=\"dijit.Toolbar\">";
+		print "<section>";
 
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+		print "<div dojoType='fox.Toolbar'>";
+
+		print "<div dojoType='fox.form.DropDownButton'>".
 				"<span>" . __('Select')."</span>";
-		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
+		print "<div dojoType='dijit.Menu' style='display: none'>";
 		print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(true)\"
-			dojoType=\"dijit.MenuItem\">".__('All')."</div>";
+			dojoType='dijit.MenuItem'>".__('All')."</div>";
 		print "<div onclick=\"dijit.byId('filterEditDlg').selectActions(false)\"
-			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
+			dojoType='dijit.MenuItem'>".__('None')."</div>";
 		print "</div></div>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').addAction()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterEditDlg').addAction()\">".
 			__('Add')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').deleteAction()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterEditDlg').deleteAction()\">".
 			__('Delete')."</button> ";
 
 		print "</div>";
@@ -801,37 +898,45 @@ class Pref_Filters extends Handler_Protected {
 #		print "<li>No actions</li>";
 		print "</ul>";
 
-/*		print "<div class=\"dlgSec\">".__("Options")."</div>";
-		print "<div class=\"dlgSecCont\">"; */
+		print "</section>";
 
-		print "<input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"enabled\" id=\"enabled\" checked=\"1\">
-				<label for=\"enabled\">".__('Enabled')."</label>";
+		print "<header>".__("Options")."</header>";
 
-		print "<br/><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"match_any_rule\" id=\"match_any_rule\">
-				<label for=\"match_any_rule\">".__('Match any rule')."</label>";
+		print "<section>";
+		print "<fieldset class='narrow'>";
 
-		print "<br/><input dojoType=\"dijit.form.CheckBox\" type=\"checkbox\" name=\"inverse\" id=\"inverse\">
-				<label for=\"inverse\">".__('Inverse matching')."</label>";
+		print "<label class='checkbox'><input dojoType='dijit.form.CheckBox' type='checkbox' name='enabled' id='enabled' checked='1'>
+				".__('Enabled')."</label>";
 
-//		print "</div>";
+		print "</fieldset><fieldset class='narrow'>";
 
-		print "<div class=\"dlgButtons\">";
+		print "<label class='checkbox'><input dojoType='dijit.form.CheckBox' type='checkbox' name='match_any_rule' id='match_any_rule'>
+				".__('Match any rule')."</label>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').test()\">".
+		print "</fieldset><fieldset class='narrow'>";
+
+		print "<label class='checkbox'><input dojoType='dijit.form.CheckBox' type='checkbox' name='inverse' id='inverse'>
+				".__('Inverse matching')."</label>";
+
+		print "</fieldset>";
+
+		print "</section>";
+
+		print "<footer>";
+
+		print "<button dojoType='dijit.form.Button' class='alt-info' onclick=\"return dijit.byId('filterEditDlg').test()\">".
 			__('Test')."</button> ";
-
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').execute()\">".
+		print "<button dojoType='dijit.form.Button' type='submit' class='alt-primary' onclick=\"return dijit.byId('filterEditDlg').execute()\">".
 			__('Create')."</button> ";
-
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterEditDlg').hide()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterEditDlg').hide()\">".
 			__('Cancel')."</button>";
 
-		print "</div>";
+		print "</footer>";
 
 	}
 
 	function newrule() {
-		$rule = json_decode($_REQUEST["rule"], true);
+		$rule = json_decode(clean($_REQUEST["rule"]), true);
 
 		if ($rule) {
 			$reg_exp = htmlspecialchars($rule["reg_exp"]);
@@ -841,196 +946,238 @@ class Pref_Filters extends Handler_Protected {
 		} else {
 			$reg_exp = "";
 			$filter_type = 1;
-			$feed_id = 0;
+			$feed_id = ["0"];
 			$inverse_checked = "";
 		}
 
-		if (strpos($feed_id, "CAT:") === 0) {
-			$feed_id = substr($feed_id, 4);
-			$cat_filter = true;
-		} else {
-			$cat_filter = false;
-		}
+		print "<form name='filter_new_rule_form' id='filter_new_rule_form' onsubmit='return false;'>";
 
-
-		print "<form name='filter_new_rule_form' id='filter_new_rule_form'>";
-
-		$result = $this->dbh->query("SELECT id,description
+		$res = $this->pdo->query("SELECT id,description
 			FROM ttrss_filter_types WHERE id != 5 ORDER BY description");
 
 		$filter_types = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $res->fetch()) {
 			$filter_types[$line["id"]] = __($line["description"]);
 		}
 
-		print "<div class=\"dlgSec\">".__("Match")."</div>";
+		print "<header>".__("Match")."</header>";
 
-		print "<div class=\"dlgSecCont\">";
+		print "<section>";
 
-		print "<input dojoType=\"dijit.form.ValidationTextBox\"
-			 required=\"true\" id=\"filterDlg_regExp\"
-			 style=\"font-size : 16px; width : 20em;\"
-			 name=\"reg_exp\" value=\"$reg_exp\"/>";
+		print "<textarea dojoType='fox.form.ValidationTextArea'
+			 required='true' id='filterDlg_regExp'
+			 ValidRegExp='true'
+			 rows='4'
+			 style='font-size : 14px; width : 490px; word-break: break-all'
+			 name='reg_exp'>$reg_exp</textarea>";
 
-		print "<hr/>";
-		print "<input id=\"filterDlg_inverse\" dojoType=\"dijit.form.CheckBox\"
-			 name=\"inverse\" $inverse_checked/>";
-		print "<label for=\"filterDlg_inverse\">".__("Inverse regular expression matching")."</label>";
+		print "<div dojoType='dijit.Tooltip' id='filterDlg_regExp_tip' connectId='filterDlg_regExp' position='below'></div>";
 
-		print "<hr/>" .  __("on field") . " ";
+		print "<fieldset>";
+		print "<label class='checkbox'><input id='filterDlg_inverse' dojoType='dijit.form.CheckBox'
+			 name='inverse' $inverse_checked/> ".
+		 	__("Inverse regular expression matching")."</label>";
+		print "</fieldset>";
+
+		print "<fieldset>";
+		print "<label style='display : inline'>".  __("on field") . "</label> ";
 		print_select_hash("filter_type", $filter_type, $filter_types,
-			'dojoType="dijit.form.Select"');
+			'dojoType="fox.form.Select"');
+		print "<label style='padding-left : 10px; display : inline'>" . __("in") . "</label> ";
 
-		print "<hr/>";
+		print "</fieldset>";
 
-		print __("in") . " ";
-
+		print "<fieldset>";
 		print "<span id='filterDlg_feeds'>";
-		print_feed_select("feed_id",
-			$cat_filter ? "CAT:$feed_id" : $feed_id,
-			'dojoType="dijit.form.FilteringSelect"');
+		print_feed_multi_select("feed_id",
+			$feed_id,
+			'style="width : 500px; height : 300px" dojoType="dijit.form.MultiSelect"');
 		print "</span>";
 
-		print "</div>";
+		print "</fieldset>";
 
-		print "<div class=\"dlgButtons\">";
+		print "</section>";
 
-		print "<div style=\"float : left\">
-			<a class=\"visibleLink\" target=\"_blank\" href=\"http://tt-rss.org/wiki/ContentFilters\">".__("Wiki: Filters")."</a>
-		</div>";
+		print "<footer>";
 
+		print "<button dojoType='dijit.form.Button' style='float : left' class='alt-info' onclick='window.open(\"https://tt-rss.org/wiki/ContentFilters\")'>
+			<i class='material-icons'>help</i> ".__("More info...")."</button>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterNewRuleDlg').execute()\">".
+		print "<button dojoType='dijit.form.Button' class='alt-primary' type='submit' onclick=\"return dijit.byId('filterNewRuleDlg').execute()\">".
 			($rule ? __("Save rule") : __('Add rule'))."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterNewRuleDlg').hide()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterNewRuleDlg').hide()\">".
 			__('Cancel')."</button>";
 
-		print "</div>";
+		print "</footer>";
 
 		print "</form>";
 	}
 
 	function newaction() {
-		$action = json_decode($_REQUEST["action"], true);
+		$action = json_decode(clean($_REQUEST["action"]), true);
 
 		if ($action) {
-			$action_param = $this->dbh->escape_string($action["action_param"]);
+			$action_param = $action["action_param"];
 			$action_id = (int)$action["action_id"];
 		} else {
 			$action_param = "";
 			$action_id = 0;
 		}
 
-		print "<form name='filter_new_action_form' id='filter_new_action_form'>";
+		print "<form name='filter_new_action_form' id='filter_new_action_form' onsubmit='return false;'>";
 
-		print "<div class=\"dlgSec\">".__("Perform Action")."</div>";
+		print "<header>".__("Perform Action")."</header>";
 
-		print "<div class=\"dlgSecCont\">";
+		print "<section>";
 
-		print "<select name=\"action_id\" dojoType=\"dijit.form.Select\"
-			onchange=\"filterDlgCheckAction(this)\">";
+		print "<select name='action_id' dojoType='fox.form.Select'
+			onchange='Filters.filterDlgCheckAction(this)'>";
 
-		$result = $this->dbh->query("SELECT id,description FROM ttrss_filter_actions
+		$res = $this->pdo->query("SELECT id,description FROM ttrss_filter_actions
 			ORDER BY name");
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $res->fetch()) {
 			$is_selected = ($line["id"] == $action_id) ? "selected='1'" : "";
 			printf("<option $is_selected value='%d'>%s</option>", $line["id"], __($line["description"]));
 		}
 
 		print "</select>";
 
-		$param_box_hidden = ($action_id == 7 || $action_id == 4 || $action_id == 6) ?
+		$param_box_hidden = ($action_id == 7 || $action_id == 4 || $action_id == 6 || $action_id == 9) ?
 			"" : "display : none";
 
 		$param_hidden = ($action_id == 4 || $action_id == 6) ?
 			"" : "display : none";
 
 		$label_param_hidden = ($action_id == 7) ?	"" : "display : none";
+		$plugin_param_hidden = ($action_id == 9) ?	"" : "display : none";
 
-		print "<span id=\"filterDlg_paramBox\" style=\"$param_box_hidden\">";
-		print " " . __("with parameters:") . " ";
-		print "<input dojoType=\"dijit.form.TextBox\"
-			id=\"filterDlg_actionParam\" style=\"$param_hidden\"
-			name=\"action_param\" value=\"$action_param\">";
+		print "<span id='filterDlg_paramBox' style=\"$param_box_hidden\">";
+		print " ";
+		//print " " . __("with parameters:") . " ";
+		print "<input dojoType='dijit.form.TextBox'
+			id='filterDlg_actionParam' style=\"$param_hidden\"
+			name='action_param' value=\"$action_param\">";
 
 		print_label_select("action_param_label", $action_param,
-			"id=\"filterDlg_actionParamLabel\" style=\"$label_param_hidden\"
-			dojoType=\"dijit.form.Select\"");
+			"id='filterDlg_actionParamLabel' style=\"$label_param_hidden\"
+			dojoType='fox.form.Select'");
+
+		$filter_actions = PluginHost::getInstance()->get_filter_actions();
+		$filter_action_hash = array();
+
+		foreach ($filter_actions as $fclass => $factions) {
+			foreach ($factions as $faction) {
+
+				$filter_action_hash[$fclass . ":" . $faction["action"]] =
+					$fclass . ": " . $faction["description"];
+			}
+		}
+
+		if (count($filter_action_hash) == 0) {
+			$filter_plugin_disabled = "disabled";
+
+			$filter_action_hash["no-data"] = __("No actions available");
+
+		} else {
+			$filter_plugin_disabled = "";
+		}
+
+		print_select_hash("filterDlg_actionParamPlugin", $action_param, $filter_action_hash,
+			"style=\"$plugin_param_hidden\" dojoType='fox.form.Select' $filter_plugin_disabled",
+			"action_param_plugin");
 
 		print "</span>";
 
 		print "&nbsp;"; // tiny layout hack
 
-		print "</div>";
+		print "</section>";
 
-		print "<div class=\"dlgButtons\">";
+		print "<footer>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterNewActionDlg').execute()\">".
+		print "<button dojoType='dijit.form.Button' class='alt-primary' type='submit' onclick=\"return dijit.byId('filterNewActionDlg').execute()\">".
 			($action ? __("Save action") : __('Add action'))."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return dijit.byId('filterNewActionDlg').hide()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return dijit.byId('filterNewActionDlg').hide()\">".
 			__('Cancel')."</button>";
 
-		print "</div>";
+		print "</footer>";
 
 		print "</form>";
 	}
 
 	private function getFilterName($id) {
 
-		$result = $this->dbh->query(
-			"SELECT title,COUNT(DISTINCT r.id) AS num_rules,COUNT(DISTINCT a.id) AS num_actions
+		$sth = $this->pdo->prepare(
+			"SELECT title,match_any_rule,f.inverse AS inverse,COUNT(DISTINCT r.id) AS num_rules,COUNT(DISTINCT a.id) AS num_actions
 				FROM ttrss_filters2 AS f LEFT JOIN ttrss_filters2_rules AS r
 					ON (r.filter_id = f.id)
 						LEFT JOIN ttrss_filters2_actions AS a
-							ON (a.filter_id = f.id) WHERE f.id = '$id' GROUP BY f.title");
+							ON (a.filter_id = f.id) WHERE f.id = ? GROUP BY f.title, f.match_any_rule, f.inverse");
+		$sth->execute([$id]);
 
-		$title = $this->dbh->fetch_result($result, 0, "title");
-		$num_rules = $this->dbh->fetch_result($result, 0, "num_rules");
-		$num_actions = $this->dbh->fetch_result($result, 0, "num_actions");
+		if ($row = $sth->fetch()) {
 
-		if (!$title) $title = __("[No caption]");
+			$title = $row["title"];
+			$num_rules = $row["num_rules"];
+			$num_actions = $row["num_actions"];
+			$match_any_rule = $row["match_any_rule"];
+			$inverse = $row["inverse"];
 
-		$title = sprintf(_ngettext("%s (%d rule)", "%s (%d rules)", $num_rules), $title, $num_rules);
+			if (!$title) $title = __("[No caption]");
 
-		$result = $this->dbh->query(
-			"SELECT * FROM ttrss_filters2_actions WHERE filter_id = '$id' ORDER BY id LIMIT 1");
+			$title = sprintf(_ngettext("%s (%d rule)", "%s (%d rules)", (int) $num_rules), $title, $num_rules);
 
-		$actions = "";
+			$sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2_actions
+				WHERE filter_id = ? ORDER BY id LIMIT 1");
+			$sth->execute([$id]);
 
-		if ($this->dbh->num_rows($result) > 0) {
-			$line = $this->dbh->fetch_assoc($result);
-			$actions = $this->getActionName($line);
+			$actions = "";
 
-			$num_actions -= 1;
+			if ($line = $sth->fetch()) {
+				$actions = $this->getActionName($line);
+
+				$num_actions -= 1;
+			}
+
+			if ($match_any_rule) $title .= " (" . __("matches any rule") . ")";
+			if ($inverse) $title .= " (" . __("inverse") . ")";
+
+			if ($num_actions > 0)
+				$actions = sprintf(_ngettext("%s (+%d action)", "%s (+%d actions)", (int) $num_actions), $actions, $num_actions);
+
+			return [$title, $actions];
 		}
 
-		if ($num_actions > 0)
-			$actions = sprintf(_ngettext("%s (+%d action)", "%s (+%d actions)", $num_actions), $actions, $num_actions);
-
-		return array($title, $actions);
+		return [];
 	}
 
 	function join() {
-		$ids = explode(",", $this->dbh->escape_string($_REQUEST["ids"]));
+		$ids = explode(",", clean($_REQUEST["ids"]));
 
 		if (count($ids) > 1) {
 			$base_id = array_shift($ids);
-			$ids_str = join(",", $ids);
+			$ids_qmarks = arr_qmarks($ids);
 
-			$this->dbh->query("BEGIN");
-			$this->dbh->query("UPDATE ttrss_filters2_rules
-				SET filter_id = '$base_id' WHERE filter_id IN ($ids_str)");
-			$this->dbh->query("UPDATE ttrss_filters2_actions
-				SET filter_id = '$base_id' WHERE filter_id IN ($ids_str)");
+			$this->pdo->beginTransaction();
 
-			$this->dbh->query("DELETE FROM ttrss_filters2 WHERE id IN ($ids_str)");
-			$this->dbh->query("UPDATE ttrss_filters2 SET match_any_rule = true WHERE id = '$base_id'");
+			$sth = $this->pdo->prepare("UPDATE ttrss_filters2_rules
+				SET filter_id = ? WHERE filter_id IN ($ids_qmarks)");
+			$sth->execute(array_merge([$base_id], $ids));
 
-			$this->dbh->query("COMMIT");
+			$sth = $this->pdo->prepare("UPDATE ttrss_filters2_actions
+				SET filter_id = ? WHERE filter_id IN ($ids_qmarks)");
+			$sth->execute(array_merge([$base_id], $ids));
+
+			$sth = $this->pdo->prepare("DELETE FROM ttrss_filters2 WHERE id IN ($ids_qmarks)");
+			$sth->execute($ids);
+
+			$sth = $this->pdo->prepare("UPDATE ttrss_filters2 SET match_any_rule = true WHERE id = ?");
+			$sth->execute([$base_id]);
+
+			$this->pdo->commit();
 
 			$this->optimizeFilter($base_id);
 
@@ -1038,14 +1185,17 @@ class Pref_Filters extends Handler_Protected {
 	}
 
 	private function optimizeFilter($id) {
-		$this->dbh->query("BEGIN");
-		$result = $this->dbh->query("SELECT * FROM ttrss_filters2_actions
-			WHERE filter_id = '$id'");
+
+		$this->pdo->beginTransaction();
+
+		$sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2_actions
+			WHERE filter_id = ?");
+		$sth->execute([$id]);
 
 		$tmp = array();
 		$dupe_ids = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 			$id = $line["id"];
 			unset($line["id"]);
 
@@ -1058,17 +1208,18 @@ class Pref_Filters extends Handler_Protected {
 
 		if (count($dupe_ids) > 0) {
 			$ids_str = join(",", $dupe_ids);
-			$this->dbh->query("DELETE FROM ttrss_filters2_actions
-				WHERE id IN ($ids_str)");
+
+			$this->pdo->query("DELETE FROM ttrss_filters2_actions WHERE id IN ($ids_str)");
 		}
 
-		$result = $this->dbh->query("SELECT * FROM ttrss_filters2_rules
-			WHERE filter_id = '$id'");
+		$sth = $this->pdo->prepare("SELECT * FROM ttrss_filters2_rules
+			WHERE filter_id = ?");
+		$sth->execute([$id]);
 
 		$tmp = array();
 		$dupe_ids = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 			$id = $line["id"];
 			unset($line["id"]);
 
@@ -1081,11 +1232,10 @@ class Pref_Filters extends Handler_Protected {
 
 		if (count($dupe_ids) > 0) {
 			$ids_str = join(",", $dupe_ids);
-			$this->dbh->query("DELETE FROM ttrss_filters2_rules
-				WHERE id IN ($ids_str)");
+
+			$this->pdo->query("DELETE FROM ttrss_filters2_rules WHERE id IN ($ids_str)");
 		}
 
-		$this->dbh->query("COMMIT");
+		$this->pdo->commit();
 	}
 }
-?>

@@ -8,80 +8,75 @@ class Pref_Labels extends Handler_Protected {
 	}
 
 	function edit() {
-		$label_id = $this->dbh->escape_string($_REQUEST['id']);
+		$label_id = clean($_REQUEST['id']);
 
-		$result = $this->dbh->query("SELECT * FROM ttrss_labels2 WHERE
-			id = '$label_id' AND owner_uid = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("SELECT * FROM ttrss_labels2 WHERE
+			id = ? AND owner_uid = ?");
+		$sth->execute([$label_id, $_SESSION['uid']]);
 
-		$line = $this->dbh->fetch_assoc($result);
+		if ($line = $sth->fetch()) {
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"id\" value=\"$label_id\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-labels\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"save\">";
+			print_hidden("id", "$label_id");
+			print_hidden("op", "pref-labels");
+			print_hidden("method", "save");
 
-		print "<div class=\"dlgSec\">".__("Caption")."</div>";
+			print "<form onsubmit='return false;'>";
 
-		print "<div class=\"dlgSecCont\">";
+			print "<header>".__("Caption")."</header>";
 
-		$fg_color = $line['fg_color'];
-		$bg_color = $line['bg_color'];
+			print "<section>";
 
-		print "<span class=\"labelColorIndicator\" id=\"label-editor-indicator\" style='color : $fg_color; background-color : $bg_color; margin-bottom : 4px; margin-right : 4px'>&alpha;</span>";
+			$fg_color = $line['fg_color'];
+			$bg_color = $line['bg_color'] ? $line['bg_color'] : '#fff7d5';
 
-		print "<input style=\"font-size : 16px\" name=\"caption\"
-			dojoType=\"dijit.form.ValidationTextBox\"
-			required=\"true\"
-			value=\"".htmlspecialchars($line['caption'])."\">";
+			print "<input style='font-size : 16px; color : $fg_color; background : $bg_color; transition : background 0.1s linear'
+				id='labelEdit_caption' name='caption' dojoType='dijit.form.ValidationTextBox'
+				required='true' value=\"".htmlspecialchars($line['caption'])."\">";
 
-		print "</div>";
-		print "<div class=\"dlgSec\">" . __("Colors") . "</div>";
-		print "<div class=\"dlgSecCont\">";
+			print "</section>";
 
-		print "<table cellspacing=\"0\">";
+			print "<header>" . __("Colors") . "</header>";
+			print "<section>";
 
-		print "<tr><td>".__("Foreground:")."</td><td>".__("Background:").
-			"</td></tr>";
+			print "<table>";
+			print "<tr><th style='text-align : left'>".__("Foreground:")."</th><th style='text-align : left'>".__("Background:")."</th></tr>";
+			print "<tr><td style='padding-right : 10px'>";
 
-		print "<tr><td style='padding-right : 10px'>";
+			print "<input dojoType='dijit.form.TextBox'
+				style='display : none' id='labelEdit_fgColor'
+				name='fg_color' value='$fg_color'>";
+			print "<input dojoType='dijit.form.TextBox'
+				style='display : none' id='labelEdit_bgColor'
+				name='bg_color' value='$bg_color'>";
 
-		print "<input dojoType=\"dijit.form.TextBox\"
-			style=\"display : none\" id=\"labelEdit_fgColor\"
-			name=\"fg_color\" value=\"$fg_color\">";
-		print "<input dojoType=\"dijit.form.TextBox\"
-			style=\"display : none\" id=\"labelEdit_bgColor\"
-			name=\"bg_color\" value=\"$bg_color\">";
-
-		print "<div dojoType=\"dijit.ColorPalette\">
-			<script type=\"dojo/method\" event=\"onChange\" args=\"fg_color\">
-				dijit.byId(\"labelEdit_fgColor\").attr('value', fg_color);
-				$('label-editor-indicator').setStyle({color: fg_color});
+			print "<div dojoType='dijit.ColorPalette'>
+			<script type='dojo/method' event='onChange' args='fg_color'>
+				dijit.byId('labelEdit_fgColor').attr('value', fg_color);
+				dijit.byId('labelEdit_caption').domNode.setStyle({color: fg_color});
 			</script>
-		</div>";
-		print "</div>";
+			</div>";
 
-		print "</td><td>";
+			print "</td><td>";
 
-		print "<div dojoType=\"dijit.ColorPalette\">
-			<script type=\"dojo/method\" event=\"onChange\" args=\"bg_color\">
-				dijit.byId(\"labelEdit_bgColor\").attr('value', bg_color);
-				$('label-editor-indicator').setStyle({backgroundColor: bg_color});
+			print "<div dojoType='dijit.ColorPalette'>
+			<script type='dojo/method' event='onChange' args='bg_color'>
+				dijit.byId('labelEdit_bgColor').attr('value', bg_color);
+				dijit.byId('labelEdit_caption').domNode.setStyle({backgroundColor: bg_color});
 			</script>
-		</div>";
-		print "</div>";
+			</div>";
 
-		print "</td></tr></table>";
-		print "</div>";
+			print "</td></tr></table>";
+			print "</section>";
 
-#			print "</form>";
+			print "<footer>";
+			print "<button dojoType='dijit.form.Button' type='submit' class='alt-primary' onclick=\"dijit.byId('labelEditDlg').execute()\">".
+				__('Save')."</button>";
+			print "<button dojoType='dijit.form.Button' onclick=\"dijit.byId('labelEditDlg').hide()\">".
+				__('Cancel')."</button>";
+			print "</footer>";
 
-		print "<div class=\"dlgButtons\">";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('labelEditDlg').execute()\">".
-			__('Save')."</button>";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('labelEditDlg').hide()\">".
-			__('Cancel')."</button>";
-		print "</div>";
-
-		return;
+			print "</form>";
+		}
 	}
 
 	function getlabeltree() {
@@ -90,12 +85,13 @@ class Pref_Labels extends Handler_Protected {
 		$root['name'] = __('Labels');
 		$root['items'] = array();
 
-		$result = $this->dbh->query("SELECT *
+		$sth = $this->pdo->prepare("SELECT *
 			FROM ttrss_labels2
-			WHERE owner_uid = ".$_SESSION["uid"]."
+			WHERE owner_uid = ?
 			ORDER BY caption");
+		$sth->execute([$_SESSION['uid']]);
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 			$label = array();
 			$label['id'] = 'LABEL:' . $line['id'];
 			$label['bare_id'] = $line['id'];
@@ -118,86 +114,90 @@ class Pref_Labels extends Handler_Protected {
 	}
 
 	function colorset() {
-		$kind = $this->dbh->escape_string($_REQUEST["kind"]);
-		$ids = explode(',', $this->dbh->escape_string($_REQUEST["ids"]));
-		$color = $this->dbh->escape_string($_REQUEST["color"]);
-		$fg = $this->dbh->escape_string($_REQUEST["fg"]);
-		$bg = $this->dbh->escape_string($_REQUEST["bg"]);
+		$kind = clean($_REQUEST["kind"]);
+		$ids = explode(',', clean($_REQUEST["ids"]));
+		$color = clean($_REQUEST["color"]);
+		$fg = clean($_REQUEST["fg"]);
+		$bg = clean($_REQUEST["bg"]);
 
 		foreach ($ids as $id) {
 
 			if ($kind == "fg" || $kind == "bg") {
-				$this->dbh->query("UPDATE ttrss_labels2 SET
-					${kind}_color = '$color' WHERE id = '$id'
-					AND owner_uid = " . $_SESSION["uid"]);
-			} else {
-				$this->dbh->query("UPDATE ttrss_labels2 SET
-					fg_color = '$fg', bg_color = '$bg' WHERE id = '$id'
-					AND owner_uid = " . $_SESSION["uid"]);
-			}
+				$sth = $this->pdo->prepare("UPDATE ttrss_labels2 SET
+					${kind}_color = ? WHERE id = ?
+					AND owner_uid = ?");
 
-			$caption = $this->dbh->escape_string(label_find_caption($id, $_SESSION["uid"]));
+				$sth->execute([$color, $id, $_SESSION['uid']]);
+
+			} else {
+
+				$sth = $this->pdo->prepare("UPDATE ttrss_labels2 SET
+					fg_color = ?, bg_color = ? WHERE id = ?
+					AND owner_uid = ?");
+
+				$sth->execute([$fg, $bg, $id, $_SESSION['uid']]);
+			}
 
 			/* Remove cached data */
 
-			$this->dbh->query("UPDATE ttrss_user_entries SET label_cache = ''
-				WHERE label_cache LIKE '%$caption%' AND owner_uid = " . $_SESSION["uid"]);
-
+			$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET label_cache = ''
+				WHERE owner_uid = ?");
+			$sth->execute([$_SESSION['uid']]);
 		}
-
-		return;
 	}
 
 	function colorreset() {
-		$ids = explode(',', $this->dbh->escape_string($_REQUEST["ids"]));
+		$ids = explode(',', clean($_REQUEST["ids"]));
 
 		foreach ($ids as $id) {
-			$this->dbh->query("UPDATE ttrss_labels2 SET
-				fg_color = '', bg_color = '' WHERE id = '$id'
-				AND owner_uid = " . $_SESSION["uid"]);
-
-			$caption = $this->dbh->escape_string(label_find_caption($id, $_SESSION["uid"]));
+			$sth = $this->pdo->prepare("UPDATE ttrss_labels2 SET
+				fg_color = '', bg_color = '' WHERE id = ?
+				AND owner_uid = ?");
+			$sth->execute([$id, $_SESSION['uid']]);
 
 			/* Remove cached data */
 
-			$this->dbh->query("UPDATE ttrss_user_entries SET label_cache = ''
-				WHERE label_cache LIKE '%$caption%' AND owner_uid = " . $_SESSION["uid"]);
+			$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET label_cache = ''
+				WHERE owner_uid = ?");
+			$sth->execute([$_SESSION['uid']]);
 		}
-
 	}
 
 	function save() {
 
-		$id = $this->dbh->escape_string($_REQUEST["id"]);
-		$caption = $this->dbh->escape_string(trim($_REQUEST["caption"]));
+		$id = clean($_REQUEST["id"]);
+		$caption = trim(clean($_REQUEST["caption"]));
 
-		$this->dbh->query("BEGIN");
+		$this->pdo->beginTransaction();
 
-		$result = $this->dbh->query("SELECT caption FROM ttrss_labels2
-			WHERE id = '$id' AND owner_uid = ". $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("SELECT caption FROM ttrss_labels2
+			WHERE id = ? AND owner_uid = ?");
+		$sth->execute([$id, $_SESSION['uid']]);
 
-		if ($this->dbh->num_rows($result) != 0) {
-			$old_caption = $this->dbh->fetch_result($result, 0, "caption");
+		if ($row = $sth->fetch()) {
+			$old_caption = $row["caption"];
 
-			$result = $this->dbh->query("SELECT id FROM ttrss_labels2
-				WHERE caption = '$caption' AND owner_uid = ". $_SESSION["uid"]);
+			$sth = $this->pdo->prepare("SELECT id FROM ttrss_labels2
+				WHERE caption = ? AND owner_uid = ?");
+			$sth->execute([$caption, $_SESSION['uid']]);
 
-			if ($this->dbh->num_rows($result) == 0) {
+			if (!$sth->fetch()) {
 				if ($caption) {
-					$result = $this->dbh->query("UPDATE ttrss_labels2 SET
-						caption = '$caption' WHERE id = '$id' AND
-						owner_uid = " . $_SESSION["uid"]);
+					$sth = $this->pdo->prepare("UPDATE ttrss_labels2 SET
+						caption = ? WHERE id = ? AND
+						owner_uid = ?");
+					$sth->execute([$caption, $id, $_SESSION['uid']]);
 
 					/* Update filters that reference label being renamed */
 
-					$old_caption = $this->dbh->escape_string($old_caption);
-
-					$this->dbh->query("UPDATE ttrss_filters2_actions SET
-						action_param = '$caption' WHERE action_param = '$old_caption'
+					$sth = $this->pdo->prepare("UPDATE ttrss_filters2_actions SET
+						action_param = ? WHERE action_param = ?
 						AND action_id = 7
-						AND filter_id IN (SELECT id FROM ttrss_filters2 WHERE owner_uid = ".$_SESSION["uid"].")");
+						AND filter_id IN (SELECT id FROM ttrss_filters2 WHERE owner_uid = ?)");
 
-					print $_REQUEST["value"];
+					$sth->execute([$caption, $old_caption, $_SESSION['uid']]);
+
+					print clean($_REQUEST["value"]);
 				} else {
 					print $old_caption;
 				}
@@ -206,28 +206,27 @@ class Pref_Labels extends Handler_Protected {
 			}
 		}
 
-		$this->dbh->query("COMMIT");
+		$this->pdo->commit();
 
-		return;
 	}
 
 	function remove() {
 
-		$ids = explode(",", $this->dbh->escape_string($_REQUEST["ids"]));
+		$ids = explode(",", clean($_REQUEST["ids"]));
 
 		foreach ($ids as $id) {
-			label_remove($id, $_SESSION["uid"]);
+			Labels::remove($id, $_SESSION["uid"]);
 		}
 
 	}
 
 	function add() {
-		$caption = $this->dbh->escape_string($_REQUEST["caption"]);
-		$output = $this->dbh->escape_string($_REQUEST["output"]);
+		$caption = clean($_REQUEST["caption"]);
+		$output = clean($_REQUEST["output"]);
 
 		if ($caption) {
 
-			if (label_create($caption)) {
+			if (Labels::create($caption)) {
 				if (!$output) {
 					print T_sprintf("Created label <b>%s</b>", htmlspecialchars($caption));
 				}
@@ -250,25 +249,11 @@ class Pref_Labels extends Handler_Protected {
 
 	function index() {
 
-		$sort = $this->dbh->escape_string($_REQUEST["sort"]);
+		print "<div dojoType='dijit.layout.BorderContainer' gutters='false'>";
+		print "<div style='padding : 0px' dojoType='dijit.layout.ContentPane' region='top'>";
+		print "<div dojoType='fox.Toolbar'>";
 
-		if (!$sort || $sort == "undefined") {
-			$sort = "caption";
-		}
-
-		$label_search = $this->dbh->escape_string($_REQUEST["search"]);
-
-		if (array_key_exists("search", $_REQUEST)) {
-			$_SESSION["prefs_label_search"] = $label_search;
-		} else {
-			$label_search = $_SESSION["prefs_label_search"];
-		}
-
-		print "<div id=\"pref-label-wrap\" dojoType=\"dijit.layout.BorderContainer\" gutters=\"false\">";
-		print "<div id=\"pref-label-header\" dojoType=\"dijit.layout.ContentPane\" region=\"top\">";
-		print "<div id=\"pref-label-toolbar\" dojoType=\"dijit.Toolbar\">";
-
-		print "<div dojoType=\"dijit.form.DropDownButton\">".
+		print "<div dojoType='fox.form.DropDownButton'>".
 				"<span>" . __('Select')."</span>";
 		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
 		print "<div onclick=\"dijit.byId('labelTree').model.setAllChecked(true)\"
@@ -277,19 +262,19 @@ class Pref_Labels extends Handler_Protected {
 			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
 		print "</div></div>";
 
-		print"<button dojoType=\"dijit.form.Button\" onclick=\"return addLabel()\">".
+		print"<button dojoType=\"dijit.form.Button\" onclick=\"CommonDialogs.addLabel()\">".
 			__('Create label')."</button dojoType=\"dijit.form.Button\"> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"removeSelectedLabels()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('labelTree').removeSelected()\">".
 			__('Remove')."</button dojoType=\"dijit.form.Button\"> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"labelColorReset()\">".
+		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('labelTree').resetColors()\">".
 			__('Clear colors')."</button dojoType=\"dijit.form.Button\">";
 
 
 		print "</div>"; #toolbar
 		print "</div>"; #pane
-		print "<div id=\"pref-label-content\" dojoType=\"dijit.layout.ContentPane\" region=\"center\">";
+		print "<div style='padding : 0px' dojoType=\"dijit.layout.ContentPane\" region=\"center\">";
 
 		print "<div id=\"labellistLoading\">
 		<img src='images/indicator_tiny.gif'>".
@@ -312,7 +297,7 @@ class Pref_Labels extends Handler_Protected {
 			var bare_id = id.substr(id.indexOf(':')+1);
 
 			if (id.match('LABEL:')) {
-				editLabel(bare_id);
+				dijit.byId('labelTree').editLabel(bare_id);
 			}
 		</script>
 		</div>";
@@ -326,5 +311,3 @@ class Pref_Labels extends Handler_Protected {
 
 	}
 }
-
-?>

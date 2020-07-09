@@ -1,0 +1,72 @@
+body.ttrss_zoom {
+	max-width : 900px;
+	margin : 2em auto;
+
+	div.post {
+		border : 1px solid @border-default;
+		background : @default-bg;
+		box-shadow : 0px 1px 1px -1px rgba(0,0,0,0.1);
+
+		.attachments {
+			display : none;
+		}
+
+		div.header {
+			padding-bottom : 10px;
+			border: 0px solid @border-default;
+			border-bottom-width: 1px;
+			background : @default-bg;
+			font-size : 12px;
+			color : @default-text;
+
+			.row {
+				display : flex;
+				margin-bottom : 4px;
+				flex-wrap : nowrap;
+				align-items : center;
+				justify-content : space-between;
+			}
+		}
+
+		div.content {
+			font-size : 15px;
+			line-height : 1.5;
+			border-width : 0;
+			padding : 0;
+
+			img, video {
+				max-width : 760px;
+				height : auto;
+			}
+
+			blockquote {
+				margin : 5px 0px 5px 0px;
+				color : @default-text;
+				padding-left : 10px;
+				border: 0px solid @border-default;
+				border-left-width: 4px;
+			}
+
+			code {
+				color : #009900;
+				font-family : monospace;
+				font-size : 12px;
+			}
+
+			pre {
+				margin : 5px 0px 5px 0px;
+				padding : 10px;
+				color : @default-text;
+				font-family : monospace;
+				font-size : 12px;
+				border: 0px solid #ccc;
+				background : @color-panel-bg;
+				display : block;
+				max-width : 98%;
+				overflow : auto;
+			}
+		}
+	}
+
+}
+

@@ -5,13 +5,15 @@ class Search_Sphinx extends Plugin {
 		return array(1.0,
 			"Delegate searching for articles to Sphinx (don't forget to set options in config.php)",
 			"hoelzro",
-			true);
+			true,
+			"https://git.tt-rss.org/fox/tt-rss/wiki/SphinxSearch");
 	}
 
 	function init($host) {
 		$host->add_hook($host::HOOK_SEARCH, $this);
 
-		if (class_exists("SphinxClient")) {
+		// idk if that would work but checking for the class being loaded is somehow not enough
+		if (class_exists("SphinxClient") && !defined('SEARCHD_COMMAND_SEARCH')) {
 			user_error("Your PHP has a separate systemwide Sphinx client installed which conflicts with the client library used by tt-rss. Either remove the system library or disable Sphinx support.");
 		}
 
@@ -61,4 +63,3 @@ class Search_Sphinx extends Plugin {
 		return 2;
 	}
 }
-?>

@@ -30,6 +30,7 @@ drop table if exists ttrss_cat_counters_cache;
 drop table if exists ttrss_archived_feeds;
 drop table if exists ttrss_feeds;
 drop table if exists ttrss_feed_categories;
+drop table if exists ttrss_app_passwords;
 drop table if exists ttrss_users;
 drop table if exists ttrss_themes;
 drop table if exists ttrss_sessions;
@@ -55,6 +56,14 @@ create table ttrss_users (id serial not null primary key,
 insert into ttrss_users (login,pwd_hash,access_level) values ('admin',
 	'SHA1:5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8', 10);
 
+create table ttrss_app_passwords (id serial not null primary key,
+    title varchar(250) not null,
+    pwd_hash text not null,
+    service varchar(100) not null,
+    created timestamp not null,
+    last_used timestamp default null,
+    owner_uid integer not null references ttrss_users(id) on delete cascade);
+
 create table ttrss_feed_categories(id serial not null primary key,
 	owner_uid integer not null references ttrss_users(id) on delete cascade,
 	collapsed boolean not null default false,
@@ -72,7 +81,9 @@ create table ttrss_feeds (id serial not null primary key,
 	update_interval integer not null default 0,
 	purge_interval integer not null default 0,
 	last_updated timestamp default null,
+	last_unconditional timestamp default null,
 	last_error text not null default '',
+	last_modified text not null default '',
 	favicon_avg_color varchar(11) default null,
 	site_url varchar(250) not null default '',
 	auth_login varchar(250) not null default '',
@@ -96,19 +107,19 @@ create table ttrss_feeds (id serial not null primary key,
 	view_settings varchar(250) not null default '',
 	pubsub_state integer not null default 0,
 	favicon_last_checked timestamp default null,
-	auth_pass_encrypted boolean not null default false);
+	feed_language varchar(100) not null default '',
+	auth_pass_encrypted boolean not null default false,
+	unique(feed_url, owner_uid));
 
 create index ttrss_feeds_owner_uid_index on ttrss_feeds(owner_uid);
 create index ttrss_feeds_cat_id_idx on ttrss_feeds(cat_id);
 
 insert into ttrss_feeds (owner_uid, title, feed_url) values
-	(1, 'Tiny Tiny RSS: New Releases', 'http://tt-rss.org/releases.rss');
-
-insert into ttrss_feeds (owner_uid, title, feed_url) values
-	(1, 'Tiny Tiny RSS: Forum', 'http://tt-rss.org/forum/rss.php');
+	((select id from ttrss_users where login = 'admin'), 'Tiny Tiny RSS: Forum', 'https://tt-rss.org/forum/rss.php');
 
 create table ttrss_archived_feeds (id integer not null primary key,
 	owner_uid integer not null references ttrss_users(id) on delete cascade,
+	created timestamp not null,
 	title varchar(200) not null,
 	feed_url text not null,
 	site_url varchar(250) not null default '');
@@ -145,13 +156,14 @@ create table ttrss_entries (id serial not null primary key,
 	num_comments integer not null default 0,
 	comments varchar(250) not null default '',
 	plugin_data text,
+	tsvector_combined tsvector,
 	lang varchar(2),
 	author varchar(250) not null default '');
 
-create index ttrss_entries_guid_index on ttrss_entries(guid);
 -- create index ttrss_entries_title_index on ttrss_entries(title);
 create index ttrss_entries_date_entered_index on ttrss_entries(date_entered);
 create index ttrss_entries_updated_idx on ttrss_entries(updated);
+create index ttrss_entries_tsvector_combined_idx on ttrss_entries using gin(tsvector_combined);
 
 create table ttrss_user_entries (
 	int_id serial not null primary key,
@@ -229,21 +241,26 @@ insert into ttrss_filter_actions (id,name,description) values (7, 'label',
 insert into ttrss_filter_actions (id,name,description) values (8, 'stop',
 	'Stop / Do nothing');
 
+insert into ttrss_filter_actions (id,name,description) values (9, 'plugin',
+	'Invoke plugin');
+
 create table ttrss_filters2(id serial not null primary key,
 	owner_uid integer not null references ttrss_users(id) on delete cascade,
 	match_any_rule boolean not null default false,
 	inverse boolean not null default false,
 	title varchar(250) not null default '',
 	order_id integer not null default 0,
+	last_triggered timestamp default null,
 	enabled boolean not null default true);
 
 create table ttrss_filters2_rules(id serial not null primary key,
 	filter_id integer not null references ttrss_filters2(id) on delete cascade,
-	reg_exp varchar(250) not null,
+	reg_exp text not null,
 	inverse boolean not null default false,
 	filter_type integer not null references ttrss_filter_types(id),
 	feed_id integer references ttrss_feeds(id) on delete cascade default null,
 	cat_id integer references ttrss_feed_categories(id) on delete cascade default null,
+	match_on text,
 	cat_filter boolean not null default false);
 
 create table ttrss_filters2_actions(id serial not null primary key,
@@ -261,7 +278,7 @@ create index ttrss_tags_post_int_id_idx on ttrss_tags(post_int_id);
 
 create table ttrss_version (schema_version int not null);
 
-insert into ttrss_version values (126);
+insert into ttrss_version values (139);
 
 create table ttrss_enclosures (id serial not null primary key,
 	content_url text not null,
@@ -299,8 +316,6 @@ create table ttrss_prefs (pref_name varchar(250) not null primary key,
 	section_id integer not null default 1 references ttrss_prefs_sections(id),
 	access_level integer not null default 0,
 	def_value text not null);
-
-create index ttrss_prefs_pref_name_idx on ttrss_prefs(pref_name);
 
 insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('PURGE_OLD_DAYS', 3, '60', 1);
 insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('DEFAULT_UPDATE_INTERVAL', 3, '30', 1);
@@ -354,6 +369,7 @@ insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('_ENABLE
 insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('_MOBILE_REVERSE_HEADLINES', 1, 'false', 1);
 insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('USER_CSS_THEME', 2, '', 2);
 insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('USER_LANGUAGE', 2, '', 2);
+insert into ttrss_prefs (pref_name,type_id,def_value,section_id) values('DEFAULT_SEARCH_LANGUAGE', 2, '', 2);
 
 update ttrss_prefs set access_level = 1 where pref_name in ('ON_CATCHUP_SHOW_NEXT_FEED',
 	'SORT_HEADLINES_BY_FEED_DATE',
@@ -374,7 +390,7 @@ create index ttrss_user_prefs_owner_uid_index on ttrss_user_prefs(owner_uid);
 create index ttrss_user_prefs_pref_name_idx on ttrss_user_prefs(pref_name);
 -- create index ttrss_user_prefs_value_index on ttrss_user_prefs(value);
 
-create table ttrss_sessions (id varchar(250) unique not null primary key,
+create table ttrss_sessions (id varchar(250) not null primary key,
 	data text,
 	expire integer not null);
 

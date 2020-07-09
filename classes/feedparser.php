@@ -13,16 +13,6 @@ class FeedParser {
 	const FEED_RSS = 1;
 	const FEED_ATOM = 2;
 
-	function normalize_encoding($data) {
-		if (preg_match('/^(<\?xml[\t\n\r ].*?encoding[\t\n\r ]*=[\t\n\r ]*["\'])(.+?)(["\'].*?\?>)/s', $data, $matches) === 1) {
-			$data = mb_convert_encoding($data, 'UTF-8', $matches[2]);
-
-			$data = preg_replace('/^<\?xml[\t\n\r ].*?\?>/s', $matches[1] . "UTF-8" . $matches[3] , $data);
-		}
-
-		return $data;
-	}
-
 	function __construct($data) {
 		libxml_use_internal_errors(true);
 		libxml_clear_errors();
@@ -32,46 +22,6 @@ class FeedParser {
 		mb_substitute_character("none");
 
 		$error = libxml_get_last_error();
-
-		// libxml compiled without iconv?
-		if ($error && $error->code == 32) {
-			$data = $this->normalize_encoding($data);
-
-			if ($data) {
-				libxml_clear_errors();
-
-				$this->doc = new DOMDocument();
-				$this->doc->loadXML($data);
-
-				$error = libxml_get_last_error();
-			}
-		}
-
-		// some terrible invalid unicode entity?
-		if ($error) {
-			foreach (libxml_get_errors() as $err) {
-				if ($err->code == 9) {
-					// if the source feed is not in utf8, next conversion will fail
-					$data = $this->normalize_encoding($data);
-
-					// remove dangling bytes
-					$data = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
-
-					// apparently not all UTF-8 characters are valid for XML
-					$data = preg_replace('/[^\x{0009}\x{000a}\x{000d}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}]+/u', ' ', $data);
-
-					if ($data) {
-						libxml_clear_errors();
-
-						$this->doc = new DOMDocument();
-						$this->doc->loadXML($data);
-
-						$error = libxml_get_last_error();
-					}
-					break;
-				}
-			}
-		}
 
 		if ($error) {
 			foreach (libxml_get_errors() as $error) {
@@ -115,6 +65,7 @@ class FeedParser {
 					$this->type = $this::FEED_RSS;
 					break;
 				case "feed":
+				case "atom:feed":
 					$this->type = $this::FEED_ATOM;
 					break;
 				default:
@@ -141,8 +92,13 @@ class FeedParser {
 				$link = $xpath->query("//atom:feed/atom:link[not(@rel)]")->item(0);
 
 				if (!$link)
+					$link = $xpath->query("//atom:feed/atom:link[@rel='alternate']")->item(0);
+
+				if (!$link)
 					$link = $xpath->query("//atom03:feed/atom03:link[not(@rel)]")->item(0);
 
+				if (!$link)
+					$link = $xpath->query("//atom03:feed/atom03:link[@rel='alternate']")->item(0);
 
 				if ($link && $link->hasAttributes()) {
 					$this->link = $link->getAttribute("href");
@@ -227,20 +183,22 @@ class FeedParser {
 		}
 	}
 
+	// libxml may have invalid unicode data in error messages
 	function error() {
-		return $this->error;
+		return UConverter::transcode($this->error, 'UTF-8', 'UTF-8');
 	}
 
+	// WARNING: may return invalid unicode data
 	function errors() {
 		return $this->libxml_errors;
 	}
 
 	function get_link() {
-		return $this->link;
+		return clean($this->link);
 	}
 
 	function get_title() {
-		return $this->title;
+		return clean($this->title);
 	}
 
 	function get_items() {
@@ -256,7 +214,7 @@ class FeedParser {
 
 			foreach ($links as $link) {
 				if (!$rel || $link->hasAttribute('rel') && $link->getAttribute('rel') == $rel) {
-					array_push($rv, trim($link->getAttribute('href')));
+					array_push($rv, clean(trim($link->getAttribute('href'))));
 				}
 			}
 			break;
@@ -265,7 +223,7 @@ class FeedParser {
 
 			foreach ($links as $link) {
 				if (!$rel || $link->hasAttribute('rel') && $link->getAttribute('rel') == $rel) {
-					array_push($rv, trim($link->getAttribute('href')));
+					array_push($rv, clean(trim($link->getAttribute('href'))));
 				}
 			}
 			break;
@@ -273,4 +231,4 @@ class FeedParser {
 
 		return $rv;
 	}
-} ?>
+}

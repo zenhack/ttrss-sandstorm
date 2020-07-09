@@ -1,5 +1,7 @@
 <?php
 class Note extends Plugin {
+
+	/* @var PluginHost $host */
 	private $host;
 
 	function about() {
@@ -20,49 +22,50 @@ class Note extends Plugin {
 
 
 	function hook_article_button($line) {
-		return "<img src=\"plugins/note/note.png\"
-			style=\"cursor : pointer\" style=\"cursor : pointer\"
-			onclick=\"editArticleNote(".$line["id"].")\"
-			class='tagsPic' title='".__('Edit article note')."'>";
+		return "<i class='material-icons' onclick=\"Plugins.Note.edit(".$line["id"].")\"
+			style='cursor : pointer' title='".__('Edit article note')."'>note</i>";
 	}
 
 	function edit() {
-		$param = db_escape_string($_REQUEST['param']);
+		$param = $_REQUEST['param'];
 
-		$result = db_query("SELECT note FROM ttrss_user_entries WHERE
-			ref_id = '$param' AND owner_uid = " . $_SESSION['uid']);
+		$sth = $this->pdo->prepare("SELECT note FROM ttrss_user_entries WHERE
+			ref_id = ? AND owner_uid = ?");
+		$sth->execute([$param, $_SESSION['uid']]);
 
-		$note = db_fetch_result($result, 0, "note");
+		if ($row = $sth->fetch()) {
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"id\" value=\"$param\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pluginhandler\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"setNote\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"plugin\" value=\"note\">";
+			$note = $row['note'];
 
-		print "<table width='100%'><tr><td>";
-		print "<textarea dojoType=\"dijit.form.SimpleTextarea\"
-			style='font-size : 12px; width : 100%; height: 100px;'
-			placeHolder='body#ttrssMain { font-size : 14px; };'
-			name='note'>$note</textarea>";
-		print "</td></tr></table>";
+			print_hidden("id", "$param");
+			print_hidden("op", "pluginhandler");
+			print_hidden("method", "setNote");
+			print_hidden("plugin", "note");
 
-		print "<div class='dlgButtons'>";
+			print "<textarea dojoType='dijit.form.SimpleTextarea'
+				style='font-size : 12px; width : 98%; height: 100px;'
+				name='note'>$note</textarea>";
+
+		}
+
+		print "<footer class='text-center'>";
 		print "<button dojoType=\"dijit.form.Button\"
 			onclick=\"dijit.byId('editNoteDlg').execute()\">".__('Save')."</button> ";
 		print "<button dojoType=\"dijit.form.Button\"
 			onclick=\"dijit.byId('editNoteDlg').hide()\">".__('Cancel')."</button>";
-		print "</div>";
+		print "</footer>";
 
 	}
 
 	function setNote() {
-		$id = db_escape_string($_REQUEST["id"]);
-		$note = trim(strip_tags(db_escape_string($_REQUEST["note"])));
+		$id = $_REQUEST["id"];
+		$note = trim(strip_tags($_REQUEST["note"]));
 
-		db_query("UPDATE ttrss_user_entries SET note = '$note'
-			WHERE ref_id = '$id' AND owner_uid = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET note = ?
+			WHERE ref_id = ? AND owner_uid = ?");
+		$sth->execute([$note, $id, $_SESSION['uid']]);
 
-		$formatted_note = format_article_note($id, $note);
+		$formatted_note = Article::format_article_note($id, $note);
 
 		print json_encode(array("note" => $formatted_note,
 				"raw_length" => mb_strlen($note)));
@@ -73,4 +76,3 @@ class Note extends Plugin {
 	}
 
 }
-?>

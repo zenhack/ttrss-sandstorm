@@ -4,7 +4,7 @@ Tiny Tiny RSS
 Web-based news feed aggregator, designed to allow you to read news from
 any location, while feeling as close to a real desktop application as possible.
 
-http://tt-rss.org (http://mirror.tt-rss.org)
+http://tt-rss.org
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,19 +34,3 @@ This Sandstorm app uses docker to build it's package.
 * Exit this image after it has booted up and run the app successfully. Then run `./export_docker.sh` from this directory to export the last run docker container into a folder named `dockerenv`.
 * Once this is done, `spk dev` and `spk pack` should now work like normal
 
-## Requirements
-
-* Compatible web browser (http://tt-rss.org/wiki/CompatibleBrowsers)
-* Web server, for example Apache
-* PHP (with support for mbstring functions)
-* PostgreSQL (tested on 8.3) or MySQL (InnoDB and version 4.1+ required)
-
-## Installation Notes
-
-http://tt-rss.org/wiki/InstallationNotes
-
-## See also
-
-* FAQ: http://tt-rss.org/wiki/FrequentlyAskedQuestions
-* Forum: http://tt-rss.org/forum
-* Wiki: http://tt-rss.org/wiki/WikiStart

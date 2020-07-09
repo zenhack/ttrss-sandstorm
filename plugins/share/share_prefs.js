@@ -1,21 +1,15 @@
-function clearArticleAccessKeys() {
+Plugins.Share = {
+	clearKeys: function() {
+		if (confirm(__("This will invalidate all previously shared article URLs. Continue?"))) {
+			Notify.progress("Clearing URLs...");
 
-	var ok = confirm(__("This will invalidate all previously shared article URLs. Continue?"));
+			const query = {op: "pluginhandler", plugin: "share", method: "clearArticleKeys"};
 
-	if (ok) {
-		notify_progress("Clearing URLs...");
+			xhrPost("backend.php", query, () => {
+				Notify.info("Shared URLs cleared.");
+			});
+		}
 
-		var query = "?op=pluginhandler&plugin=share&method=clearArticleKeys";
-
-		new Ajax.Request("backend.php", {
-			parameters: query,
-			onComplete: function(transport) {
-				notify_info("Shared URLs cleared.");
-			} });
+		return false;
 	}
-
-	return false;
-}
-
-
-
+};

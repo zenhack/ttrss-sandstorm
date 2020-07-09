@@ -7,7 +7,6 @@
 	set_include_path(dirname(__FILE__) ."/include" . PATH_SEPARATOR .
 		get_include_path());
 
-	require_once 'classes/ttrssmailer.php';
 	require_once "autoload.php";
 	require_once "functions.php";
 	require_once "sessions.php";
@@ -90,14 +89,13 @@
 		return;
 	}
 ?>
-
+<!DOCTYPE html>
 <html>
 <head>
 <title>Create new account</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<?php echo stylesheet_tag("css/utility.css") ?>
-<?php echo stylesheet_tag("css/dijit.css") ?>
-<?php echo javascript_tag("js/functions.js") ?>
+<?php echo stylesheet_tag("themes/light.css") ?>
+<?php echo javascript_tag("js/common.js") ?>
 <?php echo javascript_tag("lib/prototype.js") ?>
 <?php echo javascript_tag("lib/scriptaculous/scriptaculous.js?load=effects,controls") ?>
 </head>
@@ -117,7 +115,7 @@
 			}
 
 			var query = "register.php?action=check&login=" +
-					param_escape(login);
+					encodeURIComponent(login);
 
 			new Ajax.Request(query, {
 				onComplete: function(transport) {
@@ -137,13 +135,13 @@
 							f.sub_btn.disabled = true;
 						}
 					} catch (e) {
-						exception_error("checkUsername_callback", e);
+						App.Error.report(e);
 					}
 
 				} });
 
 		} catch (e) {
-			exception_error("checkUsername", e);
+			App.Error.report(e);
 		}
 
 		return false;
@@ -173,16 +171,14 @@
 			return true;
 
 		} catch (e) {
-			exception_error("validateRegForm", e);
+			alert(e.stack);
 			return false;
 		}
 	}
 
 </script>
 
-<body>
-
-<div class="floatingLogo"><img src="images/logo_small.png"></div>
+<body class="claro ttrss_utility">
 
 <h1><?php echo __("Create new account") ?></h1>
 
@@ -309,15 +305,13 @@
 						"\n".
 						"If that wasn't you, just ignore this message. Thanks.";
 
-					$mail = new ttrssMailer();
-					$mail->IsHTML(false);
-					$rc = $mail->quickMail($email, "", "Registration information for Tiny Tiny RSS", $reg_text, false);
+					$mailer = new Mailer();
+					$rc = $mailer->mail(["to_address" => $email,
+						"subject" => "Registration information for Tiny Tiny RSS",
+						"message" => $reg_text]);
 
-					if (!$rc) print_error($mail->ErrorInfo);
+					if (!$rc) print_error($mailer->error());
 
-					unset($reg_text);
-					unset($mail);
-					unset($rc);
 					$reg_text = "Hi!\n".
 						"\n".
 						"New user had registered at your Tiny Tiny RSS installation.\n".
@@ -325,11 +319,12 @@
 						"Login: $login\n".
 						"Email: $email\n";
 
+					$mailer = new Mailer();
+					$rc = $mailer->mail(["to_address" => REG_NOTIFY_ADDRESS,
+						"subject" => "Registration notice for Tiny Tiny RSS",
+						"message" => $reg_text]);
 
-					$mail = new ttrssMailer();
-					$mail->IsHTML(false);
-					$rc = $mail->quickMail(REG_NOTIFY_ADDRESS, "", "Registration notice for Tiny Tiny RSS", $reg_text, false);
-					if (!$rc) print_error($mail->ErrorInfo);
+					if (!$rc) print_error($mailer->error());
 
 					print_notice(__("Account created successfully."));
 
@@ -365,4 +360,3 @@
 
 </body>
 </html>
-

@@ -1,11 +1,11 @@
 <?php
 class Db_Prefs {
-	private $dbh;
+	private $pdo;
 	private static $instance;
 	private $cache;
 
 	function __construct() {
-		$this->dbh = Db::get();
+		$this->pdo = Db::pdo();
 		$this->cache = array();
 
 		if ($_SESSION["uid"]) $this->cache();
@@ -23,31 +23,25 @@ class Db_Prefs {
 	}
 
 	function cache() {
-		$profile = false;
-
 		$user_id = $_SESSION["uid"];
 		@$profile = $_SESSION["profile"];
 
-		if ($profile) {
-			$profile_qpart = "profile = '$profile' AND";
-		} else {
-			$profile_qpart = "profile IS NULL AND";
-		}
+		if (!is_numeric($profile) || !$profile || get_schema_version() < 63) $profile = null;
 
-		if (get_schema_version() < 63) $profile_qpart = "";
-
-		$result = db_query("SELECT
+		$sth = $this->pdo->prepare("SELECT
 			value,ttrss_prefs_types.type_name as type_name,ttrss_prefs.pref_name AS pref_name
 			FROM
 				ttrss_user_prefs,ttrss_prefs,ttrss_prefs_types
 			WHERE
-				$profile_qpart
+				(profile = :profile OR (:profile IS NULL AND profile IS NULL)) AND
 				ttrss_prefs.pref_name NOT LIKE '_MOBILE%' AND
 				ttrss_prefs_types.id = type_id AND
-				owner_uid = '$user_id' AND
+				owner_uid = :uid AND
 				ttrss_user_prefs.pref_name = ttrss_prefs.pref_name");
 
-		while ($line = db_fetch_assoc($result)) {
+		$sth->execute([":profile" => $profile, ":uid" => $user_id]);
+
+		while ($line = $sth->fetch()) {
 			if ($user_id == $_SESSION["uid"]) {
 				$pref_name = $line["pref_name"];
 
@@ -59,43 +53,35 @@ class Db_Prefs {
 
 	function read($pref_name, $user_id = false, $die_on_error = false) {
 
-		$pref_name = db_escape_string($pref_name);
-		$profile = false;
-
 		if (!$user_id) {
 			$user_id = $_SESSION["uid"];
 			@$profile = $_SESSION["profile"];
 		} else {
-			$user_id = sprintf("%d", $user_id);
+			$profile = false;
 		}
 
-		if (isset($this->cache[$pref_name])) {
+		if ($user_id == $_SESSION['uid'] && isset($this->cache[$pref_name])) {
 			$tuple = $this->cache[$pref_name];
 			return $this->convert($tuple["value"], $tuple["type"]);
 		}
 
-		if ($profile) {
-			$profile_qpart = "profile = '$profile' AND";
-		} else {
-			$profile_qpart = "profile IS NULL AND";
-		}
+		if (!is_numeric($profile) || !$profile || get_schema_version() < 63) $profile = null;
 
-		if (get_schema_version() < 63) $profile_qpart = "";
-
-		$result = db_query("SELECT
+		$sth = $this->pdo->prepare("SELECT
 			value,ttrss_prefs_types.type_name as type_name
 			FROM
 				ttrss_user_prefs,ttrss_prefs,ttrss_prefs_types
 			WHERE
-				$profile_qpart
-				ttrss_user_prefs.pref_name = '$pref_name' AND
+				(profile = :profile OR (:profile IS NULL AND profile IS NULL)) AND
+				ttrss_user_prefs.pref_name = :pref_name AND
 				ttrss_prefs_types.id = type_id AND
-				owner_uid = '$user_id' AND
+				owner_uid = :uid AND
 				ttrss_user_prefs.pref_name = ttrss_prefs.pref_name");
+		$sth->execute([":uid" => $user_id, ":profile" => $profile, ":pref_name" => $pref_name]);
 
-		if (db_num_rows($result) > 0) {
-			$value = db_fetch_result($result, 0, "value");
-			$type_name = db_fetch_result($result, 0, "type_name");
+		if ($row = $sth->fetch()) {
+			$value = $row["value"];
+			$type_name = $row["type_name"];
 
 			if ($user_id == $_SESSION["uid"]) {
 				$this->cache[$pref_name]["type"] = $type_name;
@@ -104,8 +90,10 @@ class Db_Prefs {
 
 			return $this->convert($value, $type_name);
 
+		} else if ($die_on_error) {
+			user_error("Fatal error, unknown preferences key: $pref_name (owner: $user_id)", E_USER_ERROR);
+			return null;
 		} else {
-			user_error("Fatal error, unknown preferences key: $pref_name (owner: $user_id)", $die_on_error ? E_USER_ERROR : E_USER_WARNING);
 			return null;
 		}
 	}
@@ -121,24 +109,16 @@ class Db_Prefs {
 	}
 
 	function write($pref_name, $value, $user_id = false, $strip_tags = true) {
-		$pref_name = db_escape_string($pref_name);
-		$value = db_escape_string($value, $strip_tags);
+		if ($strip_tags) $value = strip_tags($value);
 
 		if (!$user_id) {
 			$user_id = $_SESSION["uid"];
 			@$profile = $_SESSION["profile"];
 		} else {
-			$user_id = sprintf("%d", $user_id);
-			$prefs_cache = false;
+			$profile = null;
 		}
 
-		if ($profile) {
-			$profile_qpart = "AND profile = '$profile'";
-		} else {
-			$profile_qpart = "AND profile IS NULL";
-		}
-
-		if (get_schema_version() < 63) $profile_qpart = "";
+		if (!is_numeric($profile) || !$profile || get_schema_version() < 63) $profile = null;
 
 		$type_name = "";
 		$current_value = "";
@@ -149,12 +129,14 @@ class Db_Prefs {
 		}
 
 		if (!$type_name) {
-			$result = db_query("SELECT type_name
+			$sth = $this->pdo->prepare("SELECT type_name
 				FROM ttrss_prefs,ttrss_prefs_types
-				WHERE pref_name = '$pref_name' AND type_id = ttrss_prefs_types.id");
+				WHERE pref_name = ? AND type_id = ttrss_prefs_types.id");
+			$sth->execute([$pref_name]);
 
-			if (db_num_rows($result) > 0)
-				$type_name = db_fetch_result($result, 0, "type_name");
+			if ($row = $sth->fetch())
+				$type_name = $row["type_name"];
+
 		} else if ($current_value == $value) {
 			return;
 		}
@@ -167,17 +149,19 @@ class Db_Prefs {
 					$value = "false";
 				}
 			} else if ($type_name == "integer") {
-				$value = sprintf("%d", $value);
+				$value = (int)$value;
 			}
 
 			if ($pref_name == 'USER_TIMEZONE' && $value == '') {
 				$value = 'UTC';
 			}
 
-			db_query("UPDATE ttrss_user_prefs SET
-				value = '$value' WHERE pref_name = '$pref_name'
-					$profile_qpart
-					AND owner_uid = " . $_SESSION["uid"]);
+			$sth = $this->pdo->prepare("UPDATE ttrss_user_prefs SET
+				value = :value WHERE pref_name = :pref_name
+					AND (profile = :profile OR (:profile IS NULL AND profile IS NULL))
+					AND owner_uid = :uid");
+
+			$sth->execute([":pref_name" => $pref_name, ":value" => $value, ":uid" => $user_id, ":profile" => $profile]);
 
 			if ($user_id == $_SESSION["uid"]) {
 				$this->cache[$pref_name]["type"] = $type_name;
@@ -187,4 +171,3 @@ class Db_Prefs {
 	}
 
 }
-?>

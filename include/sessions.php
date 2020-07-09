@@ -7,13 +7,11 @@
 	require_once "errorhandler.php";
 	require_once "lib/accept-to-gettext.php";
 	require_once "lib/gettext/gettext.inc";
-	require_once "version.php";
 
-	$session_expire = max(SESSION_COOKIE_LIFETIME, 86400);
+	$session_expire = min(2147483647 - time() - 1, max(SESSION_COOKIE_LIFETIME, 86400));
 	$session_name = (!defined('TTRSS_SESSION_NAME')) ? "ttrss_sid" : TTRSS_SESSION_NAME;
 
-	if (@$_SERVER['HTTPS'] == "on") {
-		$session_name .= "_ssl";
+	if (is_server_https()) {
 		ini_set("session.cookie_secure", true);
 	}
 
@@ -23,12 +21,14 @@
 	ini_set("session.gc_maxlifetime", $session_expire);
 	ini_set("session.cookie_lifetime", min(0, SESSION_COOKIE_LIFETIME));
 
-	function session_get_schema_version($nocache = false) {
+	function session_get_schema_version() {
 		global $schema_version;
 
 		if (!$schema_version) {
-			$result = Db::get()->query("SELECT schema_version FROM ttrss_version");
-			$version = Db::get()->fetch_result($result, 0, "schema_version");
+			$row = Db::pdo()->query("SELECT schema_version FROM ttrss_version")->fetch();
+
+			$version = $row["schema_version"];
+
 			$schema_version = $version;
 			return $version;
 		} else {
@@ -39,69 +39,50 @@
 	function validate_session() {
 		if (SINGLE_USER_MODE) return true;
 
-		if (VERSION_STATIC != $_SESSION["version"]) return false;
-
-		$check_ip = $_SESSION['ip_address'];
-
-		switch (SESSION_CHECK_ADDRESS) {
-		case 0:
-			$check_ip = '';
-			break;
-		case 1:
-			$check_ip = substr($check_ip, 0, strrpos($check_ip, '.')+1);
-			break;
-		case 2:
-			$check_ip = substr($check_ip, 0, strrpos($check_ip, '.'));
-			$check_ip = substr($check_ip, 0, strrpos($check_ip, '.')+1);
-			break;
-		};
-
-		if ($check_ip && strpos($_SERVER['REMOTE_ADDR'], $check_ip) !== 0) {
-			$_SESSION["login_error_msg"] =
-				__("Session failed to validate (incorrect IP)");
-			return false;
-		}
-
-		if ($_SESSION["ref_schema_version"] != session_get_schema_version(true)) {
+		if (isset($_SESSION["ref_schema_version"]) && $_SESSION["ref_schema_version"] != session_get_schema_version()) {
 			$_SESSION["login_error_msg"] =
 				__("Session failed to validate (schema version changed)");
 			return false;
 		}
-
-		if (sha1($_SERVER['HTTP_USER_AGENT']) != $_SESSION["user_agent"]) {
-			$_SESSION["login_error_msg"] =
-				__("Session failed to validate (user agent changed)");
-			return false;
-		}
+		  $pdo = Db::pdo();
 
 		if ($_SESSION["uid"]) {
-			$result = Db::get()->query(
-				"SELECT pwd_hash FROM ttrss_users WHERE id = '".$_SESSION["uid"]."'");
+
+			if (!defined('_SESSION_SKIP_UA_CHECKS') && $_SESSION["user_agent"] != sha1($_SERVER['HTTP_USER_AGENT'])) {
+				$_SESSION["login_error_msg"] = __("Session failed to validate (UA changed).");
+				return false;
+			}
+
+			$sth = $pdo->prepare("SELECT pwd_hash FROM ttrss_users WHERE id = ?");
+			$sth->execute([$_SESSION['uid']]);
 
 			// user not found
-			if (Db::get()->num_rows($result) == 0) {
+			if ($row = $sth->fetch()) {
+					 $pwd_hash = $row["pwd_hash"];
 
-				$_SESSION["login_error_msg"] =
-					__("Session failed to validate (user not found)");
+					 if ($pwd_hash != $_SESSION["pwd_hash"]) {
 
-				return false;
+						  $_SESSION["login_error_msg"] =
+								__("Session failed to validate (password changed)");
+
+						  return false;
+					 }
 			} else {
-				$pwd_hash = Db::get()->fetch_result($result, 0, "pwd_hash");
 
-				if ($pwd_hash != $_SESSION["pwd_hash"]) {
+					 $_SESSION["login_error_msg"] =
+						  __("Session failed to validate (user not found)");
 
-					$_SESSION["login_error_msg"] =
-						__("Session failed to validate (password changed)");
+					 return false;
 
-					return false;
-				}
 			}
 		}
 
 		return true;
 	}
 
-
+	/**
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
 	function ttrss_open ($s, $n) {
 		return true;
 	}
@@ -109,18 +90,21 @@
 	function ttrss_read ($id){
 		global $session_expire;
 
-		$res = Db::get()->query("SELECT data FROM ttrss_sessions WHERE id='$id'");
+		$sth = Db::pdo()->prepare("SELECT data FROM ttrss_sessions WHERE id=?");
+		$sth->execute([$id]);
 
-		if (Db::get()->num_rows($res) != 1) {
+		if ($row = $sth->fetch()) {
+				return base64_decode($row["data"]);
 
-			$expire = time() + $session_expire;
-
-			Db::get()->query("INSERT INTO ttrss_sessions (id, data, expire)
-					VALUES ('$id', '', '$expire')");
-
-		 	return "";
 		} else {
-			return base64_decode(Db::get()->fetch_result($res, 0, "data"));
+				$expire = time() + $session_expire;
+
+				$sth = Db::pdo()->prepare("INSERT INTO ttrss_sessions (id, data, expire)
+					VALUES (?, '', ?)");
+				$sth->execute([$id, $expire]);
+
+				return "";
+
 		}
 
 	}
@@ -131,7 +115,17 @@
 		$data = base64_encode($data);
 		$expire = time() + $session_expire;
 
-		Db::get()->query("UPDATE ttrss_sessions SET data='$data', expire='$expire' WHERE id='$id'");
+		$sth = Db::pdo()->prepare("SELECT id FROM ttrss_sessions WHERE id=?");
+		$sth->execute([$id]);
+
+		if ($row = $sth->fetch()) {
+			$sth = Db::pdo()->prepare("UPDATE ttrss_sessions SET data=?, expire=? WHERE id=?");
+			$sth->execute([$data, $expire, $id]);
+		} else {
+			$sth = Db::pdo()->prepare("INSERT INTO ttrss_sessions (id, data, expire)
+				VALUES (?, ?, ?)");
+			$sth->execute([$id, $data, $expire]);
+		}
 
 		return true;
 	}
@@ -141,13 +135,19 @@
 	}
 
 	function ttrss_destroy($id) {
-		Db::get()->query("DELETE FROM ttrss_sessions WHERE id = '$id'");
+		$sth = Db::pdo()->prepare("DELETE FROM ttrss_sessions WHERE id = ?");
+		$sth->execute([$id]);
 
 		return true;
 	}
 
+	/**
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
 	function ttrss_gc ($expire) {
-		Db::get()->query("DELETE FROM ttrss_sessions WHERE expire < " . time());
+		Db::pdo()->query("DELETE FROM ttrss_sessions WHERE expire < " . time());
+
+		return true;
 	}
 
 	if (!SINGLE_USER_MODE /* && DB_TYPE == "pgsql" */) {
@@ -162,4 +162,3 @@
 			@session_start();
 		}
 	}
-?>

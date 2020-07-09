@@ -19,37 +19,37 @@ class MailTo extends Plugin {
 	}
 
 	function hook_article_button($line) {
-		return "<img src=\"plugins/mailto/mail.png\"
-					class='tagsPic' style=\"cursor : pointer\"
-					onclick=\"mailtoArticle(".$line["id"].")\"
-					alt='Zoom' title='".__('Forward by email')."'>";
+		return "<i class='material-icons' style=\"cursor : pointer\"
+					onclick=\"Plugins.Mailto.send(".$line["id"].")\"
+					title='".__('Forward by email')."'>mail_outline</i>";
 	}
 
 	function emailArticle() {
 
-		$param = db_escape_string($_REQUEST['param']);
+		$ids = explode(",", $_REQUEST['param']);
+		$ids_qmarks = arr_qmarks($ids);
 
-		require_once "lib/MiniTemplator.class.php";
+		$tpl = new Templator();
 
-		$tpl = new MiniTemplator;
-		$tpl_t = new MiniTemplator;
-
-		$tpl->readTemplateFromFile("templates/email_article_template.txt");
+		$tpl->readTemplateFromFile("email_article_template.txt");
 
 		$tpl->setVariable('USER_NAME', $_SESSION["name"], true);
-		$tpl->setVariable('USER_EMAIL', $user_email, true);
+		//$tpl->setVariable('USER_EMAIL', $user_email, true);
 		$tpl->setVariable('TTRSS_HOST', $_SERVER["HTTP_HOST"], true);
 
 
-		$result = db_query("SELECT DISTINCT link, content, title
+		$sth = $this->pdo->prepare("SELECT DISTINCT link, content, title
 			FROM ttrss_user_entries, ttrss_entries WHERE id = ref_id AND
-			id IN ($param) AND owner_uid = " . $_SESSION["uid"]);
+			id IN ($ids_qmarks) AND owner_uid = ?");
+		$sth->execute(array_merge($ids, [$_SESSION['uid']]));
 
-		if (db_num_rows($result) > 1) {
+		if (count($ids) > 1) {
 			$subject = __("[Forwarded]") . " " . __("Multiple articles");
+		} else {
+			$subject = "";
 		}
 
-		while ($line = db_fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			if (!$subject)
 				$subject = __("[Forwarded]") . " " . htmlspecialchars($line["title"]);
@@ -70,7 +70,7 @@ class MailTo extends Plugin {
 
 		print __("Clicking the following link to invoke your mail client:");
 
-		print "<div class=\"tagCloudContainer\">";
+		print "<div class='panel text-center'>";
 		print "<a target=\"_blank\" href=\"$mailto_link\">".
 			__("Forward selected article(s) by email.")."</a>";
 		print "</div>";
@@ -79,9 +79,9 @@ class MailTo extends Plugin {
 
 		print "<p>";
 
-		print "<div style='text-align : center'>";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('emailArticleDlg').hide()\">".__('Close this dialog')."</button>";
-		print "</div>";
+		print "<footer class='text-center'>";
+		print "<button dojoType='dijit.form.Button' onclick=\"dijit.byId('emailArticleDlg').hide()\">".__('Close this dialog')."</button>";
+		print "</footer>";
 
 		//return;
 	}
@@ -91,4 +91,3 @@ class MailTo extends Plugin {
 	}
 
 }
-?>

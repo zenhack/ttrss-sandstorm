@@ -49,7 +49,8 @@ class NSFW extends Plugin {
 	function hook_prefs_tab($args) {
 		if ($args != "prefPrefs") return;
 
-		print "<div dojoType=\"dijit.layout.AccordionPane\" title=\"".__("NSFW Plugin")."\">";
+		print "<div dojoType=\"dijit.layout.AccordionPane\" 
+			title=\"<i class='material-icons'>extension</i> ".__("NSFW Plugin")."\">";
 
 		print "<br/>";
 
@@ -63,16 +64,16 @@ class NSFW extends Plugin {
 				new Ajax.Request('backend.php', {
 					parameters: dojo.objectToQuery(this.getValues()),
 					onComplete: function(transport) {
-						notify_info(transport.responseText);
+						Notify.info(transport.responseText);
 					}
 				});
 				//this.reset();
 			}
 			</script>";
 
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pluginhandler\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"save\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"plugin\" value=\"nsfw\">";
+			print_hidden("op", "pluginhandler");
+			print_hidden("method", "save");
+			print_hidden("plugin", "nsfw");
 
 			print "<table width=\"100%\" class=\"prefPrefsList\">";
 
@@ -90,7 +91,7 @@ class NSFW extends Plugin {
 	}
 
 	function save() {
-		$tags = explode(",", db_escape_string($_POST["tags"]));
+		$tags = explode(",", $_POST["tags"]);
 		$tags = array_map("trim", $tags);
 		$tags = array_map("mb_strtolower", $tags);
 		$tags = join(", ", $tags);
@@ -105,4 +106,3 @@ class NSFW extends Plugin {
 	}
 
 }
-?>

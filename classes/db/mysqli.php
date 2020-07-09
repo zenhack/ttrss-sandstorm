@@ -1,6 +1,7 @@
 <?php
 class Db_Mysqli implements IDb {
 	private $link;
+	private $last_error;
 
 	function connect($host, $user, $pass, $db, $port) {
 		if ($port)
@@ -13,7 +14,8 @@ class Db_Mysqli implements IDb {
 
 			return $this->link;
 		} else {
-			die("Unable to connect to database (as $user to $host, database $db): " . mysqli_connect_error());
+			print("Unable to connect to database (as $user to $host, database $db): " . mysqli_connect_error());
+			exit(102);
 		}
 	}
 
@@ -26,10 +28,10 @@ class Db_Mysqli implements IDb {
 	function query($query, $die_on_error = true) {
 		$result = @mysqli_query($this->link, $query);
 		if (!$result) {
-			$error = @mysqli_error($this->link);
+			$this->last_error = @mysqli_error($this->link);
 
 			@mysqli_query($this->link, "ROLLBACK");
-			user_error("Query $query failed: " . ($this->link ? $error : "No connection"),
+			user_error("Query $query failed: " . ($this->link ? $this->last_error : "No connection"),
 				$die_on_error ? E_USER_ERROR : E_USER_WARNING);
 		}
 
@@ -63,18 +65,21 @@ class Db_Mysqli implements IDb {
 	}
 
 	function last_error() {
-		return mysqli_error();
+		return mysqli_error($this->link);
+	}
+
+	function last_query_error() {
+		return $this->last_error;
 	}
 
 	function init() {
 		$this->query("SET time_zone = '+0:0'");
 
 		if (defined('MYSQL_CHARSET') && MYSQL_CHARSET) {
-			$this->query("SET NAMES " . MYSQL_CHARSET);
+			mysqli_set_charset($this->link, MYSQL_CHARSET);
 		}
 
 		return true;
 	}
 
 }
-?>

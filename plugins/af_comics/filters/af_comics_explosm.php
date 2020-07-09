@@ -6,32 +6,17 @@ class Af_Comics_Explosm extends Af_ComicFilter {
 	}
 
 	function process(&$article) {
-		$owner_uid = $article["owner_uid"];
 
 		if (strpos($article["link"], "explosm.net/comics") !== FALSE) {
 
 				$doc = new DOMDocument();
-				@$doc->loadHTML(fetch_file_contents($article["link"]));
 
-				$basenode = false;
-
-				if ($doc) {
+				if (@$doc->loadHTML(fetch_file_contents($article["link"]))) {
 					$xpath = new DOMXPath($doc);
-					$entries = $xpath->query('(//img[@src])'); // we might also check for img[@class='strip'] I guess...
-
-					$matches = array();
-
-					foreach ($entries as $entry) {
-
-						if (preg_match("/(http:\/\/.*\/db\/files\/Comics\/.*)/i", $entry->getAttribute("src"), $matches)) {
-
-							$basenode = $entry;
-							break;
-						}
-					}
+					$basenode = $xpath->query('(//img[@id="main-comic"])')->item(0);
 
 					if ($basenode) {
-						$article["content"] = $doc->saveXML($basenode);
+						$article["content"] = $doc->saveHTML($basenode);
 					}
 				}
 
@@ -41,4 +26,3 @@ class Af_Comics_Explosm extends Af_ComicFilter {
 		return false;
 	}
 }
-?>

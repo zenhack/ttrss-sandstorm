@@ -20,27 +20,28 @@ class Pref_System extends Handler_Protected {
 	}
 
 	function clearLog() {
-		$this->dbh->query("DELETE FROM ttrss_error_log");
+		$this->pdo->query("DELETE FROM ttrss_error_log");
 	}
 
 	function index() {
 
 		print "<div dojoType=\"dijit.layout.AccordionContainer\" region=\"center\">";
-		print "<div dojoType=\"dijit.layout.AccordionPane\" title=\"".__('Error Log')."\">";
+		print "<div dojoType=\"dijit.layout.AccordionPane\" 
+			title=\"<i class='material-icons'>report</i> ".__('Event Log')."\">";
 
 		if (LOG_DESTINATION == "sql") {
 
-			$result = $this->dbh->query("SELECT errno, errstr, filename, lineno,
-				created_at, login FROM ttrss_error_log
+			$res = $this->pdo->query("SELECT errno, errstr, filename, lineno,
+				created_at, login, context FROM ttrss_error_log
 				LEFT JOIN ttrss_users ON (owner_uid = ttrss_users.id)
 				ORDER BY ttrss_error_log.id DESC
 				LIMIT 100");
 
 			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"updateSystemList()\">".__('Refresh')."</button> ";
+				onclick=\"Helpers.updateEventLog()\">".__('Refresh')."</button> ";
 
 			print "&nbsp;<button dojoType=\"dijit.form.Button\"
-				onclick=\"clearSqlLog()\">".__('Clear log')."</button> ";
+				class=\"alt-danger\" onclick=\"Helpers.clearEventLog()\">".__('Clear')."</button> ";
 
 			print "<p><table width=\"100%\" cellspacing=\"10\" class=\"prefErrorLog\">";
 
@@ -52,8 +53,8 @@ class Pref_System extends Handler_Protected {
 				<td width='5%'>".__("Date")."</td>
 				</tr>";
 
-			while ($line = $this->dbh->fetch_assoc($result)) {
-				print "<tr class=\"errrow\">";
+			while ($line = $res->fetch()) {
+				print "<tr>";
 
 				foreach ($line as $k => $v) {
 					$line[$k] = htmlspecialchars($v);
@@ -61,7 +62,7 @@ class Pref_System extends Handler_Protected {
 
 				print "<td class='errno'>" . Logger::$errornames[$line["errno"]] . " (" . $line["errno"] . ")</td>";
 				print "<td class='filename'>" . $line["filename"] . ":" . $line["lineno"] . "</td>";
-				print "<td class='errstr'>" . $line["errstr"] . "</td>";
+				print "<td class='errstr'>" . $line["errstr"] . "<hr/>" . nl2br($line["context"]) . "</td>";
 				print "<td class='login'>" . $line["login"] . "</td>";
 
 				print "<td class='timestamp'>" .
@@ -80,6 +81,20 @@ class Pref_System extends Handler_Protected {
 
 		print "</div>";
 
+		print "<div dojoType=\"dijit.layout.AccordionPane\" 
+			title=\"<i class='material-icons'>info</i> ".__('PHP Information')."\">";
+
+		ob_start();
+		phpinfo();
+		$info = ob_get_contents();
+		ob_end_clean();
+
+		print "<div class='phpinfo'>";
+		print preg_replace( '%^.*<body>(.*)</body>.*$%ms','$1', $info);
+		print "</div>";
+
+		print "</div>";
+
 		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_PREFS_TAB,
 			"hook_prefs_tab", "prefSystem");
 
@@ -87,4 +102,3 @@ class Pref_System extends Handler_Protected {
 	}
 
 }
-?>

@@ -1,40 +1,34 @@
 <?php
 class Dlg extends Handler_Protected {
 	private $param;
+    private $params;
 
-	function before($method) {
+    function before($method) {
 		if (parent::before($method)) {
 			header("Content-Type: text/html"); # required for iframe
 
-			$this->param = $this->dbh->escape_string($_REQUEST["param"]);
+			$this->param = $_REQUEST["param"];
 			return true;
 		}
 		return false;
 	}
 
 	function importOpml() {
-		print __("If you have imported labels and/or filters, you might need to reload preferences to see your new data.") . "</p>";
+		print_notice("If you have imported labels and/or filters, you might need to reload preferences to see your new data.");
 
-		print "<div class=\"prefFeedOPMLHolder\">";
-
-		$this->dbh->query("BEGIN");
-
-		print "<ul class='nomarks'>";
+		print "<div class='panel panel-scrollable'>";
 
 		$opml = new Opml($_REQUEST);
 
 		$opml->opml_import($_SESSION["uid"]);
 
-		$this->dbh->query("COMMIT");
-
-		print "</ul>";
 		print "</div>";
 
-		print "<div align='center'>";
-		print "<button dojoType=\"dijit.form.Button\"
+		print "<footer class='text-center'>";
+		print "<button dojoType='dijit.form.Button'
 			onclick=\"dijit.byId('opmlImportDlg').execute()\">".
 			__('Close this window')."</button>";
-		print "</div>";
+		print "</footer>";
 
 		print "</div>";
 
@@ -44,21 +38,25 @@ class Dlg extends Handler_Protected {
 	function pubOPMLUrl() {
 		$url_path = Opml::opml_publish_url();
 
-		print __("Your Public OPML URL is:");
+		print "<header>" . __("Your Public OPML URL is:") . "</header>";
 
-		print "<div class=\"tagCloudContainer\">";
+		print "<section>";
+
+		print "<div class='panel text-center'>";
 		print "<a id='pub_opml_url' href='$url_path' target='_blank'>$url_path</a>";
 		print "</div>";
 
-		print "<div align='center'>";
+		print "</section>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return opmlRegenKey()\">".
+		print "<footer class='text-center'>";
+
+		print "<button dojoType='dijit.form.Button' onclick=\"return Helpers.OPML.changeKey()\">".
 			__('Generate new URL')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return closeInfoBox()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return CommonDialogs.closeInfoBox()\">".
 			__('Close this window')."</button>";
 
-		print "</div>";
+		print "</footer>";
 
 		//return;
 	}
@@ -86,30 +84,27 @@ class Dlg extends Handler_Protected {
 
 		print "</div>";
 
-		print "<div align='center'>";
-
-		print "<button onclick=\"return closeInfoBox()\">".
+		print "<footer class='text-center'>";
+		print "<button onclick=\"return CommonDialogs.closeInfoBox()\">".
 			__('Close this window')."</button>";
-
-		print "</div>";
+		print "</footer>";
 
 		//return;
 	}
 
 	function printTagCloud() {
-		print "<div class=\"tagCloudContainer\">";
+		print "<div class='panel text-center'>";
 
 		// from here: http://www.roscripts.com/Create_tag_cloud-71.html
 
-		$query = "SELECT tag_name, COUNT(post_int_id) AS count
-			FROM ttrss_tags WHERE owner_uid = ".$_SESSION["uid"]."
-			GROUP BY tag_name ORDER BY count DESC LIMIT 50";
-
-		$result = $this->dbh->query($query);
+		$sth = $this->pdo->prepare("SELECT tag_name, COUNT(post_int_id) AS count
+			FROM ttrss_tags WHERE owner_uid = ?
+			GROUP BY tag_name ORDER BY count DESC LIMIT 50");
+		$sth->execute([$_SESSION['uid']]);
 
 		$tags = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 			$tags[$line["tag_name"]] = $line["count"];
 		}
 
@@ -143,7 +138,7 @@ class Dlg extends Handler_Protected {
 
 			$key_escaped = str_replace("'", "\\'", $key);
 
-			echo "<a href=\"javascript:viewfeed('$key_escaped') \" style=\"font-size: " .
+			echo "<a href=\"#\" onclick=\"Feeds.open({feed:'$key_escaped'}) \" style=\"font-size: " .
 				$size . "px\" title=\"$value articles tagged with " .
 				$key . '">' . $key . '</a> ';
 		}
@@ -152,120 +147,61 @@ class Dlg extends Handler_Protected {
 
 		print "</div>";
 
-		print "<div align='center'>";
-		print "<button dojoType=\"dijit.form.Button\"
-			onclick=\"return closeInfoBox()\">".
+		print "<footer class='text-center'>";
+		print "<button dojoType='dijit.form.Button'
+			onclick=\"return CommonDialogs.closeInfoBox()\">".
 			__('Close this window')."</button>";
-		print "</div>";
-
-	}
-
-	function printTagSelect() {
-
-		print __("Match:"). "&nbsp;" .
-			"<input class=\"noborder\" dojoType=\"dijit.form.RadioButton\" type=\"radio\" checked value=\"any\" name=\"tag_mode\" id=\"tag_mode_any\">";
-		print "<label for=\"tag_mode_any\">".__("Any")."</label>";
-		print "&nbsp;";
-		print "<input class=\"noborder\" dojoType=\"dijit.form.RadioButton\" type=\"radio\" value=\"all\" name=\"tag_mode\" id=\"tag_mode_all\">";
-		print "<label for=\"tag_mode_all\">".__("All tags.")."</input>";
-
-		print "<select id=\"all_tags\" name=\"all_tags\" title=\"" . __('Which Tags?') . "\" multiple=\"multiple\" size=\"10\" style=\"width : 100%\">";
-		$result = $this->dbh->query("SELECT DISTINCT tag_name FROM ttrss_tags WHERE owner_uid = ".$_SESSION['uid']."
-			AND LENGTH(tag_name) <= 30 ORDER BY tag_name ASC");
-
-		while ($row = $this->dbh->fetch_assoc($result)) {
-			$tmp = htmlspecialchars($row["tag_name"]);
-			print "<option value=\"$tmp\">$tmp</option>";
-		}
-
-		print "</select>";
-
-		print "<div align='right'>";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"viewfeed(get_all_tags($('all_tags')),
-			get_radio_checked($('tag_mode')));\">" . __('Display entries') . "</button>";
-		print "&nbsp;";
-		print "<button dojoType=\"dijit.form.Button\"
-		onclick=\"return closeInfoBox()\">" .
-			__('Close this window') . "</button>";
-		print "</div>";
+		print "</footer>";
 
 	}
 
 	function generatedFeed() {
 
 		$this->params = explode(":", $this->param, 3);
-		$feed_id = $this->dbh->escape_string($this->params[0]);
+		$feed_id = $this->params[0];
 		$is_cat = (bool) $this->params[1];
 
-		$key = get_feed_access_key($feed_id, $is_cat);
+		$key = Feeds::get_feed_access_key($feed_id, $is_cat);
 
 		$url_path = htmlspecialchars($this->params[2]) . "&key=" . $key;
 
-		print "<h2>".__("You can view this feed as RSS using the following URL:")."</h2>";
+		$feed_title = Feeds::getFeedTitle($feed_id, $is_cat);
 
-		print "<div class=\"tagCloudContainer\">";
+		print "<header>".T_sprintf("%s can be accessed via the following secret URL:", $feed_title)."</header>";
+
+		print "<section>";
+		print "<div class='panel text-center'>";
 		print "<a id='gen_feed_url' href='$url_path' target='_blank'>$url_path</a>";
 		print "</div>";
+		print "</section>";
 
-		print "<div align='center'>";
+		print "<footer>";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return genUrlChangeKey('$feed_id', '$is_cat')\">".
+		print "<button dojoType='dijit.form.Button' style='float : left' class='alt-info' onclick='window.open(\"https://tt-rss.org/wiki/GeneratedFeeds\")'>
+			<i class='material-icons'>help</i> ".__("More info...")."</button>";
+
+		print "<button dojoType='dijit.form.Button' onclick=\"return CommonDialogs.genUrlChangeKey('$feed_id', '$is_cat')\">".
 			__('Generate new URL')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return closeInfoBox()\">".
+		print "<button dojoType='dijit.form.Button' onclick=\"return CommonDialogs.closeInfoBox()\">".
 			__('Close this window')."</button>";
 
-		print "</div>";
+		print "</footer>";
 
 		//return;
 	}
 
-	function newVersion() {
+	function defaultPasswordWarning() {
 
-		$version_data = check_for_update();
-		$version = $version_data['version'];
-		$id = $version_data['version_id'];
+    	print_warning(__("You are using default tt-rss password. Please change it in the Preferences (Personal data / Authentication)."));
 
-		if ($version && $id) {
-			print "<div class='tagCloudContainer'>";
-
-			print T_sprintf("New version of Tiny Tiny RSS is available (%s).",
-				"<b>$version</b>");
-
-			print "</div>";
-
-			$details = "http://tt-rss.org/redmine/versions/$id";
-			$download = "http://tt-rss.org/#Download";
-
-			print "<p align='center'>".__("You can update using built-in updater in the Preferences or by using update.php")."</p>";
-
-			print "<div style='text-align : center'>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return window.open('$details')\">".__("See the release notes")."</button>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return window.open('$download')\">".__("Download")."</button>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return dijit.byId('newVersionDlg').hide()\">".
-				__('Close this window')."</button>";
-
-		} else {
-			print "<div class='tagCloudContainer'>";
-
-			print "<p align='center'>".__("Error receiving version information or no new version available.")."</p>";
-
-			print "</div>";
-
-			print "<div style='text-align : center'>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return dijit.byId('newVersionDlg').hide()\">".
-				__('Close this window')."</button>";
-			print "</div>";
-
-		}
-		print "</div>";
-
+		print "<footer class='text-center'>";
+		print "<button dojoType='dijit.form.Button' class='alt-primary'
+			onclick=\"document.location.href = 'prefs.php'\">".
+			__('Open Preferences')."</button> ";
+		print "<button dojoType='dijit.form.Button'
+			onclick=\"return dijit.byId('defaultPasswordDlg').hide();\">".
+			__('Close this window')."</button>";
+		print "</footeer>";
 	}
-
-
 }
-?>
