@@ -31,7 +31,7 @@ type Server struct {
 func (s Server) ProxyHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		url := req.URL.String()
-		client, err := s.getClientFor(url)
+		trans, err := s.getTransportFor(url)
 		if err != nil {
 			log.Printf("Failed to get client for %q: %v", url, err)
 			w.WriteHeader(500)
@@ -47,7 +47,7 @@ func (s Server) ProxyHandler() http.Handler {
 		// clear it to avoid problems:
 		req.RequestURI = ""
 
-		resp, err := client.Do(req)
+		resp, err := trans.RoundTrip(req)
 		if err != nil {
 			log.Printf("Error making proxied request: %v", err)
 			w.WriteHeader(500)
@@ -63,7 +63,7 @@ func (s Server) ProxyHandler() http.Handler {
 	})
 }
 
-func (s Server) getClientFor(url string) (*http.Client, error) {
+func (s Server) getTransportFor(url string) (http.RoundTripper, error) {
 	token, err := s.storage.GetTokenFor(url)
 	if err != nil {
 		token, err = s.requestTokenFor(url)
@@ -75,13 +75,10 @@ func (s Server) getClientFor(url string) (*http.Client, error) {
 			return nil, err
 		}
 	}
-	client := &http.Client{
-		Transport: tokenRoundTripper{
-			token:      token,
-			underlying: http.DefaultTransport,
-		},
-	}
-	return client, nil
+	return tokenRoundTripper{
+		token:      token,
+		underlying: http.DefaultTransport,
+	}, nil
 }
 
 func (s Server) requestTokenFor(url string) (string, error) {
