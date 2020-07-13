@@ -37,15 +37,15 @@ func (s Server) ProxyHandler() http.Handler {
 			w.WriteHeader(500)
 			return
 		}
+		if req.Method == "CONNECT" {
+			log.Printf("can't handle connect: %v", req)
+			panic("TODO")
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("Error making proxied request: %v", err)
 			w.WriteHeader(500)
 			return
-		}
-		if req.Method == "CONNECT" {
-			log.Printf("can't handle connect: %v", req)
-			panic("TODO")
 		}
 		defer resp.Body.Close()
 		wh := w.Header()
