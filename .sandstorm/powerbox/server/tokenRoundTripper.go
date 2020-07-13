@@ -10,6 +10,6 @@ type tokenRoundTripper struct {
 }
 
 func (tr tokenRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", tr.token)
+	req.Header.Set("Authorization", "Bearer "+tr.token)
 	return tr.underlying.RoundTrip(req)
 }
