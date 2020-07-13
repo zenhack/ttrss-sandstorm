@@ -161,6 +161,7 @@ opt/app/classes/counters.php
 opt/app/classes/db.php
 opt/app/classes/db/prefs.php
 opt/app/classes/debug.php
+opt/app/classes/feedparser.php
 opt/app/classes/feeds.php
 opt/app/classes/handler.php
 opt/app/classes/handler/protected.php
@@ -173,6 +174,7 @@ opt/app/classes/pluginhost.php
 opt/app/classes/pref/feeds.php
 opt/app/classes/pref/prefs.php
 opt/app/classes/rpc.php
+opt/app/classes/rssutils.php
 opt/app/config.php
 opt/app/errors.php
 opt/app/feed-icons
