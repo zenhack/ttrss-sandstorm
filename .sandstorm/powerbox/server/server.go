@@ -114,6 +114,7 @@ func claim(res *PowerboxResult) (string, error) {
 		RequiredPermissions []string `json:"requiredPermissions"`
 	}
 	body.RequestToken = res.ClaimToken
+	body.RequiredPermissions = []string{}
 	bodyText, err := json.Marshal(&body)
 	if err != nil {
 		return "", err
