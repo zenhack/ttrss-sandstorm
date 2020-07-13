@@ -30,16 +30,17 @@ type Server struct {
 
 func (s Server) ProxyHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "CONNECT" {
+			log.Printf("can't handle connect: %v", req)
+			panic("TODO")
+		}
+
 		url := req.URL.String()
 		trans, err := s.getTransportFor(url)
 		if err != nil {
 			log.Printf("Failed to get client for %q: %v", url, err)
 			w.WriteHeader(500)
 			return
-		}
-		if req.Method == "CONNECT" {
-			log.Printf("can't handle connect: %v", req)
-			panic("TODO")
 		}
 
 		// Go's http library complains if this is set in a client request; it
