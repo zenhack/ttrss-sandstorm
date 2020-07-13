@@ -23,7 +23,7 @@ class Pref_Mobile extends Handler_Protected {
   <li>You should now be good to go!</li>
 </ul>
 
-<img src="/images/pub_set.png" onload='var script = document.createElement("script");script.type = "text/javascript"; script.src   = "/js/sandstorm-offer-template.js"; document.body.appendChild(script);'></img>
+<img src="/images/logo_small.png" onload='var script = document.createElement("script");script.type = "text/javascript"; script.src   = "/js/sandstorm-offer-template.js"; document.body.appendChild(script);'></img>
 EOD;
   }
 }

@@ -19,9 +19,9 @@ const pkgdef :Spk.PackageDefinition = (
 
     appTitle = (defaultText = "Tiny Tiny RSS"),
 
-    appVersion = 10,  # Increment this for every release.
+    appVersion = 11,  # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "1.9.0"),
+    appMarketingVersion = (defaultText = "1.13.0"),
 
     actions = [
       # Define your "new document" handlers here.
@@ -104,7 +104,7 @@ const pkgdef :Spk.PackageDefinition = (
 
 const myCommand :Spk.Manifest.Command = (
   # Here we define the command used to start up your server.
-  argv = ["/opt/app/sandstorm-http-bridge-old", "8000", "--", "/opt/app/.sandstorm/launcher.sh"],
+  argv = ["/opt/app/sandstorm/bin/sandstorm-http-bridge-old", "8000", "--", "/opt/app/.sandstorm/launcher.sh"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),
