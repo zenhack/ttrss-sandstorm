@@ -41,6 +41,12 @@ func (s Server) ProxyHandler() http.Handler {
 			log.Printf("can't handle connect: %v", req)
 			panic("TODO")
 		}
+
+		// Go's http library complains if this is set in a client request; it
+		// should only be there for requests received from the server, so we
+		// clear it to avoid problems:
+		req.RequestURI = ""
+
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("Error making proxied request: %v", err)
