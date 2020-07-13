@@ -23,6 +23,8 @@
 	// location of tt-rss directory, e.g. http://example.org/tt-rss/
 	// You need to set this option correctly otherwise several features
 	// including PUSH, bookmarklets and browser integration will not work properly.
+    define('_SKIP_SELF_URL_PATH_CHECKS', 1);
+    // skip the enforcement of the above, since it doesn't work on sandstorm anyway.
 
 	define('FEED_CRYPT_KEY', '');
 	// Key used for encryption of passwords for password-protected feeds
@@ -63,7 +65,7 @@
 	define('CACHE_DIR', '/var/cache');
 	// Local cache directory for RSS feed content.
 
-	define('ICONS_DIR', "feed-icons");
+	define('ICONS_DIR', "/var/feed-icons");
 	define('ICONS_URL', "feed-icons");
 	// Local and URL path to the directory, where feed favicons are stored.
 	// Unless you really know what you're doing, please keep those relative
@@ -177,8 +179,8 @@
 	// *** Other settings (less important) ***
 	// ***************************************
 
-	define('CHECK_FOR_NEW_VERSION', true);
-	// Check for new versions of tt-rss automatically.
+	define('CHECK_FOR_UPDATES', false);
+	// Check for updates automatically if running Git version
 
 	define('DETECT_ARTICLE_LANGUAGE', false);
 	// Detect article language when updating feeds, presently this is only

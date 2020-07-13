@@ -9,7 +9,7 @@ const pkgdef :Spk.PackageDefinition = (
   # The package definition. Note that the spk tool looks specifically for the
   # "pkgdef" constant.
 
-  id = "zj20q6pwy456cmq0k57n1mtqqtky664dfqnhsmf3t36khch5geph",
+  id = "az3pakw2r4ff73pa49vvynmkdd6cjx8dkxj33xyk1fvymjd932eh",
   # Your app ID is actually its public key. The private key was placed in
   # your keyring. All updates must be signed with the same key.
 
@@ -19,9 +19,9 @@ const pkgdef :Spk.PackageDefinition = (
 
     appTitle = (defaultText = "Tiny Tiny RSS"),
 
-    appVersion = 10,  # Increment this for every release.
+    appVersion = 11,  # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "1.9.0"),
+    appMarketingVersion = (defaultText = "2.0.0"),
 
     actions = [
       # Define your "new document" handlers here.
@@ -58,7 +58,7 @@ const pkgdef :Spk.PackageDefinition = (
 
       author = (
         contactEmail = "jparyani@sandstorm.io",
-        pgpSignature = embed "pgp-signature",
+        #pgpSignature = embed "pgp-signature",
         upstreamAuthor = "TinyTinyRSS Team",
       ),
       pgpKeyring = embed "pgp-keyring",
@@ -104,7 +104,7 @@ const pkgdef :Spk.PackageDefinition = (
 
 const myCommand :Spk.Manifest.Command = (
   # Here we define the command used to start up your server.
-  argv = ["/opt/app/sandstorm-http-bridge-old", "8000", "--", "/opt/app/.sandstorm/launcher.sh"],
+  argv = ["/opt/app/sandstorm/bin/sandstorm-http-bridge-old", "8000", "--", "/opt/app/.sandstorm/launcher.sh"],
   environ = [
     # Note that this defines the *entire* environment seen by your app.
     (key = "PATH", value = "/usr/local/bin:/usr/bin:/bin"),

@@ -1,13 +1,11 @@
 #!/bin/bash
 
-set -euo pipefail
+set -xeuo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y nginx php5-fpm php5-mysql php5-cli php5-curl git php5-dev mysql-server
-apt-get install -y clang pkg-config
-export CXX=clang++
-cd /tmp && git clone https://github.com/sandstorm-io/capnproto.git && cd capnproto/c++ && autoreconf -i && ./configure && make clean && sudo make -j6 install
+#XXX apt-get update
+apt-get install -y nginx php-fpm php-mysql php-cli php-curl git php-dev php-mbstring php-intl mysql-server \
+        libcapnp-dev capnproto
 unlink /etc/nginx/sites-enabled/default
 cat > /etc/nginx/sites-available/sandstorm-php <<EOF
 server {
@@ -21,7 +19,7 @@ server {
         try_files \$uri \$uri/ =404;
     }
     location ~ \\.php\$ {
-        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_pass unix:/var/run/php-fpm.sock;
         fastcgi_index index.php;
         fastcgi_split_path_info ^(.+\\.php)(/.+)\$;
         fastcgi_param  SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
@@ -29,28 +27,37 @@ server {
     }
 }
 EOF
-ln -s /etc/nginx/sites-available/sandstorm-php /etc/nginx/sites-enabled/sandstorm-php
-service nginx stop
-service php5-fpm stop
-service mysql stop
-systemctl disable nginx
-systemctl disable php5-fpm
-systemctl disable mysql
-# patch /etc/php5/fpm/pool.d/www.conf to not change uid/gid to www-data
+ln -sf /etc/nginx/sites-available/sandstorm-php /etc/nginx/sites-enabled/sandstorm-php
+# service nginx stop
+service php7.0-fpm stop
+service mysqld stop
+# systemctl disable nginx
+systemctl disable php7.0-fpm
+systemctl disable mysqld
+# patch /etc/php/fpm/pool.d/www.conf to not change uid/gid to www-data
 sed --in-place='' \
-        --expression='s/^listen.owner = www-data/#listen.owner = www-data/' \
-        --expression='s/^listen.group = www-data/#listen.group = www-data/' \
-        --expression='s/^user = www-data/#user = www-data/' \
-        --expression='s/^group = www-data/#group = www-data/' \
-        /etc/php5/fpm/pool.d/www.conf
-# patch /etc/php5/fpm/php-fpm.conf to not have a pidfile
+        --expression='s/^listen.owner = www-data/;listen.owner = www-data/' \
+        --expression='s/^listen.group = www-data/;listen.group = www-data/' \
+        --expression='s/^user = www-data/;user = www-data/' \
+        --expression='s/^group = www-data/;group = www-data/' \
+        --expression='s@^listen = /run/php/php7.0-fpm.sock@listen = /var/run/php-fpm.sock@' \
+        /etc/php/7.0/fpm/pool.d/www.conf
+# patch /etc/php/7.0/fpm/php-fpm.conf to not have a pidfile
 sed --in-place='' \
-        --expression='s/^pid =/#pid =/' \
-        /etc/php5/fpm/php-fpm.conf
+        --expression='s/^pid =/;pid =/' \
+        /etc/php/7.0/fpm/php-fpm.conf
+# enable the php_intl module, which ttrs requries
+#sed --in-place='' \
+#        --expression='s/^;\(extension=php_intl.dll\)/\1/' \
+#        /etc/php/7.0/cli/php.ini
+
+sed --in-place='' \
+        --expression='s/^pid =/;pid =/' \
+        /etc/php/7.0/fpm/php-fpm.conf
 # patch mysql conf to not change uid
 sed --in-place='' \
         --expression='s/^user\t\t= mysql/#user\t\t= mysql/' \
-        /etc/mysql/my.cnf
+        /etc/mysql/mariadb.conf.d/50-server.cnf
 # patch mysql conf to use smaller transaction logs to save disk space
 cat <<EOF > /etc/mysql/conf.d/sandstorm.cnf
 [mysqld]
