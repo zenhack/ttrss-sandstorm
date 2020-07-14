@@ -248,9 +248,7 @@ sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
 usr/bin/mysql
-usr/bin/openssl
 usr/bin/touch
-usr/bin/yes
 usr/lib/locale/locale-archive
 usr/lib/php/20151012/calendar.so
 usr/lib/php/20151012/ctype.so

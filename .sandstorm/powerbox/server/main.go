@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/pem"
 	"net/http"
 	"os"
 
@@ -12,6 +13,8 @@ const webSocketListenAddr = ":3000"
 
 var (
 	proxyListenAddr = ":" + os.Getenv("POWERBOX_PROXY_PORT")
+
+	caCertFile = os.Getenv("CA_CERT_PATH")
 
 	mysqlUser = os.Getenv("MYSQL_USER")
 	mysqlDb   = os.Getenv("MYSQL_DATABASE")
@@ -25,8 +28,19 @@ func chkfatal(err error) {
 }
 
 func main() {
-	_, err := loadCA()
+	caspoof, err := GenSpoofer()
 	chkfatal(err)
+
+	func() {
+		f, err := os.Create(caCertFile)
+		chkfatal(err)
+		defer f.Close()
+		chkfatal(pem.Encode(f, &pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: caspoof.RawCACert(),
+		}))
+	}()
+
 	db, err := sql.Open("mysql", mysqlUri)
 	chkfatal(err)
 	storage, err := NewStorage(db)

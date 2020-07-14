@@ -36,25 +36,6 @@ HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 # Spawn mysqld
 HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
 
-# Generate a phony CA so our powerbox proxy can MITM ttrss's HTTPS requests.
-# It doesn't take that long, so we just nuke it on every startup; this way we
-# don't have to worry about expiration.
-#
-# Now is a good time to do this, since mysql can take a moment to start:
-rm -rf /var/caspoof
-mkdir -p /var/caspoof
-# Generate the key & root cert. Just fill in the defaults
-# For the various questions it asks (country name and such):
-(yes '' || true) | openssl req -x509 \
-    -newkey rsa:2048 -nodes \
-    -keyout /var/caspoof/key.pem \
-    -out /var/caspoof/cert.pem \
-    -sha256 \
-    -days 1825
-# It doesn't *really* matter in this case, but general hygene
-# thing, make the key only readable by owner:
-chmod 0400 /var/caspoof/key.pem
-
 # Wait until mysql has bound its socket, indicating readiness
 while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
     echo "waiting for mysql to be available at /var/run/mysqld/mysqld.sock"
@@ -66,8 +47,13 @@ if [ ! -e /var/.db-created ]; then
     touch /var/.db-created
 fi
 
-# Start our powerbox proxy server:
+# Start our powerbox proxy server, and wait for it to write the cert:
+export CA_CERT_PATH=/var/ca-spoof-cert.pem
+rm -f $CA_CERT_PATH
 /opt/app/.sandstorm/powerbox/server/server &
+while [ ! -e $CA_CERT_PATH ]; do
+    sleep .1
+done
 
 export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
