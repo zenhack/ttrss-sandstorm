@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/websocket"
 
@@ -81,22 +82,56 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 
 	tlsConn := tls.Server(serverConn, tlsCfg)
 	defer tlsConn.Close()
-	plainTextReq, err := http.ReadRequest(bufio.NewReader(tlsConn))
-	if err != nil {
-		log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
-		return
-	}
+	bufReader := bufio.NewReader(tlsConn)
+	for {
+		req, err := http.ReadRequest(bufReader)
+		if err != nil {
+			log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
+			return
+		}
 
-	resp, err := s.proxyRequest(plainTextReq)
-	if err != nil {
-		panic("TODO: handle errors here. " + err.Error())
+		if req.Method == "CONNECT" {
+			panic("Nested CONNECT request")
+		}
+		// The docs for ReadReqeust don't go into a lot of detail re: what fields it fills
+		// and and what it doesn't. Below we fill in things that we experimentally have
+		// found to be necessary.
+		req.URL.Scheme = "https"
+		if req.URL.Host == "" {
+			req.URL.Host = host
+		}
+
+		func() {
+			resp, err := s.proxyRequest(req)
+			if err != nil {
+				log.Printf("Failed to proxy request %v: %v", req, err)
+				logURLParts(req.URL)
+				panic("TODO: handle errors here.")
+			}
+			defer resp.Body.Close()
+			resp.Write(tlsConn)
+		}()
+		if req.Close {
+			return
+		}
 	}
-	defer resp.Body.Close()
-	resp.Write(tlsConn)
+}
+
+func logURLParts(u *url.URL) {
+	log.Printf("URL.Scheme = %q", u.Scheme)
+	log.Printf("URL.Opaque = %q", u.Opaque)
+	log.Printf("URL.Host = %q", u.Host)
+	log.Printf("URL.Path = %q", u.Path)
+	log.Printf("URL.RawPath = %q", u.RawPath)
+	log.Printf("URL.ForceQuery = %v", u.ForceQuery)
+	log.Printf("URL.RawQuery = %q", u.RawQuery)
+	log.Printf("URL.Fragment = %q", u.Fragment)
 }
 
 func (s Server) proxyRequest(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
+	log.Printf("Getting transport for URL: %q", url)
+	logURLParts(req.URL)
 	trans, err := s.getTransportFor(url)
 	if err != nil {
 		return nil, err
