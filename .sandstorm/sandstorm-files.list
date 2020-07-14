@@ -3,6 +3,7 @@
 # the app runs in dev mode. You may manually add or remove files, but don't
 # expect comments or ordering to be retained.
 bin/bash
+bin/chmod
 bin/cp
 bin/mkdir
 bin/rm
@@ -157,10 +158,12 @@ opt/app/.sandstorm/powerbox/server/server
 opt/app/.sandstorm/service-config/mime.types
 opt/app/.sandstorm/service-config/nginx.conf
 opt/app/backend.php
+opt/app/classes/article.php
 opt/app/classes/counters.php
 opt/app/classes/db.php
 opt/app/classes/db/prefs.php
 opt/app/classes/debug.php
+opt/app/classes/diskcache.php
 opt/app/classes/feeditem.php
 opt/app/classes/feeditem/common.php
 opt/app/classes/feeditem/rss.php
@@ -245,7 +248,9 @@ sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
 usr/bin/mysql
+usr/bin/openssl
 usr/bin/touch
+usr/bin/yes
 usr/lib/locale/locale-archive
 usr/lib/php/20151012/calendar.so
 usr/lib/php/20151012/ctype.so
