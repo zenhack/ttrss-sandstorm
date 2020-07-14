@@ -45,7 +45,7 @@ func main() {
 	chkfatal(err)
 	storage, err := NewStorage(db)
 	chkfatal(err)
-	srv := NewServer(storage)
+	srv := NewServer(storage, caspoof)
 
 	go func() {
 		panic(http.ListenAndServe(webSocketListenAddr, srv.WebSocketHandler()))

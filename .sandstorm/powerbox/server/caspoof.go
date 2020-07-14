@@ -11,13 +11,13 @@ type CertSpoofer struct {
 	leafKey *certs.KeyPair
 }
 
-func GenSpoofer() (CertSpoofer, error) {
+func GenSpoofer() (*CertSpoofer, error) {
 	ca, err := certs.GenCA()
 	if err != nil {
-		return CertSpoofer{}, err
+		return nil, err
 	}
 	leafKey, err := certs.GenKeyPair()
-	return CertSpoofer{
+	return &CertSpoofer{
 		ca:      ca,
 		leafKey: leafKey,
 	}, err

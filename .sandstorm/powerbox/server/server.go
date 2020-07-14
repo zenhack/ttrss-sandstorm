@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -16,51 +19,121 @@ import (
 	"zenhack.net/go/sandstorm/capnp/powerbox"
 )
 
-func NewServer(storage Storage) Server {
+func NewServer(storage Storage, spoofer *CertSpoofer) Server {
 	return Server{
 		storage: storage,
+		spoofer: spoofer,
 		pr:      NewPowerboxRequester(),
 	}
 }
 
 type Server struct {
 	storage Storage
+	spoofer *CertSpoofer
 	pr      *PowerboxRequester
+}
+
+func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
+	// If the client tries to CONNECT, we look at the host header,
+	// spoof a cert for that host, read in the request the client
+	// sends over TLS and proxy it as normal.
+
+	host, port, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		log.Printf("Failed to parse host %q: %v", req.Host, err)
+		w.WriteHeader(400)
+		return
+	}
+	// omit the port if it's the standard https port:
+	if port != "443" && port != "https" {
+		host = req.Host
+	}
+
+	tlsCfg, err := s.spoofer.TLSConfig(host)
+	if err != nil {
+		log.Printf("Failed to get TLS config for host %q: %v", host, err)
+		w.WriteHeader(500)
+		return
+	}
+
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		// Go's stdlib doesn't support hijacker for http 2.0 connections.
+		// TODO: rule out this possiblity, either by using http2 streams
+		// somehow or just disabling http 2 support entirely.
+		panic("ResponseWriter does not implement http.Hijacker. Maybe the " +
+			"client connected via HTTP2?")
+	}
+	w.WriteHeader(200)
+	conn, bio, err := hijacker.Hijack()
+	if err != nil {
+		log.Printf("Hijack failed: %v", err)
+		w.WriteHeader(500)
+		return
+	}
+	defer conn.Close()
+
+	// Since bio may have buffered read data, we need to wrap the connection
+	// to avoid skipping that data:
+	clientConn, serverConn := net.Pipe()
+	go io.Copy(clientConn, bio)
+	go io.Copy(conn, clientConn)
+
+	tlsConn := tls.Server(serverConn, tlsCfg)
+	defer tlsConn.Close()
+	plainTextReq, err := http.ReadRequest(bufio.NewReader(tlsConn))
+	if err != nil {
+		log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
+		return
+	}
+
+	resp, err := s.proxyRequest(plainTextReq)
+	if err != nil {
+		panic("TODO: handle errors here. " + err.Error())
+	}
+	defer resp.Body.Close()
+	resp.Write(tlsConn)
+}
+
+func (s Server) proxyRequest(req *http.Request) (*http.Response, error) {
+	url := req.URL.String()
+	trans, err := s.getTransportFor(url)
+	if err != nil {
+		return nil, err
+	}
+
+	// Go's http library complains if this is set in a client request; it
+	// should only be there for requests received from the server, so we
+	// clear it to avoid problems:
+	req.RequestURI = ""
+
+	return trans.RoundTrip(req)
+}
+
+func copyResponse(w http.ResponseWriter, resp *http.Response) {
+	defer resp.Body.Close()
+	wh := w.Header()
+	for k, v := range resp.Header {
+		wh[k] = v
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
 }
 
 func (s Server) ProxyHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "CONNECT" {
-			log.Printf("can't handle connect: %v", req)
-			panic("TODO")
-		}
-
-		url := req.URL.String()
-		trans, err := s.getTransportFor(url)
-		if err != nil {
-			log.Printf("Failed to get client for %q: %v", url, err)
-			w.WriteHeader(500)
+			s.handleConnect(w, req)
 			return
 		}
 
-		// Go's http library complains if this is set in a client request; it
-		// should only be there for requests received from the server, so we
-		// clear it to avoid problems:
-		req.RequestURI = ""
-
-		resp, err := trans.RoundTrip(req)
+		resp, err := s.proxyRequest(req)
 		if err != nil {
 			log.Printf("Error making proxied request: %v", err)
 			w.WriteHeader(500)
 			return
 		}
-		defer resp.Body.Close()
-		wh := w.Header()
-		for k, v := range resp.Header {
-			wh[k] = v
-		}
-		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		copyResponse(w, resp)
 	})
 }
 
