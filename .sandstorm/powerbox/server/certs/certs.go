@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
+	"time"
 )
 
 type KeyPair struct {
@@ -29,9 +30,16 @@ func GenCA() (CA, error) {
 		return CA{}, err
 	}
 	cert := &x509.Certificate{
-		// This doesn't really matter, but we have to fill it in with
+		NotBefore: time.Now().Add(-(24 * time.Hour)),
+		NotAfter:  time.Now().Add(10 * 365 * 24 * time.Hour),
+
+		// These don't really matter, but we have to fill them in with
 		// something:
 		SerialNumber: big.NewInt(12345),
+		Subject: pkix.Name{
+			CommonName:   "Sandstorm TLS Spoofer CA",
+			SerialNumber: "1212121",
+		},
 	}
 	data, err := x509.CreateCertificate(nil, cert, cert, key.Public, key.Private)
 	if err != nil {
@@ -66,6 +74,11 @@ func (k KeyPair) GenCSR(hostName string) CSR {
 			Subject: pkix.Name{
 				CommonName: hostName,
 			},
+			// Long enough that we don't have to worry about it (we'll have dropped)
+			// the cert by then, but shorter than the CA's values, to stay within
+			// those bounds:
+			NotBefore: time.Now().Add(-(12 * time.Hour)),
+			NotAfter:  time.Now().Add(365 * 24 * time.Hour),
 		},
 		pubKey: k.Public,
 	}
