@@ -220,6 +220,7 @@ lib/x86_64-linux-gnu/libnsl-2.24.so
 lib/x86_64-linux-gnu/libnsl.so.1
 lib/x86_64-linux-gnu/libnss_compat-2.24.so
 lib/x86_64-linux-gnu/libnss_compat.so.2
+lib/x86_64-linux-gnu/libnss_dns-2.24.so
 lib/x86_64-linux-gnu/libnss_dns.so.2
 lib/x86_64-linux-gnu/libnss_files-2.24.so
 lib/x86_64-linux-gnu/libnss_files.so.2
@@ -233,6 +234,8 @@ lib/x86_64-linux-gnu/libprocps.so.6
 lib/x86_64-linux-gnu/libprocps.so.6.0.0
 lib/x86_64-linux-gnu/libpthread-2.24.so
 lib/x86_64-linux-gnu/libpthread.so.0
+lib/x86_64-linux-gnu/libreadline.so.5
+lib/x86_64-linux-gnu/libreadline.so.5.2
 lib/x86_64-linux-gnu/libresolv-2.24.so
 lib/x86_64-linux-gnu/libresolv.so.2
 lib/x86_64-linux-gnu/librt-2.24.so
@@ -598,6 +601,7 @@ opt/app/plugins/vf_shared/init.php
 opt/app/prefs.php
 opt/app/public.php
 opt/app/sandstorm/bin/sandstorm-http-bridge-old
+opt/app/schema/ttrss_schema_mysql.sql
 opt/app/schema/versions/mysql/127.sql
 opt/app/schema/versions/mysql/128.sql
 opt/app/schema/versions/mysql/129.sql
@@ -624,9 +628,11 @@ usr/bin/addr2line
 usr/bin/dirname
 usr/bin/id
 usr/bin/my_print_defaults
+usr/bin/mysql
 usr/bin/mysql_install_db
 usr/bin/php
 usr/bin/php7.0
+usr/bin/resolveip
 usr/bin/sandstorm-httpGet
 usr/bin/strace
 usr/bin/sudo
@@ -787,6 +793,7 @@ usr/share/locale/locale.alias
 usr/share/mysql/charsets/Index.xml
 usr/share/mysql/english/errmsg.sys
 usr/share/mysql/fill_help_tables.sql
+usr/share/mysql/maria_add_gis_sp_bootstrap.sql
 usr/share/mysql/mysql_performance_tables.sql
 usr/share/mysql/mysql_system_tables.sql
 usr/share/mysql/mysql_system_tables_data.sql

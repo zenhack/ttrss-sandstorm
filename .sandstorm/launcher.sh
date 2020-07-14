@@ -36,6 +36,15 @@ while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
     echo "waiting for mysql to be available at /var/run/mysqld/mysqld.sock"
     sleep .2
 done
+
+MYSQL_USER="root"
+MYSQL_DATABASE="app"
+if [ ! -e /var/.db-created ]; then
+    /usr/bin/mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
+    /usr/bin/mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
+    touch /var/.db-created
+fi
+
 while [ ! -e /var/run/php-fpm.sock ] ; do
     echo "waiting for php-fpm to be available at /var/run/php-fpm.sock"
     sleep .2
