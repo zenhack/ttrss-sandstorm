@@ -25,6 +25,8 @@ func chkfatal(err error) {
 }
 
 func main() {
+	_, err := loadCA()
+	chkfatal(err)
 	db, err := sql.Open("mysql", mysqlUri)
 	chkfatal(err)
 	storage, err := NewStorage(db)
