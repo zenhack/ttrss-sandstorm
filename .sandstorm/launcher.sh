@@ -39,7 +39,7 @@ done
 
 MYSQL_USER="root"
 MYSQL_DATABASE="app"
-if [ ! -e /var/.db-created ]; then
+if [ ! -e "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
     /usr/bin/mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
     /usr/bin/mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
     touch /var/.db-created
