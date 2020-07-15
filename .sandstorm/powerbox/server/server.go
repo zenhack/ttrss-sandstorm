@@ -111,9 +111,10 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 			if err != nil {
 				log.Printf("Failed to proxy request %v: %v", req, err)
 				logURLParts(req.URL)
+				statusCode := 503
 				resp = &http.Response{
-					StatusCode: 503,
-					Status:     "503 Service Unavailable",
+					StatusCode: statusCode,
+					Status:     http.StatusText(statusCode),
 					Proto:      req.Proto,
 					ProtoMajor: req.ProtoMajor,
 					ProtoMinor: req.ProtoMinor,
