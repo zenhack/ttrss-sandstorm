@@ -116,17 +116,16 @@ func NewPowerboxRequester() *PowerboxRequester {
 
 func (pr PowerboxRequester) run() {
 	var (
-		conn      *powerboxConn
-		nextRpcId uint64
+		conn           *powerboxConn
+		nextRpcId      uint64
+		outstandingReq *pbPostMsgReq
 	)
 
-	rpcs := make(map[uint64]*pbPostMsgReq)
-
 	dropConn := func() {
-		for _, v := range rpcs {
-			v.replyErr <- ErrDisconnected
+		if outstandingReq != nil {
+			outstandingReq.replyErr <- ErrDisconnected
+			outstandingReq = nil
 		}
-		rpcs = make(map[uint64]*pbPostMsgReq)
 		if conn == nil {
 			return
 		}
@@ -142,6 +141,10 @@ func (pr PowerboxRequester) run() {
 		} else {
 			connCtx = conn.ctx
 		}
+		var makePbReq chan *pbPostMsgReq
+		if outstandingReq == nil {
+			makePbReq = pr.makePbReq
+		}
 
 		select {
 		case <-connCtx.Done():
@@ -152,38 +155,35 @@ func (pr PowerboxRequester) run() {
 			dropConn()
 			conn = newConn
 			go recvMsgs(conn.ctx, conn.wsConn, pr.pbReplies)
-		case req := <-pr.makePbReq:
+		case req := <-makePbReq:
 			log.Print("Got pb request: ", req)
 			if conn == nil {
 				log.Print("No client.")
 				req.replyErr <- ErrNoClient
 				continue
 			}
-
 			req.PowerboxRequest.RpcId = nextRpcId
 			nextRpcId++
-			rpcs[req.PowerboxRequest.RpcId] = req
 
 			err := conn.wsConn.WriteJSON(req)
 
 			if err != nil {
 				log.Print("Error sending to client: ", err)
 				req.replyErr <- err
-				delete(rpcs, req.PowerboxRequest.RpcId)
+			} else {
+				outstandingReq = req
 			}
-			log.Print("Send request to client")
 		case resp := <-pr.pbReplies:
 			log.Print("Got response: ", resp)
-			req, ok := rpcs[resp.RpcId]
-			delete(rpcs, resp.RpcId)
-			if !ok {
+			if outstandingReq == nil || resp.RpcId != outstandingReq.PowerboxRequest.RpcId {
 				log.Print("Reply to unknown rpc id: ", resp.RpcId)
 				continue
 			}
-			req.replyOk <- &PowerboxResult{
+			outstandingReq.replyOk <- &PowerboxResult{
 				ClaimToken: resp.Token,
 				SessionId:  conn.sessionId,
 			}
+			outstandingReq = nil
 		}
 	}
 }
