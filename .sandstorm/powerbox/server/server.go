@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -83,16 +84,20 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 	tlsConn := tls.Server(serverConn, tlsCfg)
 	defer tlsConn.Close()
 	bufReader := bufio.NewReader(tlsConn)
-	for {
+	shouldClose := false
+	for !shouldClose {
 		req, err := http.ReadRequest(bufReader)
 		if err != nil {
 			log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
 			return
 		}
+		shouldClose = req.Close
 
 		if req.Method == "CONNECT" {
+			// TODO: handle this more gracefully
 			panic("Nested CONNECT request")
 		}
+
 		// The docs for ReadReqeust don't go into a lot of detail re: what fields it fills
 		// and and what it doesn't. Below we fill in things that we experimentally have
 		// found to be necessary.
@@ -106,14 +111,24 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 			if err != nil {
 				log.Printf("Failed to proxy request %v: %v", req, err)
 				logURLParts(req.URL)
-				panic("TODO: handle errors here.")
+				resp = &http.Response{
+					StatusCode: 503,
+					Status:     "503 Service Unavailable",
+					Proto:      req.Proto,
+					ProtoMajor: req.ProtoMajor,
+					ProtoMinor: req.ProtoMinor,
+					Header: http.Header{
+						"Connection": []string{"close"},
+					},
+					Body: ioutil.NopCloser(
+						bytes.NewBufferString(err.Error()),
+					),
+				}
 			}
 			defer resp.Body.Close()
 			resp.Write(tlsConn)
+			shouldClose = shouldClose || resp.Header.Get("Connection") == "close"
 		}()
-		if req.Close {
-			return
-		}
 	}
 }
 
@@ -165,7 +180,7 @@ func (s Server) ProxyHandler() http.Handler {
 		resp, err := s.proxyRequest(req)
 		if err != nil {
 			log.Printf("Error making proxied request: %v", err)
-			w.WriteHeader(500)
+			w.WriteHeader(503)
 			return
 		}
 		copyResponse(w, resp)
