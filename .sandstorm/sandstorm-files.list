@@ -164,6 +164,7 @@ opt/app/classes/db.php
 opt/app/classes/db/prefs.php
 opt/app/classes/debug.php
 opt/app/classes/diskcache.php
+opt/app/classes/dlg.php
 opt/app/classes/feeditem.php
 opt/app/classes/feeditem/common.php
 opt/app/classes/feeditem/rss.php
