@@ -22,5 +22,10 @@ func (tr tokenRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 	req.URL.ForceQuery = false
 	req.URL.RawQuery = ""
 
+	// Avoid trying to use TLS ourselves, as the bridge doesn't support CONNECT.
+	// it will ignore our host & protocol anyway, as it just looks at the
+	// Authorization header.
+	req.URL.Scheme = "http"
+
 	return tr.underlying.RoundTrip(req)
 }
