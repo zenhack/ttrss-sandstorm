@@ -18,25 +18,14 @@
 	// *** Basic settings (important!) ***
 	// ***********************************
 
-	define(
-		'SELF_URL_PATH',
-		// ttrss wants us to configure this statically, but the actual
-		// domain will be determined at runtime, because sandstorm randomizes
-		// these per user per session. So just look at how we were accessed and
-		// use that.
-		//
-		// This is basically the body of make_self_url_path() in
-		// includes/sanity_check.php.
-		(
-			is_server_https() ? 'https' : 'http'
-			. '://'
-			. $_SERVER["HTTP_HOST"]
-		)
-	);
+	define('SELF_URL_PATH', 'http://localhost:33411/');
 	// Full URL of your tt-rss installation. This should be set to the
 	// location of tt-rss directory, e.g. http://example.org/tt-rss/
 	// You need to set this option correctly otherwise several features
 	// including PUSH, bookmarklets and browser integration will not work properly.
+
+	define('_SKIP_SELF_URL_PATH_CHECKS', 1);
+	// skip the enforcement of the above, since it doesn't work on sandstorm anyway.
 
 	define('FEED_CRYPT_KEY', '');
 	// Key used for encryption of passwords for password-protected feeds
