@@ -9,7 +9,8 @@ const pkgdef :Spk.PackageDefinition = (
   # The package definition. Note that the spk tool looks specifically for the
   # "pkgdef" constant.
 
-  id = "zj20q6pwy456cmq0k57n1mtqqtky664dfqnhsmf3t36khch5geph",
+  id = "rx0s9ejt13fqm6cfxw2qmxtrt3j2zs9c25mn8ks8zjtj9cqsvpm0",
+  #id = "zj20q6pwy456cmq0k57n1mtqqtky664dfqnhsmf3t36khch5geph", # Old ttrss app id
   # Your app ID is actually its public key. The private key was placed in
   # your keyring. All updates must be signed with the same key.
 
