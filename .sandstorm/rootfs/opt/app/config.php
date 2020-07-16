@@ -31,7 +31,6 @@
 			is_server_https() ? 'https' : 'http'
 			. '://'
 			. $_SERVER["HTTP_HOST"]
-			. parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)
 		)
 	);
 	// Full URL of your tt-rss installation. This should be set to the
