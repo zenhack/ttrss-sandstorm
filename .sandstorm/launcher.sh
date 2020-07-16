@@ -67,6 +67,8 @@ while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
     sleep .2
 done
 
+/usr/bin/php7.0 /opt/app/update_daemon2.php &
+
 # Start nginx.
 /usr/sbin/nginx -c /etc/nginx.conf -g "daemon off;"
 
