@@ -68,6 +68,6 @@ while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
 done
 
 # Start nginx.
-/usr/sbin/nginx -c /opt/app/.sandstorm/service-config/nginx.conf -g "daemon off;"
+/usr/sbin/nginx -c /etc/nginx.conf -g "daemon off;"
 
 # vim: set ts=4 sw=4 et :
