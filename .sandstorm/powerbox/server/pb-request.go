@@ -142,7 +142,7 @@ func (pr PowerboxRequester) run() {
 			connCtx = conn.ctx
 		}
 		var makePbReq chan *pbPostMsgReq
-		if outstandingReq == nil {
+		if outstandingReq == nil && conn != nil {
 			makePbReq = pr.makePbReq
 		}
 
@@ -157,11 +157,6 @@ func (pr PowerboxRequester) run() {
 			go recvMsgs(conn.ctx, conn.wsConn, pr.pbReplies)
 		case req := <-makePbReq:
 			log.Print("Got pb request: ", req)
-			if conn == nil {
-				log.Print("No client.")
-				req.replyErr <- ErrNoClient
-				continue
-			}
 			req.PowerboxRequest.RpcId = nextRpcId
 			nextRpcId++
 
