@@ -145,10 +145,15 @@ func logURLParts(u *url.URL) {
 }
 
 func (s Server) proxyRequest(req *http.Request) (*http.Response, error) {
-	url := req.URL.String()
-	log.Printf("Getting transport for URL: %q", url)
+	url := *req.URL
+	url.Path = ""
+	url.RawPath = ""
+	url.ForceQuery = false
+	url.RawQuery = ""
+	log.Printf("Getting transport for URL: %q", url.String())
+
 	logURLParts(req.URL)
-	trans, err := s.getTransportFor(url)
+	trans, err := s.getTransportFor(url.String())
 	if err != nil {
 		return nil, err
 	}
