@@ -204,6 +204,7 @@ opt/app/classes/debug.php
 opt/app/classes/digest.php
 opt/app/classes/diskcache.php
 opt/app/classes/dlg.php
+opt/app/classes/feedenclosure.php
 opt/app/classes/feeditem.php
 opt/app/classes/feeditem/atom.php
 opt/app/classes/feeditem/common.php
