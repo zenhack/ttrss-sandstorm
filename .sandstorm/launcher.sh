@@ -19,6 +19,7 @@ mkdir -p /var/log/nginx
 rm -rf /var/run
 mkdir -p /var/run
 mkdir -p /var/run/mysqld
+mkdir -p /var/www
 
 # Ensure mysql tables created
 if [ ! -d /var/lib/mysql/mysql ] ; then
@@ -39,7 +40,6 @@ MYSQL_DATABASE="app"
 if [ ! -e "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
     /usr/bin/mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
     /usr/bin/mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
-    touch /var/.db-created
 fi
 
 while [ ! -e /var/run/php-fpm.sock ] ; do
@@ -48,7 +48,15 @@ while [ ! -e /var/run/php-fpm.sock ] ; do
 done
 
 # run update every 30 min, and pause 20s before the first run (to give time for server to start)
-bash -c 'cd /opt/app; sleep 20; while true; do /usr/bin/php /opt/app/update.php --feeds --force-update; sleep 1800; done' 2>&1 &
+bash -c '
+     cd /opt/app; 
+     sleep 20; 
+     while true; do 
+           /usr/bin/php /opt/app/update.php --feeds --force-update;
+           /usr/bin/curl -Ss -o /var/www/public.xml "http://127.0.0.1:8000/public.php?op=rss&id=-2&view-mode=all_articles";
+           sleep 1800;
+     done' 2>&1 &
+
 
 # Start nginx.
 /usr/sbin/nginx -g "daemon off;"

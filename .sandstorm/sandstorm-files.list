@@ -451,6 +451,7 @@ opt/app/classes/pref/prefs.php
 opt/app/classes/pref/system.php
 opt/app/classes/rpc.php
 opt/app/classes/rssutils.php
+opt/app/classes/templator.php
 opt/app/config.php
 opt/app/errors.php
 opt/app/feed-icons
@@ -500,6 +501,7 @@ opt/app/js/tt-rss.js
 opt/app/js/utility.js
 opt/app/lib/CheckBoxStoreModel.js
 opt/app/lib/CheckBoxTree.js
+opt/app/lib/MiniTemplator.class.php
 opt/app/lib/_CheckBoxTreeNode.js
 opt/app/lib/accept-to-gettext.php
 opt/app/lib/dijit/form/ComboBox.js
@@ -589,6 +591,8 @@ opt/app/plugins/toggle_sidebar/init.php
 opt/app/plugins/vf_shared/init.php
 opt/app/prefs.php
 opt/app/public.php
+opt/app/sandstorm/bin
+opt/app/sandstorm/bin/sandstorm-getPublicId
 opt/app/sandstorm/bin/sandstorm-http-bridge-old
 opt/app/schema/ttrss_schema_mysql.sql
 opt/app/schema/versions/mysql/127.sql
@@ -604,6 +608,7 @@ opt/app/schema/versions/mysql/136.sql
 opt/app/schema/versions/mysql/137.sql
 opt/app/schema/versions/mysql/138.sql
 opt/app/schema/versions/mysql/139.sql
+opt/app/templates/generated_feed.txt
 opt/app/themes
 opt/app/themes.local
 opt/app/themes/light.css
@@ -612,6 +617,8 @@ opt/app/update.php
 proc/cpuinfo
 sandstorm-http-bridge-config
 sandstorm-manifest
+usr/bin/addr2line
+usr/bin/curl
 usr/bin/dirname
 usr/bin/id
 usr/bin/my_print_defaults
@@ -620,6 +627,7 @@ usr/bin/mysql_install_db
 usr/bin/php
 usr/bin/php7.0
 usr/bin/resolveip
+usr/bin/sandstorm-getPublicId
 usr/bin/sandstorm-httpGet
 usr/bin/which
 usr/bin/x86_64-linux-gnu-addr2line

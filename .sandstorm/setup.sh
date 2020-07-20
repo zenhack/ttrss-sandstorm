@@ -5,7 +5,8 @@ set -xeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y nginx php-fpm php-mysql php-cli php-curl git php-dev \
-        php-mbstring php-intl mysql-server libcapnp-dev capnproto
+        php-mbstring php-intl mysql-server libcapnp-dev capnproto \
+        libgcc-s1
 unlink /etc/nginx/sites-enabled/default
 cat > /etc/nginx/sites-available/sandstorm-php <<EOF
 server {
@@ -81,3 +82,11 @@ EOF
 sed --in-place='' \
         --expression 's/^fastcgi_param *HTTPS.*$/fastcgi_param  HTTPS               \$fe_https if_not_empty;/' \
         /etc/nginx/fastcgi_params
+
+# TODO: debian-stretch has only capnproto v 0.5 but we need 0.6 or better
+pushd /tmp
+curl -SsO http://ftp.us.debian.org/debian/pool/main/c/capnproto/libcapnp-0.7.0_0.7.0-3_amd64.deb
+curl -SsO http://ftp.us.debian.org/debian/pool/main/c/capnproto/libcapnp-dev_0.7.0-3_amd64.deb
+curl -SsO http://ftp.us.debian.org/debian/pool/main/c/capnproto/capnproto_0.7.0-3_amd64.deb
+sudo dpkg -i capnproto_0.7.0-3_amd64.deb  libcapnp-0.7.0_0.7.0-3_amd64.deb  libcapnp-dev_0.7.0-3_amd64.deb
+popd

@@ -485,8 +485,9 @@ class Handler_Public extends Handler {
 
 			if ($row = $sth->fetch())
 				$owner_id = $row["owner_uid"];
-		}
-
+		} else if (defined('SANDSTORM')) {
+            $owner_id = 1;
+        }
 		if ($owner_id) {
 			$this->generate_syndicated_feed($owner_id, $feed, $is_cat, $limit,
 				$offset, $search, $view_mode, $format, $order, $orig_guid, $start_ts);

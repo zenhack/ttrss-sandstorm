@@ -16,3 +16,4 @@ ln -sf /var/feed-icons .
 cd /opt/app/sandstorm
 make
 sudo cp bin/sandstorm-httpGet /usr/bin
+sudo cp bin/sandstorm-getPublicId /usr/bin

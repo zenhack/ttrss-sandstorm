@@ -25,6 +25,8 @@ apt-get install -y curl
 curl $CURL_OPTS https://install.sandstorm.io/ 2>&1 > /host-dot-sandstorm/caches/install.sh | cat
 
 SANDSTORM_CURRENT_VERSION=$(curl $CURL_OPTS -f "https://install.sandstorm.io/dev?from=0&type=install")
+# TODO: version 268 breaks compatability with capnp-0.7
+SANDSTORM_CURRENT_VERSION=267
 SANDSTORM_PACKAGE="sandstorm-$SANDSTORM_CURRENT_VERSION.tar.xz"
 if [[ ! -f /host-dot-sandstorm/caches/$SANDSTORM_PACKAGE ]] ; then
     echo -n "Downloading Sandstorm version ${SANDSTORM_CURRENT_VERSION}..."

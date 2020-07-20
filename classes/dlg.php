@@ -161,10 +161,13 @@ class Dlg extends Handler_Protected {
 		$feed_id = $this->params[0];
 		$is_cat = (bool) $this->params[1];
 
-		$key = Feeds::get_feed_access_key($feed_id, $is_cat);
+        if (defined('SANDSTORM')) {
+            $url_path = shell_exec('/opt/app/sandstorm/bin/sandstorm-getPublicId 0') . '/public.xml';
+        } else {
+            $key = Feeds::get_feed_access_key($feed_id, $is_cat);
 
-		$url_path = htmlspecialchars($this->params[2]) . "&key=" . $key;
-
+            $url_path = htmlspecialchars($this->params[2]) . "&key=" . $key;
+        }
 		$feed_title = Feeds::getFeedTitle($feed_id, $is_cat);
 
 		print "<header>".T_sprintf("%s can be accessed via the following secret URL:", $feed_title)."</header>";
