@@ -200,6 +200,7 @@ opt/app/classes/article.php
 opt/app/classes/counters.php
 opt/app/classes/db.php
 opt/app/classes/db/prefs.php
+opt/app/classes/dbupdater.php
 opt/app/classes/debug.php
 opt/app/classes/digest.php
 opt/app/classes/diskcache.php
@@ -213,6 +214,7 @@ opt/app/classes/feedparser.php
 opt/app/classes/feeds.php
 opt/app/classes/handler.php
 opt/app/classes/handler/protected.php
+opt/app/classes/handler/public.php
 opt/app/classes/iauthmodule.php
 opt/app/classes/ihandler.php
 opt/app/classes/labels.php
@@ -286,6 +288,7 @@ opt/app/lib/dijit/form/RangeBoundTextBox.js
 opt/app/lib/dijit/form/_Spinner.js
 opt/app/lib/dojo/dojo.js
 opt/app/lib/dojo/nls/tt-rss-layer_en-us.js
+opt/app/lib/dojo/resources/blank.gif
 opt/app/lib/dojo/selector/acme.js
 opt/app/lib/dojo/tt-rss-layer.js
 opt/app/lib/flat-ttrss/flat_combined.css
@@ -343,7 +346,21 @@ opt/app/plugins/shorten_expanded/init.php
 opt/app/plugins/toggle_sidebar/init.php
 opt/app/plugins/vf_shared/init.php
 opt/app/prefs.php
+opt/app/public.php
 opt/app/schema/ttrss_schema_mysql.sql
+opt/app/schema/versions/mysql/127.sql
+opt/app/schema/versions/mysql/128.sql
+opt/app/schema/versions/mysql/129.sql
+opt/app/schema/versions/mysql/130.sql
+opt/app/schema/versions/mysql/131.sql
+opt/app/schema/versions/mysql/132.sql
+opt/app/schema/versions/mysql/133.sql
+opt/app/schema/versions/mysql/134.sql
+opt/app/schema/versions/mysql/135.sql
+opt/app/schema/versions/mysql/136.sql
+opt/app/schema/versions/mysql/137.sql
+opt/app/schema/versions/mysql/138.sql
+opt/app/schema/versions/mysql/139.sql
 opt/app/themes
 opt/app/themes.local
 opt/app/themes/compact.css

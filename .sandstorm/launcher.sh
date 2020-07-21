@@ -41,6 +41,13 @@ while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
     echo "waiting for mysql to be available at /var/run/mysqld/mysqld.sock"
     sleep .2
 done
+if [ -d /var/lib/php5 ] ; then
+    # This means we're upgrading from an old version of the app, before we were using
+    # the .db-created sentinel file; create it, so the rest of the script correctly
+    # treats this as a pre-existing grain.
+    touch /var/.db-created
+    rm -rf /var/lib/php5
+fi
 if [ ! -e /var/.db-created ]; then
     mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
     mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
