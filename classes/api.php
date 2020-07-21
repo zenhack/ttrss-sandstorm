@@ -21,10 +21,10 @@ class API extends Handler {
 				return false;
 			}
 
-			if ($_SESSION["uid"] && $method != "logout" && !get_pref('ENABLE_API_ACCESS')) {
-				$this->wrap(self::STATUS_ERR, array("error" => 'API_DISABLED'));
-				return false;
-			}
+//			if ($_SESSION["uid"] && $method != "logout" && !get_pref('ENABLE_API_ACCESS')) {
+//				$this->wrap(self::STATUS_ERR, array("error" => 'API_DISABLED'));
+//				return false;
+//			}
 
 			$this->seq = (int) clean($_REQUEST['seq']);
 
@@ -73,7 +73,7 @@ class API extends Handler {
 			return;
 		}
 
-		if (get_pref("ENABLE_API_ACCESS", $uid)) {
+//		if (get_pref("ENABLE_API_ACCESS", $uid)) {
 			if (authenticate_user($login, $password, false,  Auth_Base::AUTH_SERVICE_API)) {               // try login with normal password
 				$this->wrap(self::STATUS_OK, array("session_id" => session_id(),
 					"api_level" => self::API_LEVEL));
@@ -84,9 +84,9 @@ class API extends Handler {
 				user_error("Failed login attempt for $login from {$_SERVER['REMOTE_ADDR']}", E_USER_WARNING);
 				$this->wrap(self::STATUS_ERR, array("error" => "LOGIN_ERROR"));
 			}
-		} else {
-			$this->wrap(self::STATUS_ERR, array("error" => "API_DISABLED"));
-		}
+//		} else {
+//			$this->wrap(self::STATUS_ERR, array("error" => "API_DISABLED"));
+//		}
 
 	}
 
