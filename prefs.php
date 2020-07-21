@@ -144,14 +144,14 @@
             href="backend.php?op=pref-labels"
             title="<i class='material-icons'>label_outline1</i> <?php echo __('Labels') ?>"></div>
         <?php if ($_SESSION["access_level"] >= 10) { ?>
-            <div id="userConfigTab" dojoType="dijit.layout.ContentPane"
-                style="padding : 0px"
-                href="backend.php?op=pref-users"
-                title="<i class='material-icons'>person</i> <?php echo __('Users') ?>"></div>
             <div id="systemConfigTab" dojoType="dijit.layout.ContentPane"
                 href="backend.php?op=pref-system"
                 title="<i class='material-icons'>info_outline</i> <?php echo __('System') ?>"></div>
         <?php } ?>
+        <div id="mobileConfigTab" dojoType="dijit.layout.ContentPane"
+             style="padding : 0px"
+	         href="backend.php?op=pref-mobile"
+             title="<i class='material-icons'>mobile</i> <?php echo __('Mobile App') ?>"></div>
         <?php
             PluginHost::getInstance()->run_hooks(PluginHost::HOOK_PREFS_TABS,
                 "hook_prefs_tabs", false);

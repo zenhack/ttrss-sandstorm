@@ -222,6 +222,7 @@ opt/app/classes/pluginhost.php
 opt/app/classes/pref/feeds.php
 opt/app/classes/pref/filters.php
 opt/app/classes/pref/labels.php
+opt/app/classes/pref/mobile.php
 opt/app/classes/pref/prefs.php
 opt/app/classes/pref/system.php
 opt/app/classes/pref/users.php
@@ -235,6 +236,7 @@ opt/app/feed-icons/index.html
 opt/app/images/blank_icon.gif
 opt/app/images/indicator_tiny.gif
 opt/app/images/indicator_white.gif
+opt/app/images/logo_small.png
 opt/app/include/autoload.php
 opt/app/include/colors.php
 opt/app/include/controls.php
@@ -270,6 +272,7 @@ opt/app/js/form/DropDownButton.js
 opt/app/js/form/Select.js
 opt/app/js/form/ValidationTextArea.js
 opt/app/js/prefs.js
+opt/app/js/sandstorm-offer-template.js
 opt/app/js/sandstorm/index.js
 opt/app/js/tt-rss.js
 opt/app/js/utility.js
