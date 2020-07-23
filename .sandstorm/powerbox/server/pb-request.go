@@ -15,9 +15,8 @@ var ErrNoClient = errors.New("No client attached; can't make pb requests")
 var ErrDisconnected = errors.New("Disconnected from websocket while waiting for reply")
 
 type PowerboxRequester struct {
-	setConn   chan *powerboxConn
+	addConn   chan *powerboxConn
 	makePbReq chan *pbPostMsgReq
-	pbReplies chan *pbPostMsgResp
 }
 
 type powerboxConn struct {
@@ -45,8 +44,9 @@ type pbPostMsgReq struct {
 }
 
 type pbPostMsgResp struct {
-	RpcId uint64 `json:"rpcId"`
-	Token string `json:"token"`
+	RpcId     uint64 `json:"rpcId"`
+	Token     string `json:"token"`
+	sessionId string `json:"-"`
 }
 
 func (pr PowerboxRequester) Connect(
@@ -56,7 +56,7 @@ func (pr PowerboxRequester) Connect(
 	sessionId string,
 ) {
 	log.Print("Called Connect()")
-	pr.setConn <- &powerboxConn{
+	pr.addConn <- &powerboxConn{
 		ctx:       ctx,
 		cancel:    cancel,
 		wsConn:    wsConn,
@@ -106,9 +106,8 @@ func (pr PowerboxRequester) Request(
 
 func NewPowerboxRequester() *PowerboxRequester {
 	pr := &PowerboxRequester{
-		setConn:   make(chan *powerboxConn),
+		addConn:   make(chan *powerboxConn),
 		makePbReq: make(chan *pbPostMsgReq),
-		pbReplies: make(chan *pbPostMsgResp),
 	}
 	go pr.run()
 	return pr
@@ -116,86 +115,95 @@ func NewPowerboxRequester() *PowerboxRequester {
 
 func (pr PowerboxRequester) run() {
 	var (
-		conn           *powerboxConn
 		nextRpcId      uint64
+		nextConnIndex  int
 		outstandingReq *pbPostMsgReq
 	)
 
-	dropConn := func() {
-		if outstandingReq != nil {
-			outstandingReq.replyErr <- ErrDisconnected
-			outstandingReq = nil
-		}
-		if conn == nil {
-			return
-		}
-		conn.cancel()
-		conn.wsConn.Close()
-		conn = nil
-	}
+	pbReplies := make(chan *pbPostMsgResp)
+	conns := make(map[int]*powerboxConn)
+	dropConnCh := make(chan int, 1)
 
 	for {
-		var connCtx context.Context
-		if conn == nil {
-			connCtx = context.Background()
-		} else {
-			connCtx = conn.ctx
-		}
 		var makePbReq chan *pbPostMsgReq
-		if outstandingReq == nil && conn != nil {
+		if outstandingReq == nil {
 			makePbReq = pr.makePbReq
 		}
 
 		select {
-		case <-connCtx.Done():
-			log.Print("Connection closed")
-			dropConn()
-		case newConn := <-pr.setConn:
-			log.Print("New connection")
-			dropConn()
-			conn = newConn
-			go recvMsgs(conn.ctx, conn.wsConn, pr.pbReplies)
+		case newConn := <-pr.addConn:
+			index := nextConnIndex
+			nextConnIndex++
+			conns[index] = newConn
+			log.Printf("New connection (#%v)", index)
+			go func() {
+				recvMsgs(newConn, pbReplies)
+				dropConnCh <- index
+			}()
+			if outstandingReq != nil {
+				err := newConn.wsConn.WriteJSON(outstandingReq)
+				if err != nil {
+					log.Printf("Error sending to client #%v: %v ", index, err)
+				}
+			}
+		case index := <-dropConnCh:
+			log.Printf("Connection #%v closed", index)
+			conn, ok := conns[index]
+			if !ok {
+				return
+			}
+			conn.cancel()
+			conn.wsConn.Close()
+			delete(conns, index)
 		case req := <-makePbReq:
 			log.Print("Got pb request: ", req)
 			req.PowerboxRequest.RpcId = nextRpcId
 			nextRpcId++
 
-			err := conn.wsConn.WriteJSON(req)
-
-			if err != nil {
-				log.Print("Error sending to client: ", err)
-				req.replyErr <- err
-			} else {
-				outstandingReq = req
+			// Broadcast the request to all open connections. Some (or all) of these may
+			// fail, in which case we just log it, but don't reply immediately to the
+			// requester -- others make succeed, in which case we're good, and if not
+			// we wait until we get a new connection and try with that. Eventually the
+			// request will just time out.
+			send := func(index int, conn *powerboxConn) {
+				err := conn.wsConn.WriteJSON(req)
+				if err == nil {
+					log.Printf("Error sending to client #%v: %v ", index, err)
+				}
 			}
-		case resp := <-pr.pbReplies:
+			for index, conn := range conns {
+				go send(index, conn)
+			}
+			outstandingReq = req
+		case resp := <-pbReplies:
 			log.Print("Got response: ", resp)
 			if outstandingReq == nil || resp.RpcId != outstandingReq.PowerboxRequest.RpcId {
-				log.Print("Reply to unknown rpc id: ", resp.RpcId)
+				log.Print("Reply to stale/unknown rpc id: ", resp.RpcId)
 				continue
 			}
 			outstandingReq.replyOk <- &PowerboxResult{
 				ClaimToken: resp.Token,
-				SessionId:  conn.sessionId,
+				SessionId:  resp.sessionId,
 			}
 			outstandingReq = nil
 		}
 	}
 }
 
-func recvMsgs(ctx context.Context, wsConn *websocket.Conn, dest chan *pbPostMsgResp) {
+func recvMsgs(conn *powerboxConn, dest chan *pbPostMsgResp) {
 	log.Print("Receiving pb messages.")
 	defer log.Print("ceasing to receive pb messages")
-	for ctx.Err() == nil {
+	for conn.ctx.Err() == nil {
 		resp := &pbPostMsgResp{}
-		err := wsConn.ReadJSON(resp)
+		err := conn.wsConn.ReadJSON(resp)
 		if err != nil {
 			log.Print("Reading from websocket: ", err)
 			return
 		}
+		resp.sessionId = conn.sessionId
 		select {
 		case dest <- resp:
-		case <-ctx.Done():
+		case <-conn.ctx.Done():
 		}
 	}
 }
