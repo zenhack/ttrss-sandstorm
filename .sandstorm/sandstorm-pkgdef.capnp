@@ -56,7 +56,7 @@ const pkgdef :Spk.PackageDefinition = (
 
       website = "https://tt-rss.org",
       codeUrl = "https://github.com/zenhack/ttrss-sandstorm",
-      license = (openSource = gpl2),
+      license = (openSource = gpl3),
       categories = [media],
 
       author = (
