@@ -55,12 +55,12 @@ const pkgdef :Spk.PackageDefinition = (
       ),
 
       website = "https://tt-rss.org",
-      codeUrl = "https://github.com/jparyani/Tiny-Tiny-RSS",
+      codeUrl = "https://github.com/zenhack/ttrss-sandstorm",
       license = (openSource = gpl2),
       categories = [media],
 
       author = (
-        contactEmail = "jparyani@sandstorm.io",
+        contactEmail = "ian@zenhack.net",
         #pgpSignature = embed "pgp-signature",
         upstreamAuthor = "TinyTinyRSS Team",
       ),
