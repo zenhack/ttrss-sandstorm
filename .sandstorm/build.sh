@@ -10,3 +10,6 @@ go build
 cd ../client
 npm install
 npm run build
+
+cd /opt/app/.sandstorm/apphooks
+go build

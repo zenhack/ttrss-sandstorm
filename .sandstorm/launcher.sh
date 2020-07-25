@@ -78,6 +78,7 @@ while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
 done
 
 /usr/bin/php7.0 /opt/app/update_daemon2.php &
+/opt/app/.sandstorm/apphooks/ttrss-apphooks &
 
 # Start nginx.
 /usr/sbin/nginx -c /etc/nginx.conf -g "daemon off;"
