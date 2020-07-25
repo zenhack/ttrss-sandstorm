@@ -220,6 +220,7 @@ opt/app/classes/iauthmodule.php
 opt/app/classes/ihandler.php
 opt/app/classes/labels.php
 opt/app/classes/logger.php
+opt/app/classes/logger/sql.php
 opt/app/classes/plugin.php
 opt/app/classes/pluginhost.php
 opt/app/classes/pref/feeds.php
