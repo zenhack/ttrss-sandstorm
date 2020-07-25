@@ -64,9 +64,52 @@ func (schedJob) Run(context.Context, grain_capnp.ScheduledJob_Callback_run) erro
 	return cmd.Run()
 }
 
+func scheduleUpdates(ctx context.Context, b bridge_capnp.SandstormHttpBridge) {
+	getApiRes, release := b.GetSandstormApi(ctx, nil)
+	defer release()
+	schedRes, release := getApiRes.Api().Schedule(ctx, func(p grain_capnp.ScheduledJob) error {
+		name, err := p.NewName()
+		chkfatal(err)
+		name.SetDefaultText("Update Feeds")
+
+		p.SetCallback(grain_capnp.ScheduledJob_Callback{
+			Client: schedJob{}.ToClient(),
+		})
+
+		p.Schedule().SetPeriodic(grain_capnp.SchedulingPeriod_hourly)
+		return nil
+	})
+	defer release()
+	_, err := schedRes.Struct()
+	chkfatal(err)
+}
+
+func chkfatal(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	ctx := context.Background()
 	hooksClient := bridge_capnp.AppHooks_ServerToClient(appHooks{}, &server.Policy{})
-	bridge.ConnectWithHooks(ctx, hooksClient)
+	b, err := bridge.ConnectWithHooks(ctx, hooksClient)
+	if err != nil {
+		panic(err)
+	}
+
+	// XXX: this is racy; we could end up with multiple copies of the job scheduled.
+	// But it's not really a big deal if its two or three instead of one.
+	const sentinelFile = "/var/updates-scheduled"
+	_, err = os.Stat(sentinelFile)
+	if err != nil {
+		scheduleUpdates(ctx, b)
+		f, err := os.Create(sentinelFile)
+		if err != nil {
+			panic(err)
+		}
+		f.Close()
+	}
+
 	<-ctx.Done()
 }
