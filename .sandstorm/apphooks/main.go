@@ -58,7 +58,7 @@ func (schedJob) Save(ctx context.Context, p grain_capnp.AppPersistent_save) erro
 }
 
 func (schedJob) Run(context.Context, grain_capnp.ScheduledJob_Callback_run) error {
-	cmd := exec.Command("/usr/bin/php7.0", "/opt/app/update.php")
+	cmd := exec.Command("/usr/bin/php7.0", "/opt/app/update.php", "--feeds")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

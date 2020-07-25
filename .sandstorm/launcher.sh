@@ -80,7 +80,7 @@ done
 (
     # Try to update feeds once immediately on startup, then start the
     # background daemon.
-    /usr/bin/php7.0 /opt/app/update.php || true
+    /usr/bin/php7.0 /opt/app/update.php --feeds || true
     /usr/bin/php7.0 /opt/app/update_daemon2.php
 ) &
 /opt/app/.sandstorm/apphooks/ttrss-apphooks &
