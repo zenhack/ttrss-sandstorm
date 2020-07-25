@@ -77,7 +77,12 @@ while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
     sleep .2
 done
 
-/usr/bin/php7.0 /opt/app/update_daemon2.php &
+(
+    # Try to update feeds once immediately on startup, then start the
+    # background daemon.
+    /usr/bin/php7.0 /opt/app/update.php || true
+    /usr/bin/php7.0 /opt/app/update_daemon2.php
+) &
 /opt/app/.sandstorm/apphooks/ttrss-apphooks &
 
 # Start nginx.
