@@ -18,7 +18,7 @@ const pkgdef :Spk.PackageDefinition = (
     # about your app.
     appTitle = (defaultText = "Tiny Tiny RSS"),
 
-    appVersion = 10,  # Increment this for every release.
+    appVersion = 11,  # Increment this for every release.
 
     appMarketingVersion = (defaultText = "1.13.0"),
 
