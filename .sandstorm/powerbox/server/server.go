@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 
 	"github.com/gorilla/websocket"
 
@@ -88,7 +87,9 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 	for !shouldClose {
 		req, err := http.ReadRequest(bufReader)
 		if err != nil {
-			log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
+			if err != io.EOF {
+				log.Print("Failed to read HTTP request from spoofed TLS connection ", err)
+			}
 			return
 		}
 		shouldClose = req.Close
@@ -109,8 +110,7 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 		func() {
 			resp, err := s.proxyRequest(req)
 			if err != nil {
-				log.Printf("Failed to proxy request %v: %v", req, err)
-				logURLParts(req.URL)
+				log.Printf("Failed to proxy request: %v", err)
 				statusCode := 503
 				resp = &http.Response{
 					StatusCode: statusCode,
@@ -133,26 +133,13 @@ func (s Server) handleConnect(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func logURLParts(u *url.URL) {
-	log.Printf("URL.Scheme = %q", u.Scheme)
-	log.Printf("URL.Opaque = %q", u.Opaque)
-	log.Printf("URL.Host = %q", u.Host)
-	log.Printf("URL.Path = %q", u.Path)
-	log.Printf("URL.RawPath = %q", u.RawPath)
-	log.Printf("URL.ForceQuery = %v", u.ForceQuery)
-	log.Printf("URL.RawQuery = %q", u.RawQuery)
-	log.Printf("URL.Fragment = %q", u.Fragment)
-}
-
 func (s Server) proxyRequest(req *http.Request) (*http.Response, error) {
 	url := *req.URL
 	url.Path = ""
 	url.RawPath = ""
 	url.ForceQuery = false
 	url.RawQuery = ""
-	log.Printf("Getting transport for URL: %q", url.String())
 
-	logURLParts(req.URL)
 	trans, err := s.getTransportFor(url.String())
 	if err != nil {
 		return nil, err
