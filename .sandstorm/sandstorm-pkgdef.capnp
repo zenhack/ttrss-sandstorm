@@ -20,7 +20,7 @@ const pkgdef :Spk.PackageDefinition = (
 
     appVersion = 10,  # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "1.9.0"),
+    appMarketingVersion = (defaultText = "1.13.0"),
 
     actions = [
       # Define your "new document" handlers here.
