@@ -103,6 +103,7 @@ const pkgdef :Spk.PackageDefinition = (
 
   alwaysInclude = [
     "opt/app",
+    "usr/share/zoneinfo",
   ],
 
   bridgeConfig = (
