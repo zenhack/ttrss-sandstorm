@@ -20,7 +20,9 @@ const pkgdef :Spk.PackageDefinition = (
 
     appVersion = 11,  # Increment this for every release.
 
-    appMarketingVersion = (defaultText = "1.13.0"),
+    # This is stored in a text file that ttrss itself reads the version
+    # from; we use `embed` to avoid duplication here.
+    appMarketingVersion = (defaultText = embed "rootfs/opt/app/version_static.txt"),
 
     actions = [
       # Define your "new document" handlers here.

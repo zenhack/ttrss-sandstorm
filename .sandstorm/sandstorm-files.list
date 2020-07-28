@@ -373,6 +373,7 @@ opt/app/themes/night.css
 opt/app/themes/night_blue.css
 opt/app/update.php
 opt/app/update_daemon2.php
+opt/app/version_static.txt
 proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
