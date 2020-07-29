@@ -99,7 +99,7 @@ func main() {
 	}
 
 	// XXX: this is racy; we could end up with multiple copies of the job scheduled.
-	// But it's not really a big deal if its two or three instead of one.
+	// But it's not really a big deal if it's two or three instead of one.
 	const sentinelFile = "/var/updates-scheduled"
 	_, err = os.Stat(sentinelFile)
 	if err != nil {
