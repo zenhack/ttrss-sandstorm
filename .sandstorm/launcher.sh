@@ -2,6 +2,15 @@
 
 set -euo pipefail
 
+wait_for() {
+    local service=$1
+    local file=$2
+    while [ ! -e "$file" ] ; do
+        echo "waiting for $service to be available at $file."
+        sleep .1
+    done
+}
+
 # Create a bunch of folders under the clean /var that php, nginx, and mysql expect to exist
 mkdir -p /var/lib/mysql
 mkdir -p /var/lib/mysql-files
@@ -37,10 +46,8 @@ HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
 
 # Wait until mysql has bound its socket, indicating readiness
-while [ ! -e /var/run/mysqld/mysqld.sock ] ; do
-    echo "waiting for mysql to be available at /var/run/mysqld/mysqld.sock"
-    sleep .2
-done
+wait_for mysql /var/run/mysqld/mysqld.sock
+
 if [ -d /var/lib/php5 ] ; then
     # This means we're upgrading from an old version of the app, before we were using
     # the .db-created sentinel file; create it, so the rest of the script correctly
@@ -61,25 +68,20 @@ fi
 export CA_CERT_PATH=/var/ca-spoof-cert.pem
 rm -f $CA_CERT_PATH
 /opt/app/.sandstorm/powerbox/server/server &
-while [ ! -e $CA_CERT_PATH ]; do
-    sleep .1
-done
+wait_for "root cert" "$CA_CERT_PATH"
 
 export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 
 # Spawn php:
 /usr/sbin/php-fpm7.0 --nodaemonize --fpm-config /etc/php/7.0/fpm/php-fpm.conf &
-
 # Wait for it to start:
-while [ ! -e /var/run/php/php7.0-fpm.sock ] ; do
-    echo "waiting for php-fpm7.0 to be available at /var/run/php/php7.0-fpm.sock"
-    sleep .2
-done
+wait_for php-fpm7.0 /var/run/php/php7.0-fpm.sock
 
 # Try to update feeds once immediately on startup, then start the
 # background daemon.
 /usr/bin/php7.0 /opt/app/update.php --feeds --daemon &
+wait_for update-daemon /var/lock/update_daemon.stamp
 
 /opt/app/.sandstorm/apphooks/ttrss-apphooks &
 
