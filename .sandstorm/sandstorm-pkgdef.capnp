@@ -63,10 +63,10 @@ const pkgdef :Spk.PackageDefinition = (
 
       author = (
         contactEmail = "ian@zenhack.net",
-        #pgpSignature = embed "pgp-signature",
+        pgpSignature = embed "pgp-signature",
         upstreamAuthor = "TinyTinyRSS Team",
       ),
-      #pgpKeyring = embed "pgp-keyring",
+      pgpKeyring = embed "pgp-keyring",
 
       description = (defaultText = embed "description.md"),
       shortDescription = (defaultText = "Feed reader"),
