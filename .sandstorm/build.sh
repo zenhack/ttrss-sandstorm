@@ -2,12 +2,8 @@
 
 set -euo pipefail
 
-cd /opt/app/.sandstorm/powerbox
-
-cd server
+cd /opt/app/.sandstorm/powerbox-http-proxy
 go build
-
-cd ../client
 npm install
 npm run build
 

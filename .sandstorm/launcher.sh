@@ -67,7 +67,7 @@ fi
 # Start our powerbox proxy server, and wait for it to write the cert:
 export CA_CERT_PATH=/var/ca-spoof-cert.pem
 rm -f $CA_CERT_PATH
-/opt/app/.sandstorm/powerbox/server/server &
+/opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy &
 wait_for "root cert" "$CA_CERT_PATH"
 
 export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
