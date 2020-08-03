@@ -65,6 +65,8 @@ if [ ! -e /var/.db-created ]; then
 fi
 
 # Start our powerbox proxy server, and wait for it to write the cert:
+export DB_TYPE=mysql
+export DB_URI="$MYSQL_USER@/$MYSQL_DATABASE"
 export CA_CERT_PATH=/var/ca-spoof-cert.pem
 rm -f $CA_CERT_PATH
 /opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy &
