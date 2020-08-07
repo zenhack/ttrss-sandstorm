@@ -3,6 +3,8 @@ Sandstorm TTRSS Port
 
 This repository contains a port of Tiny Tiny RSS to Sandstorm.
 
+[![Try it on Sandstorm](https://img.shields.io/badge/try-live%20demo-783189.svg)](https://demo.sandstorm.io/appdemo/zj20q6pwy456cmq0k57n1mtqqtky664dfqnhsmf3t36khch5geph)
+
 The repository itself is a fork of TTRSS's git repo, but as much as
 possible all of the sandstorm specific bits are under `.sandstorm/`;
 we try to keep the TTRSS source as pristine as we can to make merging
