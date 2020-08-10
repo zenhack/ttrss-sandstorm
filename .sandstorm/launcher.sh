@@ -81,9 +81,30 @@ export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 wait_for php-fpm7.0 /var/run/php/php7.0-fpm.sock
 
 # Try to update feeds once immediately on startup, then start the
-# background daemon.
-/usr/bin/php7.0 /opt/app/update.php --feeds --daemon &
-wait_for update-daemon /var/lock/update_daemon.stamp
+# background daemon. If it dies, wait a couple seconds and re-try.
+(
+    while true; do
+        /usr/bin/php7.0 /opt/app/update.php --feeds --daemon || true
+        echo 'Update daemon exited; waiting 2 seconds before re-starting.'
+        sleep 2
+    done
+) &
+
+# HACK: only wait for the update daemon to start if we haven't upgraded
+# TTRSS since the last time we booted this grain. The reason for this is
+# that the daemon may fail to boot if the database needs migration. In
+# a scenario where the migration waits for user input via the web UI,
+# this means if we wait we're deadlocked, and the grain is unbootable.
+if diff -u /var/last-booted-manifest /sandstorm-manifest 2>/dev/null >/dev/null; then
+    wait_for update-daemon /var/lock/update_daemon.stamp
+else
+    (
+        # Still wait for the daemon, but in the background -- and when
+        # it starts mark that it has succeeded.
+        wait_for update-daemon /var/lock/update_daemon.stamp
+        cp /sandstorm-manifest /var/last-booted-manifest
+    ) &
+fi
 
 /opt/app/.sandstorm/apphooks/ttrss-apphooks &
 

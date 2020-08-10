@@ -378,6 +378,7 @@ proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
+usr/bin/diff
 usr/bin/mysql
 usr/bin/php
 usr/bin/php7.0
