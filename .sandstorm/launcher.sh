@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+mysql_socket=/var/run/mysqld/mysqld.sock
+
 wait_for() {
     local service=$1
     local file=$2
@@ -42,19 +44,34 @@ mkdir -p /var/run/mysqld
 # HOME=/etc/mysql /usr/bin/mysql_install_db
 HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 
-# Spawn mysqld
-HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
+if [ -d /var/lib/php5 ]; then
+    # We're updating from a grain that was using MySQL 5.5 (and php5).
+    # If that grain was shut down improperly then trying to recover
+    # with MySQL 5.7 will fail; use the old programs to repair the
+    # db if needed:
+    HOME=/etc/mysql /usr/local/mysql55/bin/mysqld --skip-grant-tables &
+    mysql_pid="$!"
+    wait_for mysql55 $mysql_socket
+    HOME=/etc/mysql /usr/local/mysql55/bin/mysqlcheck \
+        --socket $mysql_socket \
+        --all-databases \
+        --auto-repair
+    kill $mysql_pid
+    wait $mysql_pid
 
-# Wait until mysql has bound its socket, indicating readiness
-wait_for mysql /var/run/mysqld/mysqld.sock
-
-if [ -d /var/lib/php5 ] ; then
-    # This means we're upgrading from an old version of the app, before we were using
-    # the .db-created sentinel file; create it, so the rest of the script correctly
+    # This also means we're upgrading from an old version of the app, from before we were
+    # using the .db-created sentinel file; create it, so the rest of the script correctly
     # treats this as a pre-existing grain.
     touch /var/.db-created
     rm -rf /var/lib/php5
 fi
+
+# Spawn mysqld
+HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
+
+# Wait until mysql has bound its socket, indicating readiness
+wait_for mysql $mysql_socket
+
 if [ ! -e /var/.db-created ]; then
     mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
     mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
