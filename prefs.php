@@ -151,7 +151,7 @@
         <div id="mobileConfigTab" dojoType="dijit.layout.ContentPane"
              style="padding : 0px"
 	         href="backend.php?op=pref-mobile"
-             title="<i class='material-icons'>android</i> <?php echo __('Mobile App') ?>"></div>
+             title="<i class='material-icons'>smartphone</i> <?php echo __('Mobile App') ?>"></div>
         <?php
             PluginHost::getInstance()->run_hooks(PluginHost::HOOK_PREFS_TABS,
                 "hook_prefs_tabs", false);
