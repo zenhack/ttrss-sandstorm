@@ -74,7 +74,7 @@ function print_feed_multi_select($id, $default_ids = [],
 						   $attributes = "", $include_all_feeds = true,
 						   $root_id = null, $nest_level = 0) {
 
-	$pdo = DB::pdo();
+	$pdo = Db::pdo();
 
 	print_r(in_array("CAT:6",$default_ids));
 
@@ -180,7 +180,7 @@ function print_feed_cat_select($id, $default_id,
 		print "<select id=\"$id\" name=\"$id\" default=\"$default_id\" $attributes>";
 	}
 
-	$pdo = DB::pdo();
+	$pdo = Db::pdo();
 
 	if (!$root_id) $root_id = null;
 
@@ -244,7 +244,7 @@ function stylesheet_tag($filename, $id = false) {
 function javascript_tag($filename) {
 	$query = "";
 
-	if (!(strpos($filename, "?") === FALSE)) {
+	if (!(strpos($filename, "?") === false)) {
 		$query = substr($filename, strpos($filename, "?")+1);
 		$filename = substr($filename, 0, strpos($filename, "?"));
 	}

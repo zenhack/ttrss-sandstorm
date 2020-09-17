@@ -8,7 +8,7 @@ class Feeds extends Handler_Protected {
     private $params;
 
     function csrf_ignore($method) {
-		$csrf_ignored = array("index", "quickaddfeed", "search");
+		$csrf_ignored = array("index");
 
 		return array_search($method, $csrf_ignored) !== false;
 	}
@@ -210,7 +210,7 @@ class Feeds extends Handler_Protected {
 		$feed_title = $qfh_ret[1];
 		$feed_site_url = $qfh_ret[2];
 		$last_error = $qfh_ret[3];
-		$last_updated = strpos($qfh_ret[4], '1970-') === FALSE ?
+		$last_updated = strpos($qfh_ret[4], '1970-') === false ?
 			make_local_datetime($qfh_ret[4], false) : __("Never");
 		$highlight_words = $qfh_ret[5];
 		$reply['first_id'] = $qfh_ret[6];
@@ -529,21 +529,7 @@ class Feeds extends Handler_Protected {
 
 		$reply['headlines'] = [];
 
-		$override_order = false;
-		$skip_first_id_check = false;
-
-		switch ($order_by) {
-		case "title":
-			$override_order = "ttrss_entries.title, date_entered, updated";
-			break;
-		case "date_reverse":
-			$override_order = "score DESC, date_entered, updated";
-			$skip_first_id_check = true;
-			break;
-		case "feed_dates":
-			$override_order = "updated DESC";
-			break;
-		}
+		list($override_order, $skip_first_id_check) = Feeds::order_to_override_query($order_by);
 
 		$ret = $this->format_headlines_list($feed, $method,
 			$view_mode, $limit, $cat_view, $offset,
@@ -765,7 +751,7 @@ class Feeds extends Handler_Protected {
 
 		$feed_id = (int)$_REQUEST["feed_id"];
 		@$do_update = $_REQUEST["action"] == "do_update";
-		$csrf_token = $_REQUEST["csrf_token"];
+		$csrf_token = $_POST["csrf_token"];
 
 		$sth = $this->pdo->prepare("SELECT id FROM ttrss_feeds WHERE id = ? AND owner_uid = ?");
 		$sth->execute([$feed_id, $_SESSION['uid']]);
@@ -813,7 +799,7 @@ class Feeds extends Handler_Protected {
 			<div class="container">
 				<h1>Feed Debugger: <?php echo "$feed_id: " . $this->getFeedTitle($feed_id) ?></h1>
 				<div class="content">
-					<form method="GET" action="">
+					<form method="post" action="">
 						<input type="hidden" name="op" value="feeds">
 						<input type="hidden" name="method" value="update_debugger">
 						<input type="hidden" name="xdebug" value="1">
@@ -1138,9 +1124,9 @@ class Feeds extends Handler_Protected {
 
 		$pdo = Db::pdo();
 
-		$url = Feeds::fix_url($url);
+		$url = validate_url($url);
 
-		if (!$url || !Feeds::validate_feed_url($url)) return array("code" => 2);
+		if (!$url) return array("code" => 2);
 
 		$contents = @fetch_file_contents($url, false, $auth_login, $auth_pass);
 
@@ -1156,7 +1142,7 @@ class Feeds extends Handler_Protected {
 			return array("code" => 5, "message" => $fetch_last_error);
 		}
 
-		if (mb_strpos($fetch_last_content_type, "html") !== FALSE && Feeds::is_html($contents)) {
+		if (mb_strpos($fetch_last_content_type, "html") !== false && Feeds::is_html($contents)) {
 			$feedUrls = Feeds::get_feeds_from_html($url, $contents);
 
 			if (count($feedUrls) == 0) {
@@ -1938,7 +1924,7 @@ class Feeds extends Handler_Protected {
 	}
 
 	static function get_feeds_from_html($url, $content) {
-		$url     = Feeds::fix_url($url);
+		$url     = validate_url($url);
 		$baseUrl = substr($url, 0, strrpos($url, '/') + 1);
 
 		$feedUrls = [];
@@ -1967,56 +1953,6 @@ class Feeds extends Handler_Protected {
 
 	static function is_html($content) {
 		return preg_match("/<html|DOCTYPE html/i", substr($content, 0, 8192)) !== 0;
-	}
-
-	static function validate_feed_url($url) {
-		$parts = parse_url($url);
-
-		return ($parts['scheme'] == 'http' || $parts['scheme'] == 'feed' || $parts['scheme'] == 'https');
-	}
-
-	/**
-	 * Fixes incomplete URLs by prepending "http://".
-	 * Also replaces feed:// with http://, and
-	 * prepends a trailing slash if the url is a domain name only.
-	 *
-	 * @param string $url Possibly incomplete URL
-	 *
-	 * @return string Fixed URL.
-	 */
-	static function fix_url($url) {
-
-		// support schema-less urls
-		if (strpos($url, '//') === 0) {
-			$url = 'https:' . $url;
-		}
-
-		if (strpos($url, '://') === false) {
-			$url = 'http://' . $url;
-		} else if (substr($url, 0, 5) == 'feed:') {
-			$url = 'http:' . substr($url, 5);
-		}
-
-		//prepend slash if the URL has no slash in it
-		// "http://www.example" -> "http://www.example/"
-		if (strpos($url, '/', strpos($url, ':') + 3) === false) {
-			$url .= '/';
-		}
-
-		//convert IDNA hostname to punycode if possible
-		if (function_exists("idn_to_ascii")) {
-			$parts = parse_url($url);
-			if (mb_detect_encoding($parts['host']) != 'ASCII')
-			{
-				$parts['host'] = idn_to_ascii($parts['host']);
-				$url = build_url($parts);
-			}
-		}
-
-		if ($url != "http:///")
-			return $url;
-		else
-			return '';
 	}
 
 	static function add_feed_category($feed_cat, $parent_cat_id = false, $order_id = 0) {
@@ -2161,7 +2097,7 @@ class Feeds extends Handler_Protected {
 
 	static function feed_purge_interval($feed_id) {
 
-		$pdo = DB::pdo();
+		$pdo = Db::pdo();
 
 		$sth = $pdo->prepare("SELECT purge_interval, owner_uid FROM ttrss_feeds
 			WHERE id = ?");
@@ -2347,6 +2283,32 @@ class Feeds extends Handler_Protected {
 			$search_query_part = "false";
 
 		return array($search_query_part, $search_words);
+	}
+
+	static function order_to_override_query($order) {
+		$query = "";
+		$skip_first_id = false;
+
+		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINES_CUSTOM_SORT_OVERRIDE) as $p) {
+			list ($query, $skip_first_id) = $p->hook_headlines_custom_sort_override($order);
+
+			if ($query)	return [$query, $skip_first_id];
+		}
+
+		switch ($order) {
+			case "title":
+				$query = "ttrss_entries.title, date_entered, updated";
+				break;
+			case "date_reverse":
+				$query = "updated";
+				$skip_first_id = true;
+				break;
+			case "feed_dates":
+				$query = "updated DESC";
+				break;
+		}
+
+		return [$query, $skip_first_id];
 	}
 }
 

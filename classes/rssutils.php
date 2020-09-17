@@ -57,8 +57,10 @@ class RSSUtils {
 					ttrss_feeds.update_interval > 0
 					AND ttrss_feeds.last_updated < NOW() - CAST((ttrss_feeds.update_interval || ' minutes') AS INTERVAL)
 				) OR (ttrss_feeds.last_updated IS NULL
+					AND ttrss_feeds.update_interval > 0
 					AND ttrss_user_prefs.value != '-1')
 				OR (last_updated = '1970-01-01 00:00:00'
+					AND ttrss_feeds.update_interval > 0
 					AND ttrss_user_prefs.value != '-1'))";
 		} else {
 			$update_limit_qpart = "AND ((
@@ -69,8 +71,10 @@ class RSSUtils {
 					ttrss_feeds.update_interval > 0
 					AND ttrss_feeds.last_updated < DATE_SUB(NOW(), INTERVAL ttrss_feeds.update_interval MINUTE)
 				) OR (ttrss_feeds.last_updated IS NULL
+					AND ttrss_feeds.update_interval > 0
 					AND ttrss_user_prefs.value != '-1')
 				OR (last_updated = '1970-01-01 00:00:00'
+					AND ttrss_feeds.update_interval > 0
 					AND ttrss_user_prefs.value != '-1'))";
 		}
 
@@ -144,7 +148,7 @@ class RSSUtils {
 			if ($tline = $usth->fetch()) {
 				Debug::log(" => " . $tline["last_updated"] . ", " . $tline["id"] . " " . $tline["owner_uid"]);
 
-				if (array_search($tline["owner_uid"], $batch_owners) === FALSE)
+				if (array_search($tline["owner_uid"], $batch_owners) === false)
 					array_push($batch_owners, $tline["owner_uid"]);
 
 				$fstarted = microtime(true);

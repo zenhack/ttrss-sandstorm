@@ -8,7 +8,7 @@ class Pref_Prefs extends Handler_Protected {
 	private $profile_blacklist = [];
 
 	function csrf_ignore($method) {
-		$csrf_ignored = array("index", "updateself", "customizecss", "editprefprofiles");
+		$csrf_ignored = array("index", "updateself", "customizecss", "editprefprofiles", "otpqrcode");
 
 		return array_search($method, $csrf_ignored) !== false;
 	}
@@ -125,7 +125,13 @@ class Pref_Prefs extends Handler_Protected {
 
 		$old_pw = clean($_POST["old_password"]);
 		$new_pw = clean($_POST["new_password"]);
+		$new_unclean_pw = $_POST["new_password"];
 		$con_pw = clean($_POST["confirm_password"]);
+
+		if ($new_unclean_pw != $new_pw) {
+			print "ERROR: ".format_error("New password contains disallowed characters.");
+			return;
+		}
 
 		if ($old_pw == $new_pw) {
 			print "ERROR: ".format_error("New password must be different from the old one.");
@@ -380,12 +386,12 @@ class Pref_Prefs extends Handler_Protected {
 
 			print "<fieldset>";
 			print "<label>" . __("New password:") . "</label>";
-			print "<input dojoType='dijit.form.ValidationTextBox' type='password' required='1' name='new_password'>";
+			print "<input dojoType='dijit.form.ValidationTextBox' type='password' regexp='^[^<>]+' required='1' name='new_password'>";
 			print "</fieldset>";
 
 			print "<fieldset>";
 			print "<label>" . __("Confirm password:") . "</label>";
-			print "<input dojoType='dijit.form.ValidationTextBox' type='password' required='1' name='confirm_password'>";
+			print "<input dojoType='dijit.form.ValidationTextBox' type='password' regexp='^[^<>]+' required='1' name='confirm_password'>";
 			print "</fieldset>";
 
 			print_hidden("op", "pref-prefs");
@@ -477,8 +483,8 @@ class Pref_Prefs extends Handler_Protected {
 				if (function_exists("imagecreatefromstring")) {
 					print "<h3>" . __("Scan the following code by the Authenticator application or copy the key manually") . "</h3>";
 
-					$csrf_token = $_SESSION["csrf_token"];
-					print "<img alt='otp qr-code' src='backend.php?op=pref-prefs&method=otpqrcode&csrf_token=$csrf_token'>";
+					$csrf_token_hash = sha1($_SESSION["csrf_token"]);
+					print "<img alt='otp qr-code' src='backend.php?op=pref-prefs&method=otpqrcode&csrf_token_hash=$csrf_token_hash'>";
 				} else {
 					print_error("PHP GD functions are required to generate QR codes.");
 					print "<h3>" . __("Use the following OTP key with a compatible Authenticator application") . "</h3>";
@@ -860,7 +866,7 @@ class Pref_Prefs extends Handler_Protected {
 			PluginHost::getInstance()->get_hooks(PluginHost::HOOK_FETCH_FEED));
 
 		$feed_handlers = array_filter($feed_handlers, function($plugin) use ($feed_handler_whitelist) {
-			return in_array(get_class($plugin), $feed_handler_whitelist) === FALSE; });
+			return in_array(get_class($plugin), $feed_handler_whitelist) === false; });
 
 		if (count($feed_handlers) > 0) {
 			print_error(
@@ -1004,21 +1010,28 @@ class Pref_Prefs extends Handler_Protected {
 	}
 
 	function otpqrcode() {
-		require_once "lib/phpqrcode/phpqrcode.php";
+		$csrf_token_hash = clean($_REQUEST["csrf_token_hash"]);
 
-		$sth = $this->pdo->prepare("SELECT login
-			FROM ttrss_users
-			WHERE id = ?");
-		$sth->execute([$_SESSION['uid']]);
+		if (sha1($_SESSION["csrf_token"]) === $csrf_token_hash) {
+			require_once "lib/phpqrcode/phpqrcode.php";
 
-		if ($row = $sth->fetch()) {
-			$secret = $this->otpsecret();
-			$login = $row['login'];
+			$sth = $this->pdo->prepare("SELECT login
+				FROM ttrss_users
+				WHERE id = ?");
+			$sth->execute([$_SESSION['uid']]);
 
-			if ($secret) {
-				QRcode::png("otpauth://totp/".urlencode($login).
-					"?secret=$secret&issuer=".urlencode("Tiny Tiny RSS"));
+			if ($row = $sth->fetch()) {
+				$secret = $this->otpsecret();
+				$login = $row['login'];
+
+				if ($secret) {
+					QRcode::png("otpauth://totp/".urlencode($login).
+						"?secret=$secret&issuer=".urlencode("Tiny Tiny RSS"));
+				}
 			}
+		} else {
+			header("Content-Type: text/json");
+			print error_json(6);
 		}
 	}
 

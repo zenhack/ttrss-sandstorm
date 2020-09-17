@@ -122,7 +122,7 @@
 	}
 
 	require_once "lib/accept-to-gettext.php";
-	require_once "lib/gettext/gettext.inc";
+	require_once "lib/gettext/gettext.inc.php";
 
 	function startup_gettext() {
 
@@ -238,10 +238,18 @@
 		$url = ltrim($url, ' ');
 		$url = str_replace(' ', '%20', $url);
 
-		if (strpos($url, "//") === 0)
-			$url = 'http:' . $url;
+		$url = validate_url($url, true);
+
+		if (!$url) return false;
 
 		$url_host = parse_url($url, PHP_URL_HOST);
+		$ip_addr = gethostbyname($url_host);
+
+		if (!$ip_addr || strpos($ip_addr, "127.") === 0) {
+			$fetch_last_error = "URL hostname failed to resolve or resolved to a loopback address ($ip_addr)";
+			return false;
+		}
+
 		$fetch_domain_hits[$url_host] += 1;
 
 		/*if ($fetch_domain_hits[$url_host] > MAX_FETCH_REQUESTS_PER_HOST) {
@@ -318,7 +326,7 @@
 			$contents = substr($ret, $headers_length);
 
 			foreach ($headers as $header) {
-				if (strstr($header, ": ") !== FALSE) {
+				if (strstr($header, ": ") !== false) {
 					list ($key, $value) = explode(": ", $header);
 
 					if (strtolower($key) == "last-modified") {
@@ -341,6 +349,20 @@
 			$fetch_last_content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 
 			$fetch_effective_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+
+			if (!validate_url($fetch_effective_url, true)) {
+				$fetch_last_error = "URL hostname received after redirection failed to validate.";
+
+				return false;
+			}
+
+			$fetch_effective_ip_addr = gethostbyname(parse_url($fetch_effective_url, PHP_URL_HOST));
+
+			if (!$fetch_effective_ip_addr || strpos($fetch_effective_ip_addr, "127.") === 0) {
+				$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address ($fetch_effective_ip_addr)";
+
+				return false;
+			}
 
 			$fetch_last_error_code = $http_code;
 
@@ -419,13 +441,27 @@
 
 			$old_error = error_get_last();
 
-			$fetch_effective_url = $url;
+			$fetch_effective_url = resolve_redirects($url, $timeout ? $timeout : FILE_FETCH_CONNECT_TIMEOUT);
+
+			if (!validate_url($fetch_effective_url, true)) {
+				$fetch_last_error = "URL hostname received after redirection failed to validate.";
+
+				return false;
+			}
+
+			$fetch_effective_ip_addr = gethostbyname(parse_url($fetch_effective_url, PHP_URL_HOST));
+
+			if (!$fetch_effective_ip_addr || strpos($fetch_effective_ip_addr, "127.") === 0) {
+				$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address ($fetch_effective_ip_addr)";
+
+				return false;
+			}
 
 			$data = @file_get_contents($url, false, $context);
 
 			if (isset($http_response_header) && is_array($http_response_header)) {
 				foreach ($http_response_header as $header) {
-					if (strstr($header, ": ") !== FALSE) {
+					if (strstr($header, ": ") !== false) {
 						list ($key, $value) = explode(": ", $header);
 
 						$key = strtolower($key);
@@ -477,7 +513,7 @@
 
 		if (get_schema_version() < 63) $profile_qpart = "";
 
-		$pdo = DB::pdo();
+		$pdo = Db::pdo();
 		$in_nested_tr = false;
 
 		try {
@@ -502,7 +538,7 @@
 		}
 
 		while ($line = $sth->fetch()) {
-			if (array_search($line["pref_name"], $active_prefs) === FALSE) {
+			if (array_search($line["pref_name"], $active_prefs) === false) {
 //				print "adding " . $line["pref_name"] . "<br>";
 
 				if (get_schema_version() < 63) {
@@ -565,7 +601,7 @@
 				$_SESSION["uid"] = $user_id;
 				$_SESSION["auth_module"] = $auth_module;
 
-				$pdo = DB::pdo();
+				$pdo = Db::pdo();
 				$sth = $pdo->prepare("SELECT login,access_level,pwd_hash FROM ttrss_users
 					WHERE id = ?");
 				$sth->execute([$user_id]);
@@ -573,7 +609,7 @@
 
 				$_SESSION["name"] = $row["login"];
 				$_SESSION["access_level"] = $row["access_level"];
-				$_SESSION["csrf_token"] = uniqid_short();
+				$_SESSION["csrf_token"] = bin2hex(get_random_bytes(16));
 
 				$usth = $pdo->prepare("UPDATE ttrss_users SET last_login = NOW() WHERE id = ?");
 				$usth->execute([$user_id]);
@@ -600,9 +636,8 @@
 
 			$_SESSION["auth_module"] = false;
 
-			if (!$_SESSION["csrf_token"]) {
-				$_SESSION["csrf_token"] = uniqid_short();
-			}
+			if (!$_SESSION["csrf_token"])
+				$_SESSION["csrf_token"] = bin2hex(get_random_bytes(16));
 
 			$_SESSION["ip_address"] = $_SERVER["REMOTE_ADDR"];
 
@@ -621,10 +656,6 @@
 		} else {
 			return $param;
 		}
-	}
-
-	function clean_filename($filename) {
-		return basename(preg_replace("/\.\.|[\/\\\]/", "", clean($filename)));
 	}
 
 	function make_password($length = 12) {
@@ -659,11 +690,11 @@
 
 	function initialize_user($uid) {
 
-		$pdo = DB::pdo();
+		$pdo = Db::pdo();
 
 		$sth = $pdo->prepare("insert into ttrss_feeds (owner_uid,title,feed_url)
 			values (?, 'Tiny Tiny RSS: Forum',
-				'http://tt-rss.org/forum/rss.php')");
+				'https://tt-rss.org/forum/rss.php')");
 		$sth->execute([$uid]);
 	}
 
@@ -676,7 +707,7 @@
 	}
 
 	function validate_csrf($csrf_token) {
-		return $csrf_token == $_SESSION['csrf_token'];
+		return isset($csrf_token) && hash_equals($_SESSION['csrf_token'], $csrf_token);
 	}
 
 	function load_user_plugins($owner_uid, $pluginhost = false) {
@@ -858,7 +889,7 @@
 	function get_schema_version($nocache = false) {
 		global $schema_version;
 
-		$pdo = DB::pdo();
+		$pdo = Db::pdo();
 
 		if (!$schema_version && !$nocache) {
 			$row = $pdo->query("SELECT schema_version FROM ttrss_version")->fetch();
@@ -1005,17 +1036,17 @@
 		$max_feed_id = $row["mid"];
 		$num_feeds = $row["nf"];
 
+		$params["self_url_prefix"] = get_self_url_prefix();
 		$params["max_feed_id"] = (int) $max_feed_id;
 		$params["num_feeds"] = (int) $num_feeds;
 
 		$params["hotkeys"] = get_hotkeys_map();
 
-		$params["csrf_token"] = $_SESSION["csrf_token"];
 		$params["widescreen"] = (int) $_COOKIE["ttrss_widescreen"];
 
 		$params['simple_update'] = defined('SIMPLE_UPDATE_MODE') && SIMPLE_UPDATE_MODE;
 
-		$params["icon_indicator_white"] = base64_img("images/indicator_white.gif");
+		$params["icon_indicator_white"] = image_to_base64("images/indicator_white.gif");
 
 		$params["labels"] = Labels::get_all_labels($_SESSION["uid"]);
 
@@ -1514,14 +1545,12 @@
 	}
 
 	function build_url($parts) {
-		return $parts['scheme'] . "://" . $parts['host'] . $parts['path'];
-	}
+		$tmp = $parts['scheme'] . "://" . $parts['host'] . $parts['path'];
 
-	function cleanup_url_path($path) {
-		$path = str_replace("/./", "/", $path);
-		$path = str_replace("//", "/", $path);
+		if (isset($parts['query'])) $tmp .= '?' . $parts['query'];
+		if (isset($parts['fragment'])) $tmp .= '#' . $parts['fragment'];
 
-		return $path;
+		return $tmp;
 	}
 
 	/**
@@ -1533,35 +1562,30 @@
 	 * @return string Absolute URL
 	 */
 	function rewrite_relative_url($url, $rel_url) {
-		if (strpos($rel_url, "://") !== false) {
-			return $rel_url;
+
+		$rel_parts = parse_url($rel_url);
+
+		if ($rel_parts['host'] && $rel_parts['scheme']) {
+			return validate_url($rel_url);
 		} else if (strpos($rel_url, "//") === 0) {
 			# protocol-relative URL (rare but they exist)
+			return validate_url("https:" . $rel_url);
+		} else if (strpos($rel_url, "magnet:") === 0) {
+			# allow magnet links
 			return $rel_url;
-		} else if (preg_match("/^[a-z]+:/i", $rel_url)) {
-			# magnet:, feed:, etc
-			return $rel_url;
-		} else if (strpos($rel_url, "/") === 0) {
-			$parts = parse_url($url);
-			$parts['path'] = $rel_url;
-			$parts['path'] = cleanup_url_path($parts['path']);
-
-			return build_url($parts);
-
 		} else {
 			$parts = parse_url($url);
-			if (!isset($parts['path'])) {
-				$parts['path'] = '/';
-			}
-			$dir = $parts['path'];
-			if (substr($dir, -1) !== '/') {
-				$dir = dirname($parts['path']);
-				$dir !== '/' && $dir .= '/';
-			}
-			$parts['path'] = $dir . $rel_url;
-			$parts['path'] = cleanup_url_path($parts['path']);
 
-			return build_url($parts);
+			$rel_parts['host'] = $parts['host'];
+			$rel_parts['scheme'] = $parts['scheme'];
+
+			if (strpos($rel_parts['path'], '/') !== 0)
+				$rel_parts['path'] = '/' . $rel_parts['path'];
+
+			$rel_parts['path'] = str_replace("/./", "/", $rel_parts['path']);
+			$rel_parts['path'] = str_replace("//", "/", $rel_parts['path']);
+
+			return validate_url(build_url($rel_parts));
 		}
 	}
 
@@ -1589,7 +1613,7 @@
 		foreach ($filter["rules"] AS $rule) {
 			$rule['reg_exp'] = str_replace('/', '\/', $rule["reg_exp"]);
 			$regexp_valid = preg_match('/' . $rule['reg_exp'] . '/',
-					$rule['reg_exp']) !== FALSE;
+					$rule['reg_exp']) !== false;
 
 			if ($regexp_valid) {
 
@@ -1672,7 +1696,9 @@
 	}
 
 	function get_random_bytes($length) {
-		if (function_exists('openssl_random_pseudo_bytes')) {
+		if (function_exists('random_bytes')) {
+			return random_bytes($length);
+		} else if (function_exists('openssl_random_pseudo_bytes')) {
 			return openssl_random_pseudo_bytes($length);
 		} else {
 			$output = "";
@@ -1735,7 +1761,7 @@
 
 			for ($i = 0; $i < $l10n->total; $i++) {
 				$orig = $l10n->get_original_string($i);
-				if(strpos($orig, "\000") !== FALSE) { // Plural forms
+				if(strpos($orig, "\000") !== false) { // Plural forms
 					$key = explode(chr(0), $orig);
 					print T_js_decl($key[0], _ngettext($key[0], $key[1], 1)); // Singular
 					print T_js_decl($key[1], _ngettext($key[0], $key[1], 2)); // Plural
@@ -1798,7 +1824,7 @@
 		return $errors[$code];
 	}
 
-	function base64_img($filename) {
+	function image_to_base64($filename) {
 		if (file_exists($filename)) {
 			$ext = pathinfo($filename, PATHINFO_EXTENSION);
 
@@ -1820,6 +1846,26 @@
 
 			if (is_writable($filename)) touch($filename);
 
+			$mimetype = mime_content_type($filename);
+
+			// this is hardly ideal but 1) only media is cached in images/ and 2) seemingly only mp4
+			// video files are detected as octet-stream by mime_content_type()
+
+			if ($mimetype == "application/octet-stream")
+				$mimetype = "video/mp4";
+
+			# block SVG because of possible embedded javascript (.....)
+			$mimetype_blacklist = [ "image/svg+xml" ];
+
+			/* only serve video and images */
+			if (!preg_match("/(image|video)\//", $mimetype) || in_array($mimetype, $mimetype_blacklist)) {
+				http_response_code(400);
+				header("Content-type: text/plain");
+
+				print "Stored file has disallowed content type ($mimetype)";
+				return false;
+			}
+
 			$tmppluginhost = new PluginHost();
 
 			$tmppluginhost->load(PLUGINS, PluginHost::KIND_SYSTEM);
@@ -1828,14 +1874,6 @@
 			foreach ($tmppluginhost->get_hooks(PluginHost::HOOK_SEND_LOCAL_FILE) as $plugin) {
 				if ($plugin->hook_send_local_file($filename)) return true;
 			}
-
-			$mimetype = mime_content_type($filename);
-
-			// this is hardly ideal but 1) only media is cached in images/ and 2) seemingly only mp4
-			// video files are detected as octet-stream by mime_content_type()
-
-			if ($mimetype == "application/octet-stream")
-				$mimetype = "video/mp4";
 
 			header("Content-type: $mimetype");
 
@@ -1923,4 +1961,85 @@
 		}
 
 		return $ttrss_version['version'];
+	}
+
+	// extended filtering involves validation for safe ports and loopback
+	function validate_url($url, $extended_filtering = false) {
+
+		$url = clean($url);
+
+		# fix protocol-relative URLs
+		if (strpos($url, "//") === 0)
+			$url = "https:" . $url;
+
+		if (filter_var($url, FILTER_VALIDATE_URL) === false)
+			return false;
+
+		$tokens = parse_url($url);
+
+		if (!$tokens['host'])
+			return false;
+
+		if (!in_array($tokens['scheme'], ['http', 'https']))
+			return false;
+
+		if ($extended_filtering) {
+			if (!in_array($tokens['port'], [80, 443, '']))
+				return false;
+
+			if ($tokens['host'] == 'localhost' || $tokens['host'] == '::1' || strpos($tokens['host'], '127.') === 0)
+				return false;
+		}
+
+		//convert IDNA hostname to punycode if possible
+		if (function_exists("idn_to_ascii")) {
+			if (mb_detect_encoding($tokens['host']) != 'ASCII') {
+				$parts['host'] = idn_to_ascii($tokens['host']);
+				$url = build_url($tokens);
+			}
+		}
+
+		return $url;
+	}
+
+	function resolve_redirects($url, $timeout, $nest = 0) {
+
+		// too many redirects
+		if ($nest > 10)
+			return false;
+
+		$context_options = array(
+			'http' => array(
+				 'header' => array(
+					 'Connection: close'
+				 ),
+				 'method' => 'HEAD',
+				 'timeout' => $timeout,
+				 'protocol_version'=> 1.1)
+			);
+
+		if (defined('_HTTP_PROXY')) {
+			$context_options['http']['request_fulluri'] = true;
+			$context_options['http']['proxy'] = _HTTP_PROXY;
+		}
+
+		$context = stream_context_create($context_options);
+		$headers = get_headers($url, 0, $context);
+
+		if (is_array($headers)) {
+			$headers = array_reverse($headers); // last one is the correct one
+
+			foreach($headers as $header) {
+				if (stripos($header, 'Location:') === 0) {
+					$url = rewrite_relative_url($url, trim(substr($header, strlen('Location:'))));
+
+					return resolve_redirects($url, $timeout, $nest + 1);
+				}
+			}
+
+			return $url;
+		}
+
+		// request failed?
+		return false;
 	}

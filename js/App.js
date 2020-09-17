@@ -126,7 +126,55 @@ const App = {
 				return callOriginal(options);
 			}
 		);
-	},
+   },
+   postCurrentWindow: function(target, params) {
+      const form = document.createElement("form");
+
+      form.setAttribute("method", "post");
+      form.setAttribute("action", App.getInitParam("self_url_prefix") + "/" + target);
+
+      for (const [k,v] of Object.entries(params)) {
+         const field = document.createElement("input");
+
+         field.setAttribute("name", k);
+         field.setAttribute("value", v);
+         field.setAttribute("type", "hidden");
+
+         form.appendChild(field);
+      }
+
+      document.body.appendChild(form);
+
+      form.submit();
+
+      form.parentNode.removeChild(form);
+   },
+   postOpenWindow: function(target, params) {
+      const w = window.open("");
+
+		if (w) {
+			w.opener = null;
+
+			const form = document.createElement("form");
+
+			form.setAttribute("method", "post");
+			form.setAttribute("action", App.getInitParam("self_url_prefix") + "/" + target);
+
+			for (const [k,v] of Object.entries(params)) {
+				const field = document.createElement("input");
+
+				field.setAttribute("name", k);
+				field.setAttribute("value", v);
+				field.setAttribute("type", "hidden");
+
+				form.appendChild(field);
+			}
+
+			w.document.body.appendChild(form);
+			form.submit();
+		}
+
+   },
 	urlParam: function(param) {
 		return String(window.location.href).parseQuery()[param];
 	},
@@ -252,19 +300,19 @@ const App = {
       }
    },
    helpDialog: function(topic) {
-		const query = "backend.php?op=backend&method=help&topic=" + encodeURIComponent(topic);
-
 		if (dijit.byId("helpDlg"))
 			dijit.byId("helpDlg").destroyRecursive();
 
-		const dialog = new dijit.Dialog({
-			id: "helpDlg",
-			title: __("Help"),
-			style: "width: 600px",
-			href: query,
-		});
+	   xhrPost("backend.php", {op: "backend", method: "help", topic: topic}, (transport) => {
+		   const dialog = new dijit.Dialog({
+			   id: "helpDlg",
+			   title: __("Help"),
+			   style: "width: 600px",
+			   content: transport.responseText,
+		   });
 
-		dialog.show();
+		   dialog.show();
+	   });
 	},
 	displayDlg: function(title, id, param, callback) {
 		Notify.progress("Loading, please wait...", true);
@@ -576,6 +624,8 @@ const App = {
       this.is_prefs = is_prefs;
       window.onerror = this.Error.onWindowError;
 
+      this.setInitParam("csrf_token", __csrf_token);
+
       this.setupNightModeDetection(() => {
          parser.parse();
 
@@ -586,6 +636,7 @@ const App = {
 
          this.setLoadingProgress(30);
          this.initHotkeyActions();
+         this.enableCsrfSupport();
 
          const a = document.createElement('audio');
          const hasAudio = !!a.canPlayType;
@@ -626,7 +677,6 @@ const App = {
       return errorMsg == "";
    },
    initSecondStage: function() {
-      this.enableCsrfSupport();
 
       document.onkeydown = (event) => { return this.hotkeyHandler(event) };
       document.onkeypress = (event) => { return this.hotkeyHandler(event) };
@@ -984,8 +1034,11 @@ const App = {
          };
          this.hotkey_actions["feed_debug_update"] = () => {
             if (!Feeds.activeIsCat() && parseInt(Feeds.getActive()) > 0) {
-               window.open("backend.php?op=feeds&method=update_debugger&feed_id=" + Feeds.getActive() +
-                  "&csrf_token=" + this.getInitParam("csrf_token"));
+               //window.open("backend.php?op=feeds&method=update_debugger&feed_id=" + Feeds.getActive());
+
+               /* global __csrf_token */
+               App.postOpenWindow("backend.php", {op: "feeds", method: "update_debugger", feed_id: Feeds.getActive(), csrf_token: __csrf_token});
+
             } else {
                alert("You can't debug this kind of feed.");
             }
@@ -1112,7 +1165,7 @@ const App = {
             document.location.href = "prefs.php";
             break;
          case "qmcLogout":
-            document.location.href = "backend.php?op=logout";
+            App.postCurrentWindow("public.php", {op: "logout", csrf_token: __csrf_token});
             break;
          case "qmcTagCloud":
             this.displayDlg(__("Tag cloud"), "printTagCloud");

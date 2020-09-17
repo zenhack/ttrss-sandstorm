@@ -12,15 +12,14 @@
 
 	/* Public calls compatibility shim */
 
-	$public_calls = array("globalUpdateFeeds", "rss", "getUnread", "getProfiles", "share",
-		"fbexport", "logout", "pubsub");
+	$public_calls = array("globalUpdateFeeds", "rss", "getUnread", "getProfiles", "share");
 
 	if (array_search($op, $public_calls) !== false) {
 		header("Location: public.php?" . $_SERVER['QUERY_STRING']);
 		return;
 	}
 
-	@$csrf_token = $_REQUEST['csrf_token'];
+	@$csrf_token = $_POST['csrf_token'];
 
 	require_once "autoload.php";
 	require_once "sessions.php";

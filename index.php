@@ -47,6 +47,10 @@
 	}
 	?>
 
+	<script type="text/javascript">
+		const __csrf_token = "<?php echo $_SESSION["csrf_token"]; ?>";
+	</script>
+
 	<?php print_user_stylesheet() ?>
 
 	<style type="text/css">
@@ -199,6 +203,14 @@
                 <option value="feed_dates"><?php echo __('Newest first') ?></option>
                 <option value="date_reverse"><?php echo __('Oldest first') ?></option>
                 <option value="title"><?php echo __('Title') ?></option>
+
+				<?php foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINES_CUSTOM_SORT_MAP) as $p) {
+					$sort_map = $p->hook_headlines_custom_sort_map();
+
+					foreach ($sort_map as $sort_value => $sort_title) {
+						print "<option value=\"" . htmlspecialchars($sort_value) . "\">$sort_title</option>";
+					}
+				} ?>
             </select>
 
             <div dojoType="fox.form.ComboButton" onclick="Feeds.catchupCurrent()">

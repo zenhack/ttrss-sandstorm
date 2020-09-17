@@ -28,6 +28,9 @@ class Af_Proxy_Http extends Plugin {
 		$host->add_hook($host::HOOK_ENCLOSURE_ENTRY, $this);
 
 		$host->add_hook($host::HOOK_PREFS_TAB, $this);
+
+		if (!$_SESSION['af_proxy_http_token'])
+			$_SESSION['af_proxy_http_token'] = bin2hex(get_random_bytes(16));
 	}
 
 	function hook_enclosure_entry($enc) {
@@ -45,11 +48,10 @@ class Af_Proxy_Http extends Plugin {
 	}
 
 	public function imgproxy() {
-
-		$url = rewrite_relative_url(get_self_url_prefix(), $_REQUEST["url"]);
+		$url = validate_url(clean($_REQUEST["url"]));
 
 		// called without user context, let's just redirect to original URL
-		if (!$_SESSION["uid"]) {
+		if (!$_SESSION["uid"] || $_REQUEST['af_proxy_http_token'] != $_SESSION['af_proxy_http_token']) {
 			header("Location: $url");
 			return;
 		}
@@ -59,22 +61,14 @@ class Af_Proxy_Http extends Plugin {
 		if ($this->cache->exists($local_filename)) {
 			header("Location: " . $this->cache->getUrl($local_filename));
 			return;
-			//$this->cache->send($local_filename);
 		} else {
 			$data = fetch_file_contents(["url" => $url, "max_size" => MAX_CACHE_FILE_SIZE]);
 
 			if ($data) {
-
-				$disable_cache = $this->host->get($this, "disable_cache");
-
-				if (!$disable_cache) {
-					if ($this->cache->put($local_filename, $data)) {
-						header("Location: " . $this->cache->getUrl($local_filename));
-						return;
-					}
+				if ($this->cache->put($local_filename, $data)) {
+					header("Location: " . $this->cache->getUrl($local_filename));
+					return;
 				}
-
-				print $data;
 			} else {
 				global $fetch_last_error;
 				global $fetch_last_error_code;
@@ -97,14 +91,13 @@ class Af_Proxy_Http extends Plugin {
 					imagedestroy($img);
 
 				} else {
-					header("Content-type: text/html");
+					header("Content-type: text/plain");
 
 					http_response_code(400);
 
-					print "<h1>Proxy request failed.</h1>";
-					print "<p>Fetch error $fetch_last_error ($fetch_last_error_code)</p>";
-					print "<p>URL: $url</p>";
-					print "<textarea cols='80' rows='25'>" . htmlspecialchars($fetch_last_error_content) . "</textarea>";
+					print "Proxy request failed.\n".
+						"Fetch error $fetch_last_error ($fetch_last_error_code)\n".
+						"Requested URL: $url";
 				}
 			}
 		}
@@ -141,7 +134,8 @@ class Af_Proxy_Http extends Plugin {
 						}
 					}
 
-					return $this->host->get_public_method_url($this, "imgproxy", ["url" => $url]);
+					return $this->host->get_public_method_url($this, "imgproxy",
+						["url" => $url, "af_proxy_http_token" => $_SESSION["af_proxy_http_token"]]);
 				}
 			}
 		}
@@ -208,7 +202,7 @@ class Af_Proxy_Http extends Plugin {
 	function hook_prefs_tab($args) {
 		if ($args != "prefFeeds") return;
 
-		print "<div dojoType=\"dijit.layout.AccordionPane\" 
+		print "<div dojoType=\"dijit.layout.AccordionPane\"
 			title=\"<i class='material-icons'>extension</i> ".__('Image proxy settings (af_proxy_http)')."\">";
 
 		print "<form dojoType=\"dijit.form.Form\">";
@@ -235,10 +229,6 @@ class Af_Proxy_Http extends Plugin {
 		print_checkbox("proxy_all", $proxy_all);
 		print "&nbsp;<label for=\"proxy_all\">" . __("Enable proxy for all remote images.") . "</label><br/>";
 
-		$disable_cache = $this->host->get($this, "disable_cache");
-		print_checkbox("disable_cache", $disable_cache);
-		print "&nbsp;<label for=\"disable_cache\">" . __("Don't cache files locally.") . "</label>";
-
 		print "<p>"; print_button("submit", __("Save"));
 
 		print "</form>";
@@ -248,10 +238,8 @@ class Af_Proxy_Http extends Plugin {
 
 	function save() {
 		$proxy_all = checkbox_to_sql_bool($_POST["proxy_all"]);
-		$disable_cache = checkbox_to_sql_bool($_POST["disable_cache"]);
 
 		$this->host->set($this, "proxy_all", $proxy_all, false);
-		$this->host->set($this, "disable_cache", $disable_cache);
 
 		echo __("Configuration saved");
 	}

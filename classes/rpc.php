@@ -2,7 +2,7 @@
 class RPC extends Handler_Protected {
 
 	function csrf_ignore($method) {
-		$csrf_ignored = array("sanitycheck", "completelabels", "saveprofile");
+		$csrf_ignored = array("completelabels", "saveprofile");
 
 		return array_search($method, $csrf_ignored) !== false;
 	}
@@ -436,7 +436,10 @@ class RPC extends Handler_Protected {
 					ttrss_feeds.update_interval > 0
 					AND ttrss_feeds.last_updated < NOW() - CAST((ttrss_feeds.update_interval || ' minutes') AS INTERVAL)
 				) OR ttrss_feeds.last_updated IS NULL
-				OR last_updated = '1970-01-01 00:00:00')";
+				OR (
+					ttrss_feeds.update_interval > 0
+					AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
+				))";
 		} else {
 			$update_limit_qpart = "AND ((
 					ttrss_feeds.update_interval = 0
@@ -445,7 +448,10 @@ class RPC extends Handler_Protected {
 					ttrss_feeds.update_interval > 0
 					AND ttrss_feeds.last_updated < DATE_SUB(NOW(), INTERVAL ttrss_feeds.update_interval MINUTE)
 				) OR ttrss_feeds.last_updated IS NULL
-				OR last_updated = '1970-01-01 00:00:00')";
+				OR (
+					ttrss_feeds.update_interval > 0
+					AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
+				))";
 		}
 
 		// Test if feed is currently being updated by another process.
@@ -572,7 +578,7 @@ class RPC extends Handler_Protected {
 
 	function log() {
 		$msg = clean($_REQUEST['msg']);
-		$file = clean_filename($_REQUEST['file']);
+		$file = basename(clean($_REQUEST['file']));
 		$line = (int) clean($_REQUEST['line']);
 		$context = clean($_REQUEST['context']);
 

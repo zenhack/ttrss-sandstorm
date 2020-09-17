@@ -60,7 +60,7 @@
 				array_push($errors, "Please copy config.php-dist to config.php or run the installer in install/");
 			}
 
-			if (strpos(PLUGINS, "auth_") === FALSE) {
+			if (strpos(PLUGINS, "auth_") === false) {
 				array_push($errors, "Please enable at least one authentication module via PLUGINS constant in config.php");
 			}
 
@@ -105,7 +105,7 @@
 			}
 
 			if (SINGLE_USER_MODE && class_exists("PDO")) {
-			    $pdo = DB::pdo();
+			    $pdo = Db::pdo();
 
 				$res = $pdo->query("SELECT id FROM ttrss_users WHERE id = 1");
 

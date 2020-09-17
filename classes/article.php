@@ -1,12 +1,6 @@
 <?php
 class Article extends Handler_Protected {
 
-	function csrf_ignore($method) {
-		$csrf_ignored = array("redirect", "editarticletags");
-
-		return array_search($method, $csrf_ignored) !== false;
-	}
-
 	function redirect() {
 		$id = clean($_REQUEST['id']);
 
@@ -60,7 +54,7 @@ class Article extends Handler_Protected {
 		if (!$title) $title = $url;
 		if (!$title && !$url) return false;
 
-		if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) return false;
+		if (filter_var($url, FILTER_VALIDATE_URL) === false) return false;
 
 		$pdo = Db::pdo();
 
@@ -658,7 +652,7 @@ class Article extends Handler_Protected {
 	}
 
 	static function getLastArticleId() {
-		$pdo = DB::pdo();
+		$pdo = Db::pdo();
 
 		$sth = $pdo->prepare("SELECT ref_id AS id FROM ttrss_user_entries
 			WHERE owner_uid = ? ORDER BY ref_id DESC LIMIT 1");
@@ -763,7 +757,7 @@ class Article extends Handler_Protected {
 
 			if (!$article_image)
 				foreach ($enclosures as $enc) {
-					if (strpos($enc["content_type"], "image/") !== FALSE) {
+					if (strpos($enc["content_type"], "image/") !== false) {
 						$article_image = $enc["content_url"];
 						break;
 					}
