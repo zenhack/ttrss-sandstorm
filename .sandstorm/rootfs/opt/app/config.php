@@ -18,7 +18,10 @@
 	// *** Basic settings (important!) ***
 	// ***********************************
 
-	define('SELF_URL_PATH', 'http://localhost:33411/');
+	define('SELF_URL_PATH',
+		(is_server_https() ? "https" : "http")
+		. "://"
+		. $_SERVER["HTTP_HOST"]);
 	// Full URL of your tt-rss installation. This should be set to the
 	// location of tt-rss directory, e.g. http://example.org/tt-rss/
 	// You need to set this option correctly otherwise several features

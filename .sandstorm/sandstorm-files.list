@@ -330,7 +330,7 @@ opt/app/lib/flat-ttrss/flat_combined_dark_blue.css
 opt/app/lib/flat-ttrss/fonts/flat-icon.ttf
 opt/app/lib/flat-ttrss/images/progressBarStrips.png
 opt/app/lib/floIcon.php
-opt/app/lib/gettext/gettext.inc
+opt/app/lib/gettext/gettext.inc.php
 opt/app/lib/gettext/gettext.php
 opt/app/lib/gettext/streams.php
 opt/app/lib/iconfont/MaterialIcons-Regular.woff2
@@ -399,7 +399,6 @@ opt/app/themes.local
 opt/app/themes/compact.css
 opt/app/themes/compact_night.css
 opt/app/themes/light.css
-opt/app/themes/light.css.map
 opt/app/themes/night.css
 opt/app/themes/night_blue.css
 opt/app/update.php
