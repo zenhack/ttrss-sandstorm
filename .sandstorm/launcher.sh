@@ -41,7 +41,6 @@ mkdir -p /var/tmp
 mkdir -p /var/run/mysqld
 
 # Ensure mysql tables created
-# HOME=/etc/mysql /usr/bin/mysql_install_db
 HOME=/etc/mysql /usr/sbin/mysqld --initialize || true
 
 if [ -d /var/lib/php5 ]; then
