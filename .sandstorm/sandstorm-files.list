@@ -263,6 +263,8 @@ opt/app/classes/pref/system.php
 opt/app/classes/pref/users.php
 opt/app/classes/rpc.php
 opt/app/classes/rssutils.php
+opt/app/classes/timehelper.php
+opt/app/classes/userhelper.php
 opt/app/config.php
 opt/app/errors.php
 opt/app/feed-icons
@@ -332,6 +334,7 @@ opt/app/lib/flat-ttrss/images/progressBarStrips.png
 opt/app/lib/floIcon.php
 opt/app/lib/gettext/gettext.inc.php
 opt/app/lib/gettext/gettext.php
+opt/app/lib/gettext/plurals.php
 opt/app/lib/gettext/streams.php
 opt/app/lib/iconfont/MaterialIcons-Regular.woff2
 opt/app/lib/jimIcon.php
@@ -373,7 +376,6 @@ opt/app/plugins/no_url_hashes/init.php
 opt/app/plugins/note/init.php
 opt/app/plugins/note/note.js
 opt/app/plugins/nsfw/init.php
-opt/app/plugins/search_sphinx/init.php
 opt/app/plugins/share/init.php
 opt/app/plugins/shorten_expanded/init.php
 opt/app/plugins/toggle_sidebar/init.php
