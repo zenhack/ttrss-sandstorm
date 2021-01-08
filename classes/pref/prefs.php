@@ -66,9 +66,13 @@ class Pref_Prefs extends Handler_Protected {
 			]
 		];
 
+		$this->pref_help_bottom = [
+			"BLACKLISTED_TAGS" => __("Never apply these tags automatically (comma-separated list)."),
+		];
+
 		$this->pref_help = [
 			"ALLOW_DUPLICATE_POSTS" => array(__("Allow duplicate articles"), ""),
-			"BLACKLISTED_TAGS" => array(__("Blacklisted tags"), __("Never apply these tags automatically (comma-separated list).")),
+			"BLACKLISTED_TAGS" => array(__("Blacklisted tags"), ""),
 			"DEFAULT_SEARCH_LANGUAGE" => array(__("Default language"), __("Used for full-text search")),
 			"CDM_AUTO_CATCHUP" => array(__("Mark read on scroll"), __("Mark articles as read as you scroll past them")),
 			"CDM_EXPANDED" => array(__("Always expand articles")),
@@ -192,6 +196,12 @@ class Pref_Prefs extends Handler_Protected {
 				case 'USER_CSS_THEME':
 					if (!$need_reload) $need_reload = get_pref($pref_name) != $value;
 					break;
+
+				case 'BLACKLISTED_TAGS':
+					$cats = FeedItem_Common::normalize_categories(explode(",", $value));
+					asort($cats);
+					$value = implode(", ", $cats);
+					break;
 			}
 
 			set_pref($pref_name, $value);
@@ -257,7 +267,7 @@ class Pref_Prefs extends Handler_Protected {
 				AND owner_uid = :uid");
 		$sth->execute([":profile" => $_SESSION['profile'], ":uid" => $_SESSION['uid']]);
 
-		initialize_user_prefs($_SESSION["uid"], $_SESSION["profile"]);
+		$this->initialize_user_prefs($_SESSION["uid"], $_SESSION["profile"]);
 
 		echo __("Your preferences are now set to default values.");
 	}
@@ -590,9 +600,9 @@ class Pref_Prefs extends Handler_Protected {
 		if ($profile) {
 			print_notice(__("Some preferences are only available in default profile."));
 
-			initialize_user_prefs($_SESSION["uid"], $profile);
+			$this->initialize_user_prefs($_SESSION["uid"], $profile);
 		} else {
-			initialize_user_prefs($_SESSION["uid"]);
+			$this->initialize_user_prefs($_SESSION["uid"]);
 		}
 
 		$prefs_available = [];
@@ -671,6 +681,19 @@ class Pref_Prefs extends Handler_Protected {
 						$timezones = explode("\n", file_get_contents("lib/timezones.txt"));
 
 						print_select($pref_name, $value, $timezones, 'dojoType="dijit.form.FilteringSelect"');
+
+					} else if ($pref_name == "BLACKLISTED_TAGS") { # TODO: other possible <textarea> prefs go here
+
+						print "<div>";
+
+						print "<textarea dojoType='dijit.form.SimpleTextarea' rows='4'
+							style='width: 500px; font-size : 12px;'
+							name='$pref_name'>$value</textarea><br/>";
+
+						print "<div class='help-text-bottom text-muted'>" . $this->pref_help_bottom[$pref_name] . "</div>";
+
+						print "</div>";
+
 					} else if ($pref_name == "USER_CSS_THEME") {
 
 						$themes = array_merge(glob("themes/*.php"), glob("themes/*.css"), glob("themes.local/*.css"));
@@ -725,8 +748,8 @@ class Pref_Prefs extends Handler_Protected {
 						print "<input type='checkbox' name='$pref_name' $checked $disabled
 							dojoType='dijit.form.CheckBox' id='CB_$pref_name' value='1'>";
 
-					} else if (array_search($pref_name, array('FRESH_ARTICLE_MAX_AGE',
-							'PURGE_OLD_DAYS', 'LONG_DATE_FORMAT', 'SHORT_DATE_FORMAT')) !== false) {
+					} else if (in_array($pref_name, ['FRESH_ARTICLE_MAX_AGE',
+							'PURGE_OLD_DAYS', 'LONG_DATE_FORMAT', 'SHORT_DATE_FORMAT'])) {
 
 						$regexp = ($type_name == 'integer') ? 'regexp="^\d*$"' : '';
 
@@ -856,6 +879,10 @@ class Pref_Prefs extends Handler_Protected {
 
 		if (ini_get("open_basedir") && function_exists("curl_init") && !defined("NO_CURL")) {
 			print_warning("Your PHP configuration has open_basedir restrictions enabled. Some plugins relying on CURL for functionality may not work correctly.");
+		}
+
+		if ($_SESSION["safe_mode"]) {
+			print_error("You have logged in using safe mode, no user plugins will be actually enabled until you login again.");
 		}
 
 		$feed_handler_whitelist = [ "Af_Comics" ];
@@ -1267,14 +1294,14 @@ class Pref_Prefs extends Handler_Protected {
 	}
 
 	private function getShortDesc($pref_name) {
-		if (isset($this->pref_help[$pref_name])) {
+		if (isset($this->pref_help[$pref_name][0])) {
 			return $this->pref_help[$pref_name][0];
 		}
 		return "";
 	}
 
 	private function getHelpText($pref_name) {
-		if (isset($this->pref_help[$pref_name])) {
+		if (isset($this->pref_help[$pref_name][1])) {
 			return $this->pref_help[$pref_name][1];
 		}
 		return "";
@@ -1316,11 +1343,11 @@ class Pref_Prefs extends Handler_Protected {
 			print "<td>" . htmlspecialchars($row["title"]) . "</td>";
 
 			print "<td align='right' class='text-muted'>";
-			print make_local_datetime($row['created'], false);
+			print TimeHelper::make_local_datetime($row['created'], false);
 			print "</td>";
 
 			print "<td align='right' class='text-muted'>";
-			print make_local_datetime($row['last_used'], false);
+			print TimeHelper::make_local_datetime($row['last_used'], false);
 			print "</td>";
 
 			print "</tr>";
@@ -1362,4 +1389,57 @@ class Pref_Prefs extends Handler_Protected {
 
 		$this->appPasswordList();
 	}
+
+	static function initialize_user_prefs($uid, $profile = false) {
+
+		if (get_schema_version() < 63) $profile_qpart = "";
+
+		$pdo = Db::pdo();
+		$in_nested_tr = false;
+
+		try {
+			$pdo->beginTransaction();
+		} catch (Exception $e) {
+			$in_nested_tr = true;
+		}
+
+		$sth = $pdo->query("SELECT pref_name,def_value FROM ttrss_prefs");
+
+		if (!is_numeric($profile) || !$profile || get_schema_version() < 63) $profile = null;
+
+		$u_sth = $pdo->prepare("SELECT pref_name
+			FROM ttrss_user_prefs WHERE owner_uid = :uid AND
+				(profile = :profile OR (:profile IS NULL AND profile IS NULL))");
+		$u_sth->execute([':uid' => $uid, ':profile' => $profile]);
+
+		$active_prefs = array();
+
+		while ($line = $u_sth->fetch()) {
+			array_push($active_prefs, $line["pref_name"]);
+		}
+
+		while ($line = $sth->fetch()) {
+			if (array_search($line["pref_name"], $active_prefs) === false) {
+//				print "adding " . $line["pref_name"] . "<br>";
+
+				if (get_schema_version() < 63) {
+					$i_sth = $pdo->prepare("INSERT INTO ttrss_user_prefs
+						(owner_uid,pref_name,value) VALUES
+						(?, ?, ?)");
+					$i_sth->execute([$uid, $line["pref_name"], $line["def_value"]]);
+
+				} else {
+					$i_sth = $pdo->prepare("INSERT INTO ttrss_user_prefs
+						(owner_uid,pref_name,value, profile) VALUES
+						(?, ?, ?, ?)");
+					$i_sth->execute([$uid, $line["pref_name"], $line["def_value"], $profile]);
+				}
+
+			}
+		}
+
+		if (!$in_nested_tr) $pdo->commit();
+
+	}
+
 }

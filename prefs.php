@@ -21,7 +21,7 @@
 
 	if (!init_plugins()) return;
 
-	login_sequence();
+	UserHelper::login_sequence();
 
 	header('Content-Type: text/html; charset=utf-8');
 ?>
@@ -36,14 +36,17 @@
 		if ($theme && theme_exists("$theme")) {
 			echo stylesheet_tag(get_theme_path($theme), 'theme_css');
 		}
-	}
-	?>
+	} ?>
+
+	<?php if (theme_exists(LOCAL_OVERRIDE_STYLESHEET)) {
+		echo stylesheet_tag(get_theme_path(LOCAL_OVERRIDE_STYLESHEET));
+	} ?>
 
 	<script type="text/javascript">
 		const __csrf_token = "<?php echo $_SESSION["csrf_token"]; ?>";
 	</script>
 
-	<?php print_user_stylesheet() ?>
+	<?php UserHelper::print_user_stylesheet() ?>
 
 	<link rel="shortcut icon" type="image/png" href="images/favicon.png"/>
 	<link rel="icon" type="image/png" sizes="72x72" href="images/favicon-72px.png" />

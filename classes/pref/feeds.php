@@ -74,7 +74,7 @@ class Pref_Feeds extends Handler_Protected {
 			$cat['items'] = $this->get_category_items($line['id']);
 
 			$num_children = $this->calculate_children_count($cat);
-			$cat['param'] = vsprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
+			$cat['param'] = sprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
 
 			if ($num_children > 0 || $show_empty_cats)
 				array_push($items, $cat);
@@ -101,7 +101,7 @@ class Pref_Feeds extends Handler_Protected {
 			$feed['unread'] = -1;
 			$feed['error'] = $feed_line['last_error'];
 			$feed['icon'] = Feeds::getFeedIcon($feed_line['id']);
-			$feed['param'] = make_local_datetime(
+			$feed['param'] = TimeHelper::make_local_datetime(
 				$feed_line['last_updated'], true);
 			$feed['updates_disabled'] = (int)($feed_line['update_interval'] < 0);
 
@@ -126,6 +126,7 @@ class Pref_Feeds extends Handler_Protected {
 		$root['id'] = 'root';
 		$root['name'] = __('Feeds');
 		$root['items'] = array();
+		$root['param'] = 0;
 		$root['type'] = 'category';
 
 		$enable_cats = get_pref('ENABLE_FEED_CATS');
@@ -229,7 +230,7 @@ class Pref_Feeds extends Handler_Protected {
 				$cat['items'] = $this->get_category_items($line['id']);
 
 				$num_children = $this->calculate_children_count($cat);
-				$cat['param'] = vsprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
+				$cat['param'] = sprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
 
 				if ($num_children > 0 || $show_empty_cats)
 					array_push($root['items'], $cat);
@@ -268,7 +269,7 @@ class Pref_Feeds extends Handler_Protected {
 				$feed['checkbox'] = false;
 				$feed['error'] = $feed_line['last_error'];
 				$feed['icon'] = Feeds::getFeedIcon($feed_line['id']);
-				$feed['param'] = make_local_datetime(
+				$feed['param'] = TimeHelper::make_local_datetime(
 					$feed_line['last_updated'], true);
 				$feed['unread'] = -1;
 				$feed['type'] = 'feed';
@@ -277,13 +278,13 @@ class Pref_Feeds extends Handler_Protected {
 				array_push($cat['items'], $feed);
 			}
 
-			$cat['param'] = vsprintf(_ngettext('(%d feed)', '(%d feeds)', count($cat['items'])), count($cat['items']));
+			$cat['param'] = sprintf(_ngettext('(%d feed)', '(%d feeds)', count($cat['items'])), count($cat['items']));
 
 			if (count($cat['items']) > 0 || $show_empty_cats)
 				array_push($root['items'], $cat);
 
 			$num_children = $this->calculate_children_count($root);
-			$root['param'] = vsprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
+			$root['param'] = sprintf(_ngettext('(%d feed)', '(%d feeds)', (int) $num_children), $num_children);
 
 		} else {
 			$fsth = $this->pdo->prepare("SELECT id, title, last_error,
@@ -303,7 +304,7 @@ class Pref_Feeds extends Handler_Protected {
 				$feed['checkbox'] = false;
 				$feed['error'] = $feed_line['last_error'];
 				$feed['icon'] = Feeds::getFeedIcon($feed_line['id']);
-				$feed['param'] = make_local_datetime(
+				$feed['param'] = TimeHelper::make_local_datetime(
 					$feed_line['last_updated'], true);
 				$feed['unread'] = -1;
 				$feed['type'] = 'feed';
@@ -312,7 +313,7 @@ class Pref_Feeds extends Handler_Protected {
 				array_push($root['items'], $feed);
 			}
 
-			$root['param'] = vsprintf(_ngettext('(%d feed)', '(%d feeds)', count($root['items'])), count($root['items']));
+			$root['param'] = sprintf(_ngettext('(%d feed)', '(%d feeds)', count($root['items'])), count($root['items']));
 		}
 
 		$fl = array();
@@ -509,7 +510,6 @@ class Pref_Feeds extends Handler_Protected {
 		global $purge_intervals;
 		global $update_intervals;
 
-
 		$feed_id = clean($_REQUEST["id"]);
 
 		$sth = $this->pdo->prepare("SELECT * FROM ttrss_feeds WHERE id = ? AND
@@ -620,7 +620,10 @@ class Pref_Feeds extends Handler_Protected {
 
 			print "<label>".__("Interval:")."</label> ";
 
-			print_select_hash("update_interval", $update_interval, $update_intervals,
+			$local_update_intervals = $update_intervals;
+			$local_update_intervals[0] .= sprintf(" (%s)", $update_intervals[get_pref("DEFAULT_UPDATE_INTERVAL")]);
+
+			print_select_hash("update_interval", $update_interval, $local_update_intervals,
 				'dojoType="fox.form.Select"');
 
 			print "</fieldset>";
@@ -633,7 +636,21 @@ class Pref_Feeds extends Handler_Protected {
 
 			print "<label>" . __('Article purging:') . "</label> ";
 
-			print_select_hash("purge_interval", $purge_interval, $purge_intervals,
+			if (FORCE_ARTICLE_PURGE == 0) {
+				$local_purge_intervals = $purge_intervals;
+				$default_purge_interval = get_pref("PURGE_OLD_DAYS");
+
+				if ($default_purge_interval > 0)
+				$local_purge_intervals[0] .= " " . T_nsprintf('(%d day)', '(%d days)', $default_purge_interval, $default_purge_interval);
+			else
+				$local_purge_intervals[0] .= " " . sprintf("(%s)", __("Disabled"));
+
+			} else {
+				$purge_interval = FORCE_ARTICLE_PURGE;
+				$local_purge_intervals = [ T_nsprintf('%d day', '%d days', $purge_interval, $purge_interval) ];
+			}
+
+			print_select_hash("purge_interval", $purge_interval, $local_purge_intervals,
 				'dojoType="fox.form.Select" ' .
 				((FORCE_ARTICLE_PURGE == 0) ? "" : 'disabled="1"'));
 
@@ -859,7 +876,10 @@ class Pref_Feeds extends Handler_Protected {
 
 		print "<label>".__("Interval:")."</label> ";
 
-		print_select_hash("update_interval", "", $update_intervals,
+		$local_update_intervals = $update_intervals;
+		$local_update_intervals[0] .= sprintf(" (%s)", $update_intervals[get_pref("DEFAULT_UPDATE_INTERVAL")]);
+
+		print_select_hash("update_interval", "", $local_update_intervals,
 			'disabled="1" dojoType="fox.form.Select"');
 
 		$this->batch_edit_cbox("update_interval");
@@ -874,7 +894,15 @@ class Pref_Feeds extends Handler_Protected {
 
 			print "<label>" . __('Article purging:') . "</label> ";
 
-			print_select_hash("purge_interval", "", $purge_intervals,
+			$local_purge_intervals = $purge_intervals;
+			$default_purge_interval = get_pref("PURGE_OLD_DAYS");
+
+			if ($default_purge_interval > 0)
+				$local_purge_intervals[0] .= " " . T_sprintf("(%d days)", $default_purge_interval);
+			else
+				$local_purge_intervals[0] .= " " . sprintf("(%s)", __("Disabled"));
+
+			print_select_hash("purge_interval", "", $local_purge_intervals,
 				'disabled="1" dojoType="fox.form.Select"');
 
 			$this->batch_edit_cbox("purge_interval");
@@ -1151,7 +1179,7 @@ class Pref_Feeds extends Handler_Protected {
 		$ids = explode(",", clean($_REQUEST["ids"]));
 
 		foreach ($ids as $id) {
-			Pref_Feeds::remove_feed($id, $_SESSION["uid"]);
+			self::remove_feed($id, $_SESSION["uid"]);
 		}
 
 		return;
@@ -1187,10 +1215,11 @@ class Pref_Feeds extends Handler_Protected {
 		}
 
 		if ($num_errors > 0) {
-
 			$error_button = "<button dojoType=\"dijit.form.Button\"
 			  		onclick=\"CommonDialogs.showFeedsWithErrors()\" id=\"errorButton\">" .
 				__("Feeds with errors") . "</button>";
+		} else {
+			$error_button = "";
 		}
 
 		$inactive_button = "<button dojoType=\"dijit.form.Button\"
@@ -1478,7 +1507,7 @@ class Pref_Feeds extends Handler_Protected {
 				htmlspecialchars($line["title"])."</a>";
 
 			print "</td><td class='text-muted' align='right'>";
-			print make_local_datetime($line['last_article'], false);
+			print TimeHelper::make_local_datetime($line['last_article'], false);
 			print "</td>";
 			print "</tr>";
 
@@ -1703,7 +1732,7 @@ class Pref_Feeds extends Handler_Protected {
 		foreach ($feeds as $feed) {
 			$feed = trim($feed);
 
-			if (validate_url($feed)) {
+			if (UrlHelper::validate($feed)) {
 
 				$this->pdo->beginTransaction();
 

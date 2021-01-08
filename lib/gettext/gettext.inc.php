@@ -69,10 +69,10 @@ function get_list_of_locales($locale) {
    * sr_CS.UTF-8@latin, sr_CS@latin, sr@latin, sr_CS.UTF-8, sr_CS, sr.
    */
   $locale_names = array();
-  $lang = NULL;
-  $country = NULL;
-  $charset = NULL;
-  $modifier = NULL;
+  $lang = null;
+  $country = null;
+  $charset = null;
+  $modifier = null;
   if ($locale) {
     if (preg_match("/^(?P<lang>[a-z]{2,3})"              // language code
                    ."(?:_(?P<country>[A-Z]{2}))?"           // country code
@@ -167,7 +167,7 @@ function _check_locale_and_function($function=false) {
 function _get_codeset($domain=null) {
     global $text_domains, $default_domain, $LC_CATEGORIES;
     if (!isset($domain)) $domain = $default_domain;
-    return (isset($text_domains[$domain]->codeset))? $text_domains[$domain]->codeset : ini_get('mbstring.internal_encoding');
+    return (isset($text_domains[$domain]->codeset))? $text_domains[$domain]->codeset : ini_get('default_charset');
 }
 
 /**

@@ -3,6 +3,7 @@ class Af_RedditImgur extends Plugin {
 
 	/* @var PluginHost $host */
 	private $host;
+	private $domain_blacklist = [ "github.com" ];
 
 	function about() {
 		return array(1.0,
@@ -19,16 +20,21 @@ class Af_RedditImgur extends Plugin {
 
 		$host->add_hook($host::HOOK_ARTICLE_FILTER, $this);
 		$host->add_hook($host::HOOK_PREFS_TAB, $this);
+
+		$host->add_hook($host::HOOK_RENDER_ARTICLE, $this);
+		$host->add_hook($host::HOOK_RENDER_ARTICLE_CDM, $this);
+		$host->add_hook($host::HOOK_RENDER_ARTICLE_API, $this);
 	}
 
 	function hook_prefs_tab($args) {
 		if ($args != "prefFeeds") return;
 
-		print "<div dojoType=\"dijit.layout.AccordionPane\" 
+		print "<div dojoType=\"dijit.layout.AccordionPane\"
 			title=\"<i class='material-icons'>extension</i> ".__('Reddit content settings (af_redditimgur)')."\">";
 
 		$enable_readability = $this->host->get($this, "enable_readability");
 		$enable_content_dupcheck = $this->host->get($this, "enable_content_dupcheck");
+		$reddit_to_teddit = $this->host->get($this, "reddit_to_teddit");
 
 		if (version_compare(PHP_VERSION, '5.6.0', '<')) {
 			print_error("Readability requires PHP version 5.6.");
@@ -66,6 +72,12 @@ class Af_RedditImgur extends Plugin {
 		print " " . __("Enable additional duplicate checking") . "</label>";
 		print "</fieldset>";
 
+		print "<fieldset class='narrow'>";
+		print "<label class='checkbox'>";
+		print_checkbox("reddit_to_teddit", $reddit_to_teddit);
+		print " " . T_sprintf("Rewrite Reddit URLs to %s",
+			"<a target=\"_blank\" href=\"https://teddit.net/about\">Teddit</a>") . "</label>";
+
 		print_button("submit", __("Save"), 'class="alt-primary"');
 		print "</form>";
 
@@ -75,8 +87,10 @@ class Af_RedditImgur extends Plugin {
 	function save() {
 		$enable_readability = checkbox_to_sql_bool($_POST["enable_readability"]);
 		$enable_content_dupcheck = checkbox_to_sql_bool($_POST["enable_content_dupcheck"]);
+		$reddit_to_teddit = checkbox_to_sql_bool($_POST["reddit_to_teddit"]);
 
 		$this->host->set($this, "enable_readability", $enable_readability, false);
+		$this->host->set($this, "reddit_to_teddit", $reddit_to_teddit, false);
 		$this->host->set($this, "enable_content_dupcheck", $enable_content_dupcheck);
 
 		echo __("Configuration saved");
@@ -96,6 +110,9 @@ class Af_RedditImgur extends Plugin {
 		foreach ($entries as $entry) {
 			if ($entry->hasAttribute("href") && strpos($entry->getAttribute("href"), "reddit.com") === false) {
 
+				if ($this->is_blacklisted($entry->getAttribute("href")))
+					continue;
+
 				Debug::log("processing href: " . $entry->getAttribute("href"), Debug::$LOG_VERBOSE);
 
 				$matches = array();
@@ -103,7 +120,7 @@ class Af_RedditImgur extends Plugin {
 				if (!$found && preg_match("/^https?:\/\/twitter.com\/(.*?)\/status\/(.*)/", $entry->getAttribute("href"), $matches)) {
 					Debug::log("handling as twitter: " . $matches[1] . " " . $matches[2], Debug::$LOG_VERBOSE);
 
-					$oembed_result = fetch_file_contents("https://publish.twitter.com/oembed?url=" . urlencode($entry->getAttribute("href")));
+					$oembed_result = UrlHelper::fetch("https://publish.twitter.com/oembed?url=" . urlencode($entry->getAttribute("href")));
 
 					if ($oembed_result) {
 						$oembed_result = json_decode($oembed_result, true);
@@ -111,7 +128,7 @@ class Af_RedditImgur extends Plugin {
 						if ($oembed_result && isset($oembed_result["html"])) {
 
 							$tmp = new DOMDocument();
-							if ($tmp->loadHTML('<?xml encoding="utf-8" ?>' . $oembed_result["html"])) {
+							if (@$tmp->loadHTML('<?xml encoding="utf-8" ?>' . $oembed_result["html"])) {
 								$p = $doc->createElement("p");
 
 								$p->appendChild($doc->importNode(
@@ -165,7 +182,7 @@ class Af_RedditImgur extends Plugin {
 					$source_stream = false;
 
 					if ($source_article_url) {
-						$j = json_decode(fetch_file_contents($source_article_url.".json"), true);
+						$j = json_decode(UrlHelper::fetch($source_article_url.".json"), true);
 
 						if ($j) {
 							foreach ($j as $listing) {
@@ -195,7 +212,7 @@ class Af_RedditImgur extends Plugin {
 
 					Debug::log("Handling as Streamable", Debug::$LOG_VERBOSE);
 
-					$tmp = fetch_file_contents($entry->getAttribute("href"));
+					$tmp = UrlHelper::fetch($entry->getAttribute("href"));
 
 					if ($tmp) {
 						$tmpdoc = new DOMDocument();
@@ -285,7 +302,7 @@ class Af_RedditImgur extends Plugin {
 
 					Debug::log("handling as imgur page/whatever", Debug::$LOG_VERBOSE);
 
-					$content = fetch_file_contents(["url" => $entry->getAttribute("href"),
+					$content = UrlHelper::fetch(["url" => $entry->getAttribute("href"),
 						"http_accept" => "text/*"]);
 
 					if ($content) {
@@ -331,7 +348,7 @@ class Af_RedditImgur extends Plugin {
 				if (!$found) {
 					Debug::log("looking for meta og:image", Debug::$LOG_VERBOSE);
 
-					$content = fetch_file_contents(["url" => $entry->getAttribute("href"),
+					$content = UrlHelper::fetch(["url" => $entry->getAttribute("href"),
 						"http_accept" => "text/*"]);
 
 					if ($content) {
@@ -431,6 +448,9 @@ class Af_RedditImgur extends Plugin {
 				}
 			}
 
+			if ($content_link && $this->is_blacklisted($content_link->getAttribute("href")))
+				return $article;
+
 			$found = $this->inline_stuff($article, $doc, $xpath);
 
 			$node = $doc->getElementsByTagName('body')->item(0);
@@ -506,7 +526,7 @@ class Af_RedditImgur extends Plugin {
 		}
 	}
 
-	private function get_header($url, $useragent = SELF_USER_AGENT, $header) {
+	private function get_header($url, $header, $useragent = SELF_USER_AGENT) {
 		$ret = false;
 
 		if (function_exists("curl_init") && !defined("NO_CURL")) {
@@ -526,11 +546,11 @@ class Af_RedditImgur extends Plugin {
 	}
 
 	private function get_content_type($url, $useragent = SELF_USER_AGENT) {
-		return $this->get_header($url, $useragent, CURLINFO_CONTENT_TYPE);
+		return $this->get_header($url, CURLINFO_CONTENT_TYPE, $useragent);
 	}
 
 	private function get_location($url, $useragent = SELF_USER_AGENT) {
-		return $this->get_header($url, $useragent, CURLINFO_EFFECTIVE_URL);
+		return $this->get_header($url, CURLINFO_EFFECTIVE_URL, $useragent);
 	}
 
 	/**
@@ -567,4 +587,63 @@ class Af_RedditImgur extends Plugin {
 
 		return $article;
 	}
+
+	private function is_blacklisted($src) {
+		$src_domain = parse_url($src, PHP_URL_HOST);
+
+		foreach ($this->domain_blacklist as $domain) {
+			if (strstr($src_domain, $domain) !== false) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	function hook_render_article($article) {
+		return $this->hook_render_article_cdm($article);
+	}
+
+	private function rewrite_to_teddit($str) {
+		if (strpos($str, "reddit.com") !== false) {
+			return preg_replace("/https?:\/\/([a-z]+\.)?reddit\.com/", "https://teddit.net", $str);
+		}
+
+		return $str;
+	}
+
+	function hook_render_article_cdm($article) {
+		if ($this->host->get($this, "reddit_to_teddit")) {
+			$need_saving = false;
+
+			$article["link"] = $this->rewrite_to_teddit($article["link"]);
+
+			$doc = new DOMDocument();
+			if (@$doc->loadHTML('<?xml encoding="UTF-8">' . $article["content"])) {
+				$xpath = new DOMXPath($doc);
+				$elems = $xpath->query("//a[@href]");
+
+				foreach ($elems as $elem) {
+					$href = $elem->getAttribute("href");
+					$rewritten_href = $this->rewrite_to_teddit($href);
+
+					if ($href != $rewritten_href) {
+						$elem->setAttribute("href", $rewritten_href);
+						$need_saving = true;
+					}
+				}
+			}
+
+			if ($need_saving) $article["content"] = $doc->saveHTML();
+		}
+
+		return $article;
+	}
+
+	function hook_render_article_api($params) {
+		$article = isset($params["article"]) ? $params["article"] : $params["headline"];
+
+		return $this->hook_render_article_cdm($article);
+	}
+
 }

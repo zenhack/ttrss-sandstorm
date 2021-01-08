@@ -18,6 +18,10 @@
 
 	} ?>
 
+	<?php if (theme_exists(LOCAL_OVERRIDE_STYLESHEET)) {
+		echo stylesheet_tag(get_theme_path(LOCAL_OVERRIDE_STYLESHEET));
+	} ?>
+
 	<style type="text/css">
 		@media (prefers-color-scheme: dark) {
 			body {
@@ -145,6 +149,14 @@
 			<div dojoType="dijit.Tooltip" connectId="bw_limit_label" position="below" style="display:none">
 				<?php echo __("Does not display images in articles, reduces automatic refreshes."); ?>
 			</div>
+
+			<fieldset class="narrow">
+				<label> </label>
+
+				<label ><input dojoType="dijit.form.CheckBox" name="safe_mode" id="safe_mode"
+					  type="checkbox">
+					<?php echo __("Safe mode (no plugins)") ?></label>
+			</fieldset>
 
 			<?php if (SESSION_COOKIE_LIFETIME > 0) { ?>
 

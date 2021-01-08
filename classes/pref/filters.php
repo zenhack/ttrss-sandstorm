@@ -302,7 +302,7 @@ class Pref_Filters extends Handler_Protected {
 			$filter['name'] = $name[0];
 			$filter['param'] = $name[1];
 			$filter['checkbox'] = false;
-			$filter['last_triggered'] = $line["last_triggered"] ? make_local_datetime($line["last_triggered"], false) : null;
+			$filter['last_triggered'] = $line["last_triggered"] ? TimeHelper::make_local_datetime($line["last_triggered"], false) : null;
 			$filter['enabled'] = sql_bool_to_bool($line["enabled"]);
 			$filter['rules'] = $this->getfilterrules_list($line['id']);
 
@@ -552,7 +552,7 @@ class Pref_Filters extends Handler_Protected {
 
 		return "<span class='filterRule $inverse'>" .
 			T_sprintf("%s on %s in %s %s", htmlspecialchars($rule["reg_exp"]),
-			$filter_type, $feed, isset($rule["inverse"]) ? __("(inverse)") : "") . "</span>";
+			"<span class='field'>$filter_type</span>", "<span class='feed'>$feed</span>", isset($rule["inverse"]) ? __("(inverse)") : "") . "</span>";
 	}
 
 	function printRuleName() {
@@ -736,10 +736,8 @@ class Pref_Filters extends Handler_Protected {
 	}
 
 	function index() {
-
-		$filter_search = clean($_REQUEST["search"]);
-
 		if (array_key_exists("search", $_REQUEST)) {
+			$filter_search = clean($_REQUEST["search"]);
 			$_SESSION["prefs_filter_search"] = $filter_search;
 		} else {
 			$filter_search = $_SESSION["prefs_filter_search"];
@@ -748,12 +746,6 @@ class Pref_Filters extends Handler_Protected {
 		print "<div dojoType='dijit.layout.BorderContainer' gutters='false'>";
 		print "<div style='padding : 0px' dojoType='dijit.layout.ContentPane' region='top'>";
 		print "<div dojoType='fox.Toolbar'>";
-
-		if (array_key_exists("search", $_REQUEST)) {
-			$_SESSION["prefs_filter_search"] = $filter_search;
-		} else {
-			$filter_search = $_SESSION["prefs_filter_search"];
-		}
 
 		print "<div style='float : right; padding-right : 4px;'>
 			<input dojoType=\"dijit.form.TextBox\" id=\"filter_search\" size=\"20\" type=\"search\"

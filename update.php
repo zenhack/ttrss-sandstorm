@@ -14,6 +14,19 @@
 	require_once "db.php";
 	require_once "db-prefs.php";
 
+	function make_stampfile($filename) {
+		$fp = fopen(LOCK_DIRECTORY . "/$filename", "w");
+
+		if (flock($fp, LOCK_EX | LOCK_NB)) {
+			fwrite($fp, time() . "\n");
+			flock($fp, LOCK_UN);
+			fclose($fp);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	function cleanup_tags($days = 14, $limit = 1000) {
 
 		$days = (int) $days;
@@ -69,6 +82,7 @@
 	$longopts = array("feeds",
 			"daemon",
 			"daemon-loop",
+			"update-feed:",
 			"send-digests",
 			"task:",
 			"cleanup-tags",
@@ -77,7 +91,7 @@
 			"log-level:",
 			"indexes",
 			"pidlock:",
-			"update-schema",
+			"update-schema::",
 			"convert-filters",
 			"force-update",
 			"gen-search-idx",
@@ -131,7 +145,7 @@
 		print "  --log FILE                  - log messages to FILE\n";
 		print "  --log-level N               - log verbosity level\n";
 		print "  --indexes                   - recreate missing schema indexes\n";
-		print "  --update-schema             - update database schema\n";
+		print "  --update-schema[=force-yes] - update database schema (without prompting)\n";
 		print "  --gen-search-idx            - generate basic PostgreSQL fulltext search index\n";
 		print "  --convert-filters           - convert type1 filters to type2\n";
 		print "  --send-digests              - send pending email digests\n";
@@ -204,7 +218,7 @@
 
 	if (isset($options["task"]) && isset($options["pidlock"])) {
 		$waits = $options["task"] * 5;
-		Debug::log("Waiting before update ($waits)");
+		Debug::log("Waiting before update ($waits)...");
 		sleep($waits);
 	}
 
@@ -222,17 +236,17 @@
 	}
 
 	if (isset($options["feeds"])) {
-		RSSUtils::update_daemon_common();
-		RSSUtils::housekeeping_common(true);
+		RSSUtils::update_daemon_common(DAEMON_FEED_LIMIT, $options);
+		RSSUtils::housekeeping_common();
 
-		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_UPDATE_TASK, "hook_update_task", $op);
+		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_UPDATE_TASK, "hook_update_task", $options);
 	}
 
 	if (isset($options["daemon"])) {
 		while (true) {
 			$quiet = (isset($options["quiet"])) ? "--quiet" : "";
-            $log = isset($options['log']) ? '--log '.$options['log'] : '';
-            $log_level = isset($options['log-level']) ? '--log-level '.$options['log-level'] : '';
+			$log = isset($options['log']) ? '--log '.$options['log'] : '';
+			$log_level = isset($options['log-level']) ? '--log-level '.$options['log-level'] : '';
 
 			passthru(PHP_EXECUTABLE . " " . $argv[0] ." --daemon-loop $quiet $log $log_level");
 
@@ -244,15 +258,31 @@
 		}
 	}
 
+	if (isset($options["update-feed"])) {
+		try {
+
+			if (!RSSUtils::update_rss_feed($options["update-feed"], true))
+				exit(100);
+
+		} catch (PDOException $e) {
+			Debug::log(sprintf("Exception while updating feed %d: %s (%s:%d)",
+				$options["update-feed"], $e->getMessage(), $e->getFile(), $e->getLine()));
+
+			Logger::get()->log_error(E_USER_WARNING, $e->getMessage(), $e->getFile(), $e->getLine(), $e->getTraceAsString());
+
+			exit(110);
+		}
+	}
+
 	if (isset($options["daemon-loop"])) {
 		if (!make_stampfile('update_daemon.stamp')) {
 			Debug::log("warning: unable to create stampfile\n");
 		}
 
-		RSSUtils::update_daemon_common(isset($options["pidlock"]) ? 50 : DAEMON_FEED_LIMIT);
+		RSSUtils::update_daemon_common(isset($options["pidlock"]) ? 50 : DAEMON_FEED_LIMIT, $options);
 
 		if (!isset($options["pidlock"]) || $options["task"] == 0)
-			RSSUtils::housekeeping_common(true);
+			RSSUtils::housekeeping_common();
 
 		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_UPDATE_TASK, "hook_update_task", $op);
 	}
@@ -382,12 +412,16 @@
 			else
 				Debug::log("WARNING: please backup your database before continuing.");
 
-			Debug::log("Type 'yes' to continue.");
+			if ($options["update-schema"] != "force-yes") {
+				Debug::log("Type 'yes' to continue.");
 
-			if (read_stdin() != 'yes')
-				exit;
+				if (read_stdin() != 'yes')
+					exit;
+			} else {
+				Debug::log("Proceeding to update without confirmation...");
+			}
 
-			Debug::log("Performing updates to version " . SCHEMA_VERSION);
+			Debug::log("Performing updates to version " . SCHEMA_VERSION . "...");
 
 			for ($i = $updater->getSchemaVersion() + 1; $i <= SCHEMA_VERSION; $i++) {
 				Debug::log("* Updating to version $i...");
@@ -400,10 +434,11 @@
 					Debug::log("One of the updates failed. Either retry the process or perform updates manually.");
 					return;
 				}
-
 			}
+
+			Debug::log("All done.");
 		} else {
-			Debug::log("Update not required.");
+			Debug::log("Database schema is already at latest version.");
 		}
 
 	}

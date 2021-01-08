@@ -668,6 +668,10 @@ body.ttrss_main #headlines-frame div.feed-title a {
 body.ttrss_main #headlines-frame div.feed-title a:hover {
   color: #b87d2c;
 }
+body.ttrss_main #headlines-frame span.hlMenuAttach {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
 body.ttrss_main #toolbar-frame_splitter {
   display: none;
 }
@@ -703,6 +707,9 @@ body.ttrss_main #toolbar-frame #toolbar .left i.icon-error {
 body.ttrss_main #toolbar-frame #toolbar i.log-alert {
   color: #ddba1c;
 }
+body.ttrss_main #toolbar-frame #toolbar i {
+  margin: 0 4px;
+}
 body.ttrss_main #toolbar-frame #toolbar #toolbar-headlines {
   padding-right: 4px;
   flex-grow: 2;
@@ -713,9 +720,8 @@ body.ttrss_main #toolbar-frame #toolbar #toolbar-headlines .left {
   display: flex;
   align-items: center;
 }
-body.ttrss_main #toolbar-frame #toolbar #toolbar-headlines .left img {
-  vertical-align: middle;
-  margin-right: 8px;
+body.ttrss_main #toolbar-frame #toolbar #toolbar-headlines .left #feed_title {
+  margin-left: 4px;
 }
 body.ttrss_main #toolbar-frame #toolbar #toolbar-headlines .right {
   display: flex;
@@ -1466,6 +1472,9 @@ body.ttrss_prefs .user-css-editor {
 }
 body.ttrss_prefs fieldset.prefs {
   min-height: 30px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 body.ttrss_prefs fieldset.prefs label:first-of-type {
   min-width: 300px;
@@ -1473,6 +1482,9 @@ body.ttrss_prefs fieldset.prefs label:first-of-type {
 body.ttrss_prefs fieldset.prefs .help-text {
   display: inline-block;
   margin-left: 10px;
+}
+body.ttrss_prefs fieldset.prefs .help-text-bottom {
+  margin-top: 10px;
 }
 body.ttrss_prefs fieldset.plugin label.description {
   width: 600px;
@@ -1564,8 +1576,14 @@ body.ttrss_utility fieldset > label.checkbox {
   position: relative;
   top: -1px;
 }
-.flat #filterDlg_Matches span.filterRule {
+.flat #filterDlg_Matches .filterRule {
   color: green;
+  word-break: break-all;
+}
+.flat #filterDlg_Matches .filterRule .field,
+.flat #filterDlg_Matches .filterRule .feed {
+  word-break: break-word;
+  font-style: italic;
 }
 .flat #filterTree .filterRules li.inverse,
 .flat #filterDlg_Matches span.filterRule.inverse {

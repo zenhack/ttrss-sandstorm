@@ -159,7 +159,7 @@ class Article extends Handler_Protected {
 
 		$param = clean($_REQUEST['param']);
 
-		$tags = Article::get_article_tags($param);
+		$tags = self::get_article_tags($param);
 
 		$tags_str = join(", ", $tags);
 
@@ -179,7 +179,7 @@ class Article extends Handler_Protected {
 
 		print "<footer>";
 		print "<button dojoType='dijit.form.Button'
-			type='submit' class='alt-primary' onclick=\"dijit.byId('editTagsDlg').execute()\">".__('Save')."</button> ";
+			type='submit' class='alt-primary'>".__('Save')."</button> ";
 		print "<button dojoType='dijit.form.Button'
 			onclick=\"dijit.byId('editTagsDlg').hide()\">".__('Cancel')."</button>";
 		print "</footer>";
@@ -218,7 +218,7 @@ class Article extends Handler_Protected {
 		$id = clean($_REQUEST["id"]);
 
 		$tags_str = clean($_REQUEST["tags_str"]);
-		$tags = array_unique(trim_array(explode(",", $tags_str)));
+		$tags = array_unique(array_map('trim', explode(",", $tags_str)));
 
 		$this->pdo->beginTransaction();
 
@@ -232,19 +232,24 @@ class Article extends Handler_Protected {
 
 			$int_id = $row['int_id'];
 
-			$sth = $this->pdo->prepare("DELETE FROM ttrss_tags WHERE
+			$dsth = $this->pdo->prepare("DELETE FROM ttrss_tags WHERE
 				post_int_id = ? AND owner_uid = ?");
-			$sth->execute([$int_id, $_SESSION['uid']]);
+			$dsth->execute([$int_id, $_SESSION['uid']]);
+
+			$csth = $this->pdo->prepare("SELECT post_int_id FROM ttrss_tags
+				WHERE post_int_id = ? AND owner_uid = ? AND tag_name = ?");
+
+			$usth = $this->pdo->prepare("INSERT INTO ttrss_tags
+				(post_int_id, owner_uid, tag_name)
+				VALUES (?, ?, ?)");
 
 			$tags = FeedItem_Common::normalize_categories($tags);
 
 			foreach ($tags as $tag) {
-				if ($tag != '') {
-					$sth = $this->pdo->prepare("INSERT INTO ttrss_tags
-								(post_int_id, owner_uid, tag_name)
-								VALUES (?, ?, ?)");
+				$csth->execute([$int_id, $_SESSION['uid'], $tag]);
 
-					$sth->execute([$int_id, $_SESSION['uid'], $tag]);
+				if (!$csth->fetch()) {
+					$usth->execute([$int_id, $_SESSION['uid'], $tag]);
 				}
 
 				array_push($tags_to_cache, $tag);
@@ -261,7 +266,7 @@ class Article extends Handler_Protected {
 
 		$this->pdo->commit();
 
-		$tags = Article::get_article_tags($id);
+		$tags = self::get_article_tags($id);
 		$tags_str = $this->format_tags_string($tags, $id);
 		$tags_str_full = join(", ", $tags);
 
@@ -344,7 +349,7 @@ class Article extends Handler_Protected {
 	static function format_article_enclosures($id, $always_display_enclosures,
 									   $article_content, $hide_images = false) {
 
-		$result = Article::get_article_enclosures($id);
+		$result = self::get_article_enclosures($id);
 		$rv = '';
 
 		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_FORMAT_ENCLOSURES) as $plugin) {
@@ -716,6 +721,11 @@ class Article extends Handler_Protected {
 
 		$article_image = "";
 		$article_stream = "";
+		$article_kind = 0;
+
+		define('ARTICLE_KIND_ALBUM', 1); /* TODO */
+		define('ARTICLE_KIND_VIDEO', 2);
+		define('ARTICLE_KIND_YOUTUBE', 3);
 
 		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ARTICLE_IMAGE) as $p) {
 			list ($article_image, $article_stream, $content) = $p->hook_article_image($enclosures, $content, $site_url);
@@ -734,6 +744,7 @@ class Article extends Handler_Protected {
 						if ($rrr = preg_match("/\/embed\/([\w-]+)/", $e->getAttribute("src"), $matches)) {
 							$article_image = "https://img.youtube.com/vi/" . $matches[1] . "/hqdefault.jpg";
 							$article_stream = "https://youtu.be/" . $matches[1];
+							$article_kind = ARTICLE_KIND_YOUTUBE;
 							break;
 						}
 					} else if ($e->nodeName == "video") {
@@ -743,6 +754,7 @@ class Article extends Handler_Protected {
 
 						if ($src) {
 							$article_stream = $src->getAttribute("src");
+							$article_kind = ARTICLE_KIND_VIDEO;
 						}
 
 						break;
@@ -763,8 +775,12 @@ class Article extends Handler_Protected {
 					}
 				}
 
-			if ($article_image)
+			if ($article_image) {
 				$article_image = rewrite_relative_url($site_url, $article_image);
+
+				if (!$article_kind && (count($enclosures) > 1 || $elems->length > 1))
+					$article_kind = ARTICLE_KIND_ALBUM;
+			}
 
 			if ($article_stream)
 				$article_stream = rewrite_relative_url($site_url, $article_stream);
@@ -778,7 +794,7 @@ class Article extends Handler_Protected {
 		if ($article_stream && $cache->exists(sha1($article_stream)))
 			$article_stream = $cache->getUrl(sha1($article_stream));
 
-		return [$article_image, $article_stream];
+		return [$article_image, $article_stream, $article_kind];
 	}
 
 }
