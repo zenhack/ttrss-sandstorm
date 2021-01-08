@@ -18,7 +18,7 @@ const pkgdef :Spk.PackageDefinition = (
     # about your app.
     appTitle = (defaultText = "Tiny Tiny RSS"),
 
-    appVersion = 18,  # Increment this for every release.
+    appVersion = 19,  # Increment this for every release.
 
     # This is stored in a text file that ttrss itself reads the version
     # from; we use `embed` to avoid duplication here.
