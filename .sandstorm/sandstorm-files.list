@@ -263,7 +263,9 @@ opt/app/classes/pref/system.php
 opt/app/classes/pref/users.php
 opt/app/classes/rpc.php
 opt/app/classes/rssutils.php
+opt/app/classes/sanitizer.php
 opt/app/classes/timehelper.php
+opt/app/classes/urlhelper.php
 opt/app/classes/userhelper.php
 opt/app/config.php
 opt/app/errors.php
@@ -396,6 +398,7 @@ opt/app/schema/versions/mysql/136.sql
 opt/app/schema/versions/mysql/137.sql
 opt/app/schema/versions/mysql/138.sql
 opt/app/schema/versions/mysql/139.sql
+opt/app/schema/versions/mysql/140.sql
 opt/app/themes
 opt/app/themes.local
 opt/app/themes/compact.css
