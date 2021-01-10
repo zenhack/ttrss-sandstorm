@@ -19,7 +19,7 @@
 	// ***********************************
 
 	define('SELF_URL_PATH',
-		(is_server_https() ? "https" : "http")
+		((!empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] != 'off')) || $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' ? "https" : "http")
 		. "://"
 		. $_SERVER["HTTP_HOST"]);
 	// Full URL of your tt-rss installation. This should be set to the
