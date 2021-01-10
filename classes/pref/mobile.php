@@ -1,5 +1,9 @@
 <?php
 class Pref_Mobile extends Handler_Protected {
+    function csrf_ignore($method) {
+        return $method === "index";
+    }
+
     function index() {
     print <<<EOD
 <h2>Mobile App Setup</h2>
