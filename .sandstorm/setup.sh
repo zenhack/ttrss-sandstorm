@@ -77,4 +77,6 @@ cat <<EOF > /etc/mysql/conf.d/sandstorm.cnf
 innodb_log_file_size = 1048576
 # Set the main data file to grow by 1MB at a time, rather than 8MB at a time.
 innodb_autoextend_increment = 1
+# Use /var for tmpdir, so it doesn't fill up
+tmpdir = /var
 EOF
