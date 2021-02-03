@@ -75,6 +75,8 @@ cat <<EOF > /etc/mysql/conf.d/sandstorm.cnf
 [mysqld]
 # Set the transaction log file to the minimum allowed size to save disk space.
 innodb_log_file_size = 1048576
+# /tmp is small; use /var/tmp so we don't run out of space:
+tmpdir = /var/tmp
 # Set the main data file to grow by 1MB at a time, rather than 8MB at a time.
 innodb_autoextend_increment = 1
 EOF
