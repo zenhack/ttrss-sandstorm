@@ -332,12 +332,15 @@ opt/app/lib/flat-ttrss/flat_combined.css
 opt/app/lib/flat-ttrss/flat_combined_dark.css
 opt/app/lib/flat-ttrss/flat_combined_dark_blue.css
 opt/app/lib/flat-ttrss/fonts/flat-icon.ttf
+opt/app/lib/flat-ttrss/fonts/flat-icon.woff
 opt/app/lib/flat-ttrss/images/progressBarStrips.png
 opt/app/lib/floIcon.php
 opt/app/lib/gettext/gettext.inc.php
 opt/app/lib/gettext/gettext.php
 opt/app/lib/gettext/plurals.php
 opt/app/lib/gettext/streams.php
+opt/app/lib/iconfont/MaterialIcons-Regular.ttf
+opt/app/lib/iconfont/MaterialIcons-Regular.woff
 opt/app/lib/iconfont/MaterialIcons-Regular.woff2
 opt/app/lib/jimIcon.php
 opt/app/lib/prototype.js
