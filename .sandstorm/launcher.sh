@@ -92,15 +92,15 @@ export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 
 # Spawn php:
-/usr/sbin/php-fpm7.0 --nodaemonize --fpm-config /etc/php/7.0/fpm/php-fpm.conf &
+/usr/sbin/php-fpm7.3 --nodaemonize --fpm-config /etc/php/7.3/fpm/php-fpm.conf &
 # Wait for it to start:
-wait_for php-fpm7.0 /var/run/php/php7.0-fpm.sock
+wait_for php-fpm7.3 /var/run/php/php7.3-fpm.sock
 
 # Try to update feeds once immediately on startup, then start the
 # background daemon. If it dies, wait a couple seconds and re-try.
 (
     while true; do
-        /usr/bin/php7.0 /opt/app/update.php --feeds --daemon || true
+        /usr/bin/php7.3 /opt/app/update.php --feeds --daemon || true
         echo 'Update daemon exited; waiting 2 seconds before re-starting.'
         sleep 2
     done

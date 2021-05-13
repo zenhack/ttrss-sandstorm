@@ -12,8 +12,12 @@ CURL_OPTS="--silent --show-error"
 echo localhost > /etc/hostname
 hostname localhost
 
-# Install curl that is needed below.
+# Grub updates don't silent install well
+apt-mark hold grub-pc
 apt-get update
+apt-get upgrade -y
+
+# Install curl that is needed below.
 apt-get install -y curl
 
 # The following line copies stderr through stderr to cat without accidentally leaving it in the
@@ -41,6 +45,10 @@ usermod -a -G 'sandstorm' 'vagrant'
 sudo sed --in-place='' \
         --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' \
         /opt/sandstorm/sandstorm.conf
+
+# Force vagrant-spk to use the strict CSP, see sandstorm#3424 for details.
+echo 'ALLOW_LEGACY_RELAXED_CSP=false' >> /opt/sandstorm/sandstorm.conf
+
 sudo service sandstorm restart
 # Enable apt-cacher-ng proxy to make things faster if one appears to be running on the gateway IP
 GATEWAY_IP=$(ip route  | grep ^default  | cut -d ' ' -f 3)
