@@ -1,7 +1,7 @@
 <?php
 class API extends Handler {
 
-	const API_LEVEL  = 16;
+	const API_LEVEL  = 17;
 
 	const STATUS_OK  = 0;
 	const STATUS_ERR = 1;
@@ -74,7 +74,12 @@ class API extends Handler {
 		if ($uid = UserHelper::find_user_by_login($login)) {
 //			if (get_pref(Prefs::ENABLE_API_ACCESS, $uid)) {
 				if (UserHelper::authenticate($login, $password, false,  Auth_Base::AUTH_SERVICE_API)) {
+
+					// needed for _get_config()
+					UserHelper::load_user_plugins($_SESSION['uid']);
+
 					$this->_wrap(self::STATUS_OK, array("session_id" => session_id(),
+						"config" => $this->_get_config(),
 						"api_level" => self::API_LEVEL));
 				} else {
 					$this->_wrap(self::STATUS_ERR, array("error" => self::E_LOGIN_ERROR));
@@ -370,17 +375,24 @@ class API extends Handler {
 		}
 	}
 
-	function getConfig() {
+	private function _get_config() {
 		$config = [
 			"icons_dir" => Config::get(Config::ICONS_DIR),
 			"icons_url" => Config::get(Config::ICONS_URL)
 		];
 
 		$config["daemon_is_running"] = file_is_locked("update_daemon.lock");
+		$config["custom_sort_types"] = $this->_get_custom_sort_types();
 
 		$config["num_feeds"] = ORM::for_table('ttrss_feeds')
 			->where('owner_uid', $_SESSION['uid'])
 			->count();
+
+		return $config;
+	}
+
+	function getConfig() {
+		$config = $this->_get_config();
 
 		$this->_wrap(self::STATUS_OK, $config);
 	}
@@ -851,5 +863,17 @@ class API extends Handler {
 		}
 
 		return false;
+	}
+
+	private function _get_custom_sort_types() {
+		$ret = [];
+
+		PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_HEADLINES_CUSTOM_SORT_MAP, function ($result) use (&$ret) {
+			foreach ($result as $sort_value => $sort_title) {
+				$ret[$sort_value] = $sort_title;
+			}
+		});
+
+		return $ret;
 	}
 }
