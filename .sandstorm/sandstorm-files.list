@@ -326,7 +326,6 @@ opt/app/plugins/auth_remote/init.php
 opt/app/plugins/auto_assign_labels/init.php
 opt/app/plugins/bookmarklets/init.php
 opt/app/plugins/cache_starred_images/init.php
-opt/app/plugins/googlereaderkeys/init.php
 opt/app/plugins/hotkeys_force_top/init.php
 opt/app/plugins/hotkeys_noscroll/init.php
 opt/app/plugins/hotkeys_swap_jk/init.php
@@ -341,6 +340,7 @@ opt/app/plugins/toggle_sidebar/init.php
 opt/app/prefs.php
 opt/app/public.php
 opt/app/schema/ttrss_schema_mysql.sql
+opt/app/sql/mysql/schema.sql
 opt/app/themes
 opt/app/themes.local
 opt/app/themes/compact.css
@@ -452,6 +452,7 @@ sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
 usr/bin/bash
+usr/bin/cp
 usr/bin/dash
 usr/bin/diff
 usr/bin/mkdir
@@ -496,6 +497,8 @@ usr/lib/php/20180731/xmlwriter.so
 usr/lib/php/20180731/xsl.so
 usr/lib/ssl/openssl.cnf
 usr/lib/x86_64-linux-gnu/ld-2.28.so
+usr/lib/x86_64-linux-gnu/libacl.so.1
+usr/lib/x86_64-linux-gnu/libacl.so.1.1.2253
 usr/lib/x86_64-linux-gnu/libaio.so.1
 usr/lib/x86_64-linux-gnu/libaio.so.1.0.1
 usr/lib/x86_64-linux-gnu/libapparmor.so.1
@@ -503,6 +506,8 @@ usr/lib/x86_64-linux-gnu/libapparmor.so.1.6.0
 usr/lib/x86_64-linux-gnu/libargon2.so.1
 usr/lib/x86_64-linux-gnu/libatomic.so.1
 usr/lib/x86_64-linux-gnu/libatomic.so.1.2.0
+usr/lib/x86_64-linux-gnu/libattr.so.1
+usr/lib/x86_64-linux-gnu/libattr.so.1.1.2448
 usr/lib/x86_64-linux-gnu/libbsd.so.0
 usr/lib/x86_64-linux-gnu/libbsd.so.0.9.1
 usr/lib/x86_64-linux-gnu/libc-2.28.so
