@@ -73,7 +73,7 @@ wait_for mysql $mysql_socket
 
 if [ ! -e /var/.db-created ]; then
     mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
-    mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/schema/ttrss_schema_mysql.sql
+    mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/sql/mysql/schema.sql
     # Delete the TTRSS project's feeds from the db; otherwise the user will
     # get a bunch of powerbox requests immediately on startup, which is not great UX:
     mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" -e "DELETE FROM ttrss_feeds"
