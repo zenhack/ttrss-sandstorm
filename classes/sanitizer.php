@@ -41,20 +41,22 @@ class Sanitizer {
 	}
 
 	public static function iframe_whitelisted($entry) {
-		@$src = parse_url($entry->getAttribute("src"), PHP_URL_HOST);
+		$src = parse_url($entry->getAttribute("src"), PHP_URL_HOST);
 
-		if ($src) {
-			foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_IFRAME_WHITELISTED) as $plugin) {
-				if ($plugin->hook_iframe_whitelisted($src))
-					return true;
-			}
-		}
+		if (!empty($src))
+			return PluginHost::getInstance()->run_hooks_until(PluginHost::HOOK_IFRAME_WHITELISTED, true, $src);
 
 		return false;
 	}
 
+	private static function is_prefix_https() {
+		return parse_url(Config::get(Config::SELF_URL_PATH), PHP_URL_SCHEME) == 'https';
+	}
+
 	public static function sanitize($str, $force_remove_images = false, $owner = false, $site_url = false, $highlight_words = false, $article_id = false) {
-		if (!$owner) $owner = $_SESSION["uid"];
+
+		if (!$owner && isset($_SESSION["uid"]))
+			$owner = $_SESSION["uid"];
 
 		$res = trim($str); if (!$res) return '';
 
@@ -62,7 +64,9 @@ class Sanitizer {
 		$doc->loadHTML('<?xml encoding="UTF-8">' . $res);
 		$xpath = new DOMXPath($doc);
 
-		$rewrite_base_url = $site_url ? $site_url : get_self_url_prefix();
+		// is it a good idea to possibly rewrite urls to our own prefix?
+		// $rewrite_base_url = $site_url ? $site_url : Config::get_self_url();
+		$rewrite_base_url = $site_url ? $site_url : "http://domain.invalid/";
 
 		$entries = $xpath->query('(//a[@href]|//img[@src]|//source[@srcset|@src])');
 
@@ -97,7 +101,7 @@ class Sanitizer {
 			}
 
 			if ($entry->hasAttribute('src') &&
-					($owner && get_pref("STRIP_IMAGES", $owner)) || $force_remove_images || $_SESSION["bw_limit"]) {
+					($owner && get_pref(Prefs::STRIP_IMAGES, $owner)) || $force_remove_images || ($_SESSION["bw_limit"] ?? false)) {
 
 				$p = $doc->createElement('p');
 
@@ -127,7 +131,7 @@ class Sanitizer {
 			if (!self::iframe_whitelisted($entry)) {
 				$entry->setAttribute('sandbox', 'allow-scripts');
 			} else {
-				if (is_prefix_https()) {
+				if (self::is_prefix_https()) {
 					$entry->setAttribute("src",
 						str_replace("http://", "https://",
 							$entry->getAttribute("src")));
@@ -147,20 +151,21 @@ class Sanitizer {
 			'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'time',
 			'tr', 'track', 'tt', 'u', 'ul', 'var', 'wbr', 'video', 'xml:namespace' );
 
-		if ($_SESSION['hasSandbox']) $allowed_elements[] = 'iframe';
+		if ($_SESSION['hasSandbox'] ?? false) $allowed_elements[] = 'iframe';
 
 		$disallowed_attributes = array('id', 'style', 'class', 'width', 'height', 'allow');
 
-		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_SANITIZE) as $plugin) {
-			$retval = $plugin->hook_sanitize($doc, $site_url, $allowed_elements, $disallowed_attributes, $article_id);
-			if (is_array($retval)) {
-				$doc = $retval[0];
-				$allowed_elements = $retval[1];
-				$disallowed_attributes = $retval[2];
-			} else {
-				$doc = $retval;
-			}
-		}
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_SANITIZE,
+			function ($result) use (&$doc, &$allowed_elements, &$disallowed_attributes) {
+				if (is_array($result)) {
+					$doc = $result[0];
+					$allowed_elements = $result[1];
+					$disallowed_attributes = $result[2];
+				} else {
+					$doc = $result;
+				}
+			},
+			$doc, $site_url, $allowed_elements, $disallowed_attributes, $article_id);
 
 		$doc->removeChild($doc->firstChild); //remove doctype
 		$doc = self::strip_harmful_tags($doc, $allowed_elements, $disallowed_attributes);
@@ -186,16 +191,16 @@ class Sanitizer {
 					$text = $child->textContent;
 
 					while (($pos = mb_stripos($text, $word)) !== false) {
-						$fragment->appendChild(new DomText(mb_substr($text, 0, $pos)));
-						$word = mb_substr($text, $pos, mb_strlen($word));
+						$fragment->appendChild(new DOMText(mb_substr($text, 0, (int)$pos)));
+						$word = mb_substr($text, (int)$pos, mb_strlen($word));
 						$highlight = $doc->createElement('span');
-						$highlight->appendChild(new DomText($word));
+						$highlight->appendChild(new DOMText($word));
 						$highlight->setAttribute('class', 'highlight');
 						$fragment->appendChild($highlight);
 						$text = mb_substr($text, $pos + mb_strlen($word));
 					}
 
-					if (!empty($text)) $fragment->appendChild(new DomText($text));
+					if (!empty($text)) $fragment->appendChild(new DOMText($text));
 
 					$child->parentNode->replaceChild($fragment, $child);
 				}

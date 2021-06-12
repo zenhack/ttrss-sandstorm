@@ -17,6 +17,10 @@ const PluginHost = {
 	HOOK_HEADLINE_RENDERED: 12,
 	HOOK_COUNTERS_RECEIVED: 13,
 	HOOK_COUNTERS_PROCESSED: 14,
+	HOOK_HEADLINE_MUTATIONS: 15,
+	HOOK_HEADLINE_MUTATIONS_SYNCED: 16,
+	HOOK_HEADLINES_RENDERED: 17,
+	HOOK_HEADLINES_SCROLL_HANDLER: 18,
 	hooks: [],
 	register: function (name, callback) {
 		if (typeof(this.hooks[name]) == 'undefined')
@@ -25,7 +29,7 @@ const PluginHost = {
 		this.hooks[name].push(callback);
 	},
 	run: function (name, args) {
-		//console.warn('PluginHost::run ' + name);
+		//console.warn('PluginHost.run', name);
 
 		if (typeof(this.hooks[name]) != 'undefined')
 			for (let i = 0; i < this.hooks[name].length; i++) {

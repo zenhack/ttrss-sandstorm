@@ -1,10 +1,7 @@
 <?php
-class Logger_Stdout {
+class Logger_Stdout implements Logger_Adapter {
 
-	/**
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	function log_error($errno, $errstr, $file, $line, $context) {
+	function log_error(int $errno, string $errstr, string $file, int $line, $context) {
 
 		switch ($errno) {
 		case E_ERROR:
@@ -24,7 +21,7 @@ class Logger_Stdout {
 			$priority = LOG_INFO;
 		}
 
-		$errname = Logger::$errornames[$errno] . " ($errno)";
+		$errname = Logger::ERROR_NAMES[$errno] . " ($errno)";
 
 		print "[EEE] $priority $errname ($file:$line) $errstr\n";
 

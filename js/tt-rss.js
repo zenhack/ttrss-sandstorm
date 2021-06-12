@@ -1,6 +1,6 @@
 'use strict'
 
-/* global require, App */
+/* global require, App, dojo */
 
 /* exported Plugins */
 const Plugins = {};
@@ -50,6 +50,8 @@ require(["dojo/_base/kernel",
 	"fox/FeedStoreModel",
 	"fox/FeedTree",
 	"fox/Toolbar",
+	"fox/SingleUseDialog",
+	"fox/form/ValidationMultiSelect",
 	"fox/form/ValidationTextArea",
 	"fox/form/Select",
 	"fox/form/ComboButton",
@@ -67,15 +69,3 @@ require(["dojo/_base/kernel",
 	});
 });
 
-/* exported hash_get */
-function hash_get(key) {
-	const kv = window.location.hash.substring(1).toQueryParams();
-	return kv[key];
-}
-
-/* exported hash_set */
-function hash_set(key, value) {
-	const kv = window.location.hash.substring(1).toQueryParams();
-	kv[key] = value;
-	window.location.hash = $H(kv).toQueryString();
-}

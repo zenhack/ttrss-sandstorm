@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: tt-rss git\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-07 18:21+0300\n"
-"PO-Revision-Date: 2019-12-10 18:38+0000\n"
-"Last-Translator: Nikolay Korotkiy <sikmir@gmail.com>\n"
+"POT-Creation-Date: 2021-03-08 19:06+0300\n"
+"PO-Revision-Date: 2021-02-26 10:23+0000\n"
+"Last-Translator: Andrew Dolgov <fox@fakecake.org>\n"
 "Language-Team: Russian <https://weblate.tt-rss.org/projects/tt-rss/messages/"
 "ru/>\n"
 "Language: ru_RU\n"
@@ -18,843 +18,1455 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 3.7.1\n"
+"X-Generator: Weblate 4.5\n"
 
-#: backend.php:57
+#: backend.php:60
 msgid "Use default"
 msgstr "По умолчанию"
 
-#: backend.php:58
+#: backend.php:61
 msgid "Never purge"
 msgstr "Никогда"
 
-#: backend.php:59
+#: backend.php:62
 msgid "1 week old"
 msgstr "Неделя"
 
-#: backend.php:60
+#: backend.php:63
 msgid "2 weeks old"
 msgstr "Две недели"
 
-#: backend.php:61
+#: backend.php:64
 msgid "1 month old"
 msgstr "Один месяц"
 
-#: backend.php:62
+#: backend.php:65
 msgid "2 months old"
 msgstr "Два месяца"
 
-#: backend.php:63
+#: backend.php:66
 msgid "3 months old"
 msgstr "Три месяца"
 
-#: backend.php:66
+#: backend.php:69
 msgid "Default interval"
 msgstr "По умолчанию"
 
-#: backend.php:67 backend.php:77
+#: backend.php:70 backend.php:80
 msgid "Disable updates"
 msgstr "Не обновлять"
 
-#: backend.php:68 backend.php:78
+#: backend.php:71 backend.php:81
 msgid "15 minutes"
 msgstr "Каждые 15 минут"
 
-#: backend.php:69 backend.php:79
+#: backend.php:72 backend.php:82
 msgid "30 minutes"
 msgstr "Каждые 30 минут"
 
-#: backend.php:70 backend.php:80
+#: backend.php:73 backend.php:83
 msgid "Hourly"
 msgstr "Каждый час"
 
-#: backend.php:71 backend.php:81
+#: backend.php:74 backend.php:84
 msgid "4 hours"
 msgstr "Каждые 4 часа"
 
-#: backend.php:72 backend.php:82
+#: backend.php:75 backend.php:85
 msgid "12 hours"
 msgstr "Каждые 12 часов"
 
-#: backend.php:73 backend.php:83
+#: backend.php:76 backend.php:86
 msgid "Daily"
 msgstr "Раз в день"
 
-#: backend.php:74 backend.php:84
+#: backend.php:77 backend.php:87
 msgid "Weekly"
 msgstr "Раз в неделю"
 
-#: backend.php:87 classes/pref/users.php:47 classes/pref/system.php:68
+#: backend.php:90 classes/pref/system.php:124
 msgid "User"
 msgstr "Пользователь"
 
-#: backend.php:88
+#: backend.php:91
 msgid "Power User"
 msgstr "Активный пользователь"
 
-#: backend.php:89
+#: backend.php:92
 msgid "Administrator"
 msgstr "Администратор"
 
-#: errors.php:10
-msgid ""
-"This program requires XmlHttpRequest to function properly. Your browser "
-"doesn't seem to support it."
-msgstr ""
-"Программе требуется функционал XmlHttpRequest. Ваш браузер его не "
-"поддерживает."
-
-#: errors.php:13
-msgid ""
-"This program requires cookies to function properly. Your browser doesn't "
-"seem to support them."
-msgstr "Для работы программы необходимы куки. Ваш браузер их не поддерживает."
-
-#: errors.php:16
-msgid "Backend sanity check failed."
-msgstr "Произошла ошибка проверки бэкэнда."
-
-#: errors.php:18
-msgid "Frontend sanity check failed."
-msgstr "Произошла ошибка проверки фронтэнда."
-
-#: errors.php:20
-msgid ""
-"Incorrect database schema version. &lt;a href='db-updater.php'&gt;Please "
-"update&lt;/a&gt;."
-msgstr ""
-"Некорректная версия базы данных. &lt;a href='update.php'&gt;Пожалуйста "
-"обновите её&lt;/a&gt;."
-
-#: errors.php:22
-msgid "Request not authorized."
-msgstr "В доступе отказано."
-
-#: errors.php:24
-msgid "No operation to perform."
-msgstr "Операция не задана."
-
-#: errors.php:26
-msgid ""
-"Could not display feed: query failed. Please check label match syntax or "
-"local configuration."
-msgstr ""
-"Не могу показать канал: ошибка в запросе. Пожалуйста, проверьте синтаксис "
-"или локальную конфигурацию."
-
-#: errors.php:28
-msgid "Denied. Your access level is insufficient to access this page."
-msgstr "В доступе отказано - недостаточный уровень привилегий."
-
-#: errors.php:30
-msgid "Configuration check failed"
-msgstr "Тест конфигурации неудачен"
-
-#: errors.php:32
-msgid ""
-"Your version of MySQL is not currently supported. Please see official site "
-"for more information."
-msgstr ""
-"Ваша версия MySQL сейчас не поддерживается. Пожалуйста \n"
-"\t\tпрочитайте на официальном сайте подробную информацию."
-
-#: errors.php:36
-msgid "SQL escaping test failed, check your database and PHP configuration"
-msgstr ""
-"неудавшийся тест экранирования SQL, проверьте вашу базу данных и "
-"конфигурацию PHP"
-
-#: errors.php:38
-msgid "Method not found"
-msgstr "Метод не найден"
-
-#: errors.php:40
-msgid "Plugin not found"
-msgstr "Плагин не найден"
-
-#: errors.php:42
-msgid "Encoding data as JSON failed"
-msgstr "Представление как JSON неудачно"
-
-#: index.php:139 index.php:154 index.php:277 prefs.php:124
-#: classes/pref/filters.php:788 classes/pref/labels.php:281
-#: classes/pref/feeds.php:1298 js/App.js:318 js/CommonDialogs.js:299
-#: js/CommonDialogs.js:379 js/Feeds.js:359 js/Feeds.js:437 js/Headlines.js:315
-#: js/PrefFeedTree.js:127 js/PrefFeedTree.js:134 js/PrefFeedTree.js:251
-#: js/PrefFeedTree.js:320 js/PrefFilterTree.js:98 js/PrefHelpers.js:26
-#: js/PrefHelpers.js:38 js/PrefHelpers.js:62 js/PrefHelpers.js:111
-#: js/PrefHelpers.js:184 plugins/af_readability/init.js:17
+#: index.php:123 index.php:138 index.php:261 prefs.php:108
+#: classes/pref/prefs.php:875 classes/pref/prefs.php:925
+#: classes/pref/system.php:219 js/Feeds.js:401 js/Feeds.js:471
+#: js/PrefFeedTree.js:165 js/PrefFeedTree.js:172 js/PrefFeedTree.js:296
+#: js/PrefFeedTree.js:373 js/CommonDialogs.js:289 js/CommonDialogs.js:446
+#: js/CommonDialogs.js:598 js/PrefHelpers.js:27 js/PrefHelpers.js:39
+#: js/PrefHelpers.js:62 js/PrefHelpers.js:115 js/PrefHelpers.js:222
+#: js/PrefHelpers.js:273 js/PrefHelpers.js:416 js/PrefHelpers.js:427
+#: js/PrefHelpers.js:813 js/Headlines.js:344 js/PrefFilterTree.js:100
+#: js/Article.js:337 js/PrefUsers.js:112 js/CommonFilters.js:273
+#: js/CommonFilters.js:401 plugins/af_psql_trgm/init.js:7
+#: plugins/note/note.js:28 plugins/af_readability/init.js:19
+#: plugins/share/share.js:56
 msgid "Loading, please wait..."
 msgstr "Идет загрузка..."
 
-#: index.php:168 js/App.js:415 js/App.js:421
+#: index.php:152 prefs.php:118 js/App.js:460
 msgid "Communication problem with server."
 msgstr "Проблема соединения с сервером."
 
-#: index.php:171
+#: index.php:155 prefs.php:120
 msgid "Recent entries found in event log."
 msgstr "В журнале событий есть свежие записи."
 
-#: index.php:174
+#: index.php:158
 msgid "Updates are available from Git."
 msgstr "Обновления доступны из Git."
 
-#: index.php:188
+#: index.php:173
 msgid "Show articles"
 msgstr "Показать статьи"
 
-#: index.php:191
+#: index.php:176
 msgid "Adaptive"
 msgstr "Адаптивно"
 
-#: index.php:192
+#: index.php:177
 msgid "All Articles"
 msgstr "Все статьи"
 
-#: index.php:193 classes/rpc.php:807 classes/feeds.php:77
+#: index.php:178 classes/rpc.php:615
 msgid "Starred"
 msgstr "Отмеченные"
 
-#: index.php:194 classes/rpc.php:808 classes/feeds.php:78
+#: index.php:179 classes/rpc.php:616
 msgid "Published"
 msgstr "Опубликован"
 
-#: index.php:195 classes/feeds.php:70 classes/feeds.php:76
+#: index.php:180
 msgid "Unread"
 msgstr "Новые"
 
-#: index.php:196
+#: index.php:181
 msgid "With Note"
 msgstr "С заметкой"
 
-#: index.php:197
-msgid "Ignore Scoring"
-msgstr "Игнорировать Оценки"
-
-#: index.php:200
+#: index.php:184
 msgid "Sort articles"
 msgstr "Сортировать статьи"
 
-#: index.php:204
+#: index.php:188
 msgid "Default"
 msgstr "По умолчанию"
 
-#: index.php:205
+#: index.php:189
 msgid "Newest first"
 msgstr "Сначала новые"
 
-#: index.php:206
+#: index.php:190
 msgid "Oldest first"
 msgstr "Сначала старые"
 
-#: index.php:207
+#: index.php:191
 msgid "Title"
 msgstr "Заголовок"
 
-#: index.php:219 index.php:253 classes/rpc.php:795 classes/feeds.php:82
-#: js/FeedTree.js:89 js/FeedTree.js:119
+#: index.php:203 index.php:237 classes/rpc.php:603 js/FeedTree.js:89
+#: js/FeedTree.js:119
 msgid "Mark as read"
 msgstr "Как прочитанные"
 
-#: index.php:222
+#: index.php:206
 msgid "Older than one day"
 msgstr "Старше одного дня"
 
-#: index.php:225
+#: index.php:209
 msgid "Older than one week"
 msgstr "Старше одной недели"
 
-#: index.php:228
+#: index.php:212
 msgid "Older than two weeks"
 msgstr "Старше двух недель"
 
-#: index.php:243
+#: index.php:227
 msgid "Actions..."
 msgstr "Действия..."
 
-#: index.php:246
+#: index.php:230
 msgid "Preferences..."
 msgstr "Настройки..."
 
-#: index.php:247
+#: index.php:231
 msgid "Search..."
 msgstr "Поиск..."
 
-#: index.php:248
+#: index.php:232
 msgid "Feed actions:"
 msgstr "Действия над каналами:"
 
-#: index.php:249 classes/handler/public.php:781
+#: index.php:233 plugins/bookmarklets/init.php:38
+#: plugins/bookmarklets/init.php:72
 msgid "Subscribe to feed..."
 msgstr "Подписаться на канал..."
 
-#: index.php:250
+#: index.php:234
 msgid "Edit this feed..."
 msgstr "Редактировать канал..."
 
-#: index.php:251 classes/pref/feeds.php:814 classes/pref/feeds.php:1271
-#: js/PrefFeedTree.js:63
+#: index.php:235 classes/pref/feeds.php:925 js/PrefFeedTree.js:99
+#: js/CommonDialogs.js:585
 msgid "Unsubscribe"
 msgstr "Отписаться"
 
-#: index.php:252
+#: index.php:236
 msgid "All feeds:"
 msgstr "Все каналы:"
 
-#: index.php:254
+#: index.php:238
 msgid "(Un)hide read feeds"
 msgstr "Показать/скрыть прочитанные"
 
-#: index.php:255
+#: index.php:239
 msgid "Other actions:"
 msgstr "Другие действия:"
 
-#: index.php:256 classes/rpc.php:781
+#: index.php:240 classes/rpc.php:589
 msgid "Toggle widescreen mode"
 msgstr "Переключить широкоэкранный режим"
 
-#: index.php:257
+#: index.php:241
 msgid "Keyboard shortcuts help"
 msgstr "Горячие клавиши"
 
-#: index.php:266
+#: index.php:250
 msgid "Logout"
 msgstr "Выход"
 
-#: prefs.php:31 prefs.php:141 classes/rpc.php:811 classes/pref/prefs.php:568
+#: prefs.php:20 prefs.php:129 classes/rpc.php:618 classes/pref/prefs.php:927
 msgid "Preferences"
 msgstr "Настройки"
 
-#: prefs.php:133
-msgid "Keyboard shortcuts"
-msgstr "Горячие Клавиши"
-
-#: prefs.php:134
+#: prefs.php:122
 msgid "Exit preferences"
 msgstr "Закрыть настройки"
 
-#: prefs.php:144 classes/pref/prefs.php:28 classes/pref/feeds.php:127
-#: classes/pref/feeds.php:1205 classes/pref/feeds.php:1260
+#: prefs.php:132 classes/pref/prefs.php:38 classes/pref/feeds.php:127
+#: classes/pref/feeds.php:914
 msgid "Feeds"
 msgstr "Каналы"
 
-#: prefs.php:148 classes/pref/filters.php:240
+#: prefs.php:136 classes/pref/filters.php:228
 msgid "Filters"
 msgstr "Фильтры"
 
-#: prefs.php:152 classes/pref/labels.php:85 classes/feeds.php:1431
+#: prefs.php:140 classes/pref/labels.php:23 classes/feeds.php:1254
 msgid "Labels"
 msgstr "Метки"
 
-#: prefs.php:157
+#: prefs.php:145
 msgid "Users"
 msgstr "Пользователи"
 
-#: prefs.php:160
+#: prefs.php:148
 msgid "System"
 msgstr "Система"
 
-#: register.php:186 include/login_form.php:182
-msgid "Create new account"
-msgstr "Создать новый аккаунт"
-
-#: register.php:192
-msgid "New user registrations are administratively disabled."
-msgstr "Регистрация новых пользователей запрещена."
-
-#: register.php:196 register.php:241 register.php:254 register.php:269
-#: register.php:288 register.php:335 register.php:345 register.php:357
-#: classes/handler/public.php:799 classes/handler/public.php:849
-#: classes/handler/public.php:873 classes/handler/public.php:965
-#: classes/handler/public.php:995 classes/handler/public.php:1068
-#: classes/handler/public.php:1165 classes/handler/public.php:1177
-#: classes/handler/public.php:1182 classes/handler/public.php:1206
-msgid "Return to Tiny Tiny RSS"
-msgstr "Вернуться к Tiny Tiny RSS"
-
-#: register.php:217
-msgid ""
-"Your temporary password will be sent to the specified email. Accounts, which "
-"were not logged in once, are erased automatically 24 hours after temporary "
-"password is sent."
-msgstr ""
-"Временный пароль будет отправлен на указанный e-mail. Если аккаунт не будет "
-"активирован в течении 24 часов, то он будет удалён."
-
-#: register.php:223
-msgid "Desired login:"
-msgstr "Желаемый логин:"
-
-#: register.php:226
-msgid "Check availability"
-msgstr "Проверить доступность"
-
-#: register.php:228 classes/handler/public.php:980
-msgid "Email:"
-msgstr "E-mail:"
-
-#: register.php:231
-msgid "How much is two plus two:"
-msgstr "Сколько будет, два плюс два:"
-
-#: register.php:234
-msgid "Submit registration"
-msgstr "Зарегистрироваться"
-
-#: register.php:252
-msgid "Your registration information is incomplete."
-msgstr "Не полностью заполнена ваша регистрационная информация."
-
-#: register.php:267
-msgid "Sorry, this username is already taken."
-msgstr "Извините, такое имя пользователя уже существует."
-
-#: register.php:286
-msgid "Registration failed."
-msgstr "Неудачная регистрация."
-
-#: register.php:332
-msgid "Account created successfully."
-msgstr "Аккаунт успешно создан."
-
-#: register.php:354
-msgid "New user registrations are currently closed."
-msgstr "Регистрация новых пользователей временно закрыта."
-
-#: update.php:128
-msgid "Tiny Tiny RSS data update script."
-msgstr "Скрипт обновления данных Tiny Tiny RSS."
-
-#: include/controls.php:85 classes/pref/filters.php:209
-#: classes/pref/filters.php:220 classes/pref/filters.php:535
-msgid "All feeds"
-msgstr "Все каналы"
-
-#: include/controls.php:138 include/controls.php:230 classes/opml.php:544
-#: classes/pref/feeds.php:247 classes/feeds.php:1443 classes/digest.php:124
-msgid "Uncategorized"
-msgstr "Без категории"
-
-#: include/functions.php:102
-msgid "Detect automatically"
-msgstr "Определять автоматически"
-
-#: include/login_form.php:108 classes/pref/users.php:55
-#: classes/handler/public.php:640 classes/handler/public.php:975
-msgid "Login:"
-msgstr "Логин:"
-
-#: include/login_form.php:117 classes/handler/public.php:647
-msgid "Password:"
-msgstr "Пароль:"
-
-#: include/login_form.php:129
-msgid "I forgot my password"
-msgstr "Восстановить пароль"
-
-#: include/login_form.php:134
-msgid "Profile:"
-msgstr "Профиль:"
-
-#: include/login_form.php:137 classes/rpc.php:69 classes/pref/prefs.php:1241
-#: classes/handler/public.php:272
-msgid "Default profile"
-msgstr "Профиль по умолчанию"
-
-#: include/login_form.php:146
-msgid "Use less traffic"
-msgstr "Использовать меньше трафика"
-
-#: include/login_form.php:150
-msgid "Does not display images in articles, reduces automatic refreshes."
-msgstr ""
-"Не отображать изображения в статьях, уменьшает количество автоматических "
-"обновлений."
-
-#: include/login_form.php:158
-#, fuzzy
-msgid "Safe mode (no plugins)"
-msgstr "Системные плагины"
-
-#: include/login_form.php:167
-msgid "Remember me"
-msgstr "Запомнить меня"
-
-#: include/login_form.php:178 classes/handler/public.php:660
-msgid "Log in"
-msgstr "Войти"
-
-#: include/sessions.php:44
-msgid "Session failed to validate (schema version changed)"
-msgstr "Ошибка проверки сессии (изменилась версия схемы)"
-
-#: include/sessions.php:52
-msgid "Session failed to validate (UA changed)."
-msgstr "Ошибка проверки сессии (браузер изменен)."
-
-#: include/sessions.php:66
-msgid "Session failed to validate (password changed)"
-msgstr "Ошибка проверки сессии (пароль изменен)"
-
-#: include/sessions.php:73
-msgid "Session failed to validate (user not found)"
-msgstr "Ошибка проверки сессии (пользователь не найден)"
-
-#: classes/article.php:20
-msgid "Article not found."
-msgstr "Статья не найдена."
-
-#: classes/article.php:170
-msgid "Tags for this article (separated by commas):"
-msgstr "Теги для этой статьи (разделенные запятыми):"
-
-#: classes/article.php:182 classes/pref/users.php:114
-#: classes/pref/filters.php:507 classes/pref/labels.php:73
-#: classes/pref/feeds.php:815 classes/pref/feeds.php:980
-#: plugins/af_readability/init.php:103 plugins/note/init.php:53
-#: plugins/af_redditimgur/init.php:81 plugins/af_psql_trgm/init.php:197
-#: plugins/nsfw/init.php:86 plugins/af_proxy_http/init.php:232
-#: plugins/mail/init.php:66
-msgid "Save"
-msgstr "Сохранить"
-
-#: classes/article.php:184 classes/pref/users.php:116
-#: classes/pref/filters.php:510 classes/pref/filters.php:924
-#: classes/pref/filters.php:1003 classes/pref/filters.php:1096
-#: classes/pref/labels.php:75 classes/pref/prefs.php:1194
-#: classes/pref/prefs.php:1291 classes/pref/feeds.php:816
-#: classes/pref/feeds.php:983 classes/pref/feeds.php:1713 classes/feeds.php:743
-#: classes/feeds.php:784 classes/handler/public.php:618
-#: plugins/note/init.php:55 plugins/mail/init.php:182
-msgid "Cancel"
-msgstr "Отмена"
-
-#: classes/article.php:273 classes/article.php:539
-msgid "no tags"
-msgstr "нет тегов"
-
-#: classes/article.php:383
-msgid "unknown type"
-msgstr "неизвестный тип"
-
-#: classes/article.php:460
-msgid "Attachments"
-msgstr "Вложения"
-
-#: classes/rpc.php:752
+#: classes/rpc.php:560
 msgid "Navigation"
 msgstr "Навигация"
 
-#: classes/rpc.php:753
+#: classes/rpc.php:561
 msgid "Open next feed"
 msgstr "Открыть следующий канал"
 
-#: classes/rpc.php:754
+#: classes/rpc.php:562
 msgid "Open previous feed"
 msgstr "Открыть предыдущий канал"
 
-#: classes/rpc.php:755
+#: classes/rpc.php:563
 #, fuzzy
 msgid "Open next article (in combined mode, scroll down)"
 msgstr "Открыть следующую статью (не прокручивать длинные статьи)"
 
-#: classes/rpc.php:756
+#: classes/rpc.php:564
 #, fuzzy
 msgid "Open previous article (in combined mode, scroll up)"
 msgstr "Открыть предыдущую статью (не прокручивать длинные статьи)"
 
-#: classes/rpc.php:757
+#: classes/rpc.php:565
 #, fuzzy
 msgid "Scroll headlines by one page down"
 msgstr "Показать детали статьи в новом окне"
 
-#: classes/rpc.php:758
+#: classes/rpc.php:566
 #, fuzzy
 msgid "Scroll headlines by one page up"
 msgstr "Выбрать статьи в группе"
 
-#: classes/rpc.php:759
+#: classes/rpc.php:567
 msgid "Open next article"
 msgstr "Открыть следующую статью"
 
-#: classes/rpc.php:760
+#: classes/rpc.php:568
 msgid "Open previous article"
 msgstr "Открыть предыдущую статью"
 
-#: classes/rpc.php:761
+#: classes/rpc.php:569
 #, fuzzy
 msgid "Move to next article (don't expand)"
 msgstr "Перейти к следующей статье (не разворачивать или помечать прочитанной)"
 
-#: classes/rpc.php:762
+#: classes/rpc.php:570
 #, fuzzy
 msgid "Move to previous article (don't expand)"
 msgstr ""
 "Перейти к предыдущей статье (не разворачивать или помечать прочитанной)"
 
-#: classes/rpc.php:763
+#: classes/rpc.php:571
 msgid "Show search dialog"
 msgstr "Показать диалог поиска"
 
-#: classes/rpc.php:764
+#: classes/rpc.php:572
 #, fuzzy
 msgid "Cancel active search"
 msgstr "Отменить поиск"
 
-#: classes/rpc.php:765
+#: classes/rpc.php:573
 msgid "Article"
 msgstr "Статья"
 
-#: classes/rpc.php:766 js/Headlines.js:1266
+#: classes/rpc.php:574 js/Headlines.js:1338 js/Headlines.js:626
 msgid "Toggle starred"
 msgstr "Отметить / снять отметку"
 
-#: classes/rpc.php:767 js/Headlines.js:1278
+#: classes/rpc.php:575 js/Headlines.js:1350
 msgid "Toggle published"
 msgstr "Опубликовано / не опубликовано"
 
-#: classes/rpc.php:768 js/Headlines.js:1253
+#: classes/rpc.php:576 js/Headlines.js:1325
 msgid "Toggle unread"
 msgstr "Прочитано / не прочитано"
 
-#: classes/rpc.php:769
+#: classes/rpc.php:577
 msgid "Edit tags"
 msgstr "Редактировать теги"
 
-#: classes/rpc.php:770
+#: classes/rpc.php:578
 msgid "Open in new window"
 msgstr "Открыть в новом окне"
 
-#: classes/rpc.php:771 js/Headlines.js:1299
+#: classes/rpc.php:579 js/Headlines.js:1371
 msgid "Mark below as read"
 msgstr "Отметить статьи ниже как прочитанные"
 
-#: classes/rpc.php:772 js/Headlines.js:1292
+#: classes/rpc.php:580 js/Headlines.js:1364
 msgid "Mark above as read"
 msgstr "Отметить статьи выше как прочитанные"
 
-#: classes/rpc.php:773
+#: classes/rpc.php:581
 msgid "Scroll down"
 msgstr "Пролистать вниз"
 
-#: classes/rpc.php:774
+#: classes/rpc.php:582
 msgid "Scroll up"
 msgstr "Пролистать вверх"
 
-#: classes/rpc.php:775
+#: classes/rpc.php:583
 #, fuzzy
 msgid "Scroll down page"
 msgstr "Пролистать вниз"
 
-#: classes/rpc.php:776
+#: classes/rpc.php:584
 #, fuzzy
 msgid "Scroll up page"
 msgstr "Пролистать вверх"
 
-#: classes/rpc.php:777
+#: classes/rpc.php:585
 msgid "Select article under cursor"
 msgstr "Выбрать статью под курсором мыши"
 
-#: classes/rpc.php:778
+#: classes/rpc.php:586
 msgid "Email article"
 msgstr "Отправить по почте"
 
-#: classes/rpc.php:779
+#: classes/rpc.php:587
 msgid "Close/collapse article"
 msgstr "Закрыть статью"
 
-#: classes/rpc.php:780
+#: classes/rpc.php:588
 msgid "Toggle article expansion (combined mode)"
 msgstr "Переключить растяжение статьи (комбинированный режим)"
 
-#: classes/rpc.php:782
+#: classes/rpc.php:590
 msgid "Toggle full article text via Readability"
-msgstr ""
+msgstr "Получить полный текст с помощью Readability"
 
-#: classes/rpc.php:783
+#: classes/rpc.php:591
 msgid "Article selection"
 msgstr "Выбрать статью"
 
-#: classes/rpc.php:784
+#: classes/rpc.php:592
 msgid "Select all articles"
 msgstr "Выбрать все статьи"
 
-#: classes/rpc.php:785
+#: classes/rpc.php:593
 msgid "Select unread"
 msgstr "Выбрать непрочитанные"
 
-#: classes/rpc.php:786
+#: classes/rpc.php:594
 msgid "Select starred"
 msgstr "Выбрать отмеченные"
 
-#: classes/rpc.php:787
+#: classes/rpc.php:595
 msgid "Select published"
 msgstr "Выбрать опубликованные"
 
-#: classes/rpc.php:788
+#: classes/rpc.php:596
 msgid "Invert selection"
 msgstr "Инвертировать выделение"
 
-#: classes/rpc.php:789
+#: classes/rpc.php:597
 msgid "Deselect everything"
 msgstr "Снять выделение"
 
-#: classes/rpc.php:790 classes/pref/feeds.php:529 classes/pref/feeds.php:835
+#: classes/rpc.php:598
 msgid "Feed"
 msgstr "Канал"
 
-#: classes/rpc.php:791
+#: classes/rpc.php:599
 msgid "Refresh current feed"
 msgstr "Обновить активный канал"
 
-#: classes/rpc.php:792
+#: classes/rpc.php:600
 msgid "Un/hide read feeds"
 msgstr "Показать/скрыть прочитанные"
 
-#: classes/rpc.php:793 classes/pref/feeds.php:1263
+#: classes/rpc.php:601 classes/pref/feeds.php:917 js/CommonDialogs.js:19
 msgid "Subscribe to feed"
 msgstr "Подписаться на канал"
 
-#: classes/rpc.php:794 js/PrefFeedTree.js:57 js/FeedTree.js:96
-#: js/Headlines.js:1422
+#: classes/rpc.php:602 js/PrefFeedTree.js:93 js/CommonDialogs.js:336
+#: js/Headlines.js:1494 js/FeedTree.js:96
 msgid "Edit feed"
 msgstr "Редактировать канал"
 
-#: classes/rpc.php:796
+#: classes/rpc.php:604
 msgid "Reverse headlines"
 msgstr "Обратный порядок заголовков"
 
-#: classes/rpc.php:797
+#: classes/rpc.php:605
 msgid "Toggle headline grouping"
 msgstr "Включить группировку заголовков"
 
-#: classes/rpc.php:798
+#: classes/rpc.php:606
 msgid "Debug feed update"
 msgstr "Отлаживать обновление канала"
 
-#: classes/rpc.php:799
+#: classes/rpc.php:607
 msgid "Debug viewfeed()"
 msgstr "Отлаживать обновление канала"
 
-#: classes/rpc.php:800 js/FeedTree.js:144
+#: classes/rpc.php:608 js/FeedTree.js:144
 msgid "Mark all feeds as read"
 msgstr "Отметить все каналы как прочитанные"
 
-#: classes/rpc.php:801
+#: classes/rpc.php:609
 msgid "Un/collapse current category"
 msgstr "Свернуть/развернуть категорию"
 
-#: classes/rpc.php:802
+#: classes/rpc.php:610
 msgid "Toggle auto expand in combined mode"
 msgstr "Переключить автоматическое разворачивание в комбинированном режиме"
 
-#: classes/rpc.php:803
+#: classes/rpc.php:611
 msgid "Toggle combined mode"
 msgstr "Переключить комбинированный режим"
 
-#: classes/rpc.php:804
+#: classes/rpc.php:612
 msgid "Go to"
 msgstr "Перейти к"
 
-#: classes/rpc.php:805 classes/feeds.php:1299
+#: classes/rpc.php:613 classes/feeds.php:1120
 msgid "All articles"
 msgstr "Все статьи"
 
-#: classes/rpc.php:806
+#: classes/rpc.php:614
 msgid "Fresh"
 msgstr "Свежие"
 
-#: classes/rpc.php:809 classes/feeds.php:1303
+#: classes/rpc.php:617 classes/feeds.php:1124
 msgid "Recently read"
 msgstr "Недавно прочитанные"
 
-#: classes/rpc.php:810 js/App.js:1098 js/App.js:1175
-msgid "Tag cloud"
-msgstr "Облако тегов"
-
-#: classes/rpc.php:812
+#: classes/rpc.php:619
 msgid "Other"
 msgstr "Другой"
 
-#: classes/rpc.php:813 classes/pref/labels.php:266
+#: classes/rpc.php:620
 msgid "Create label"
 msgstr "Создать метку"
 
-#: classes/rpc.php:814 classes/pref/filters.php:767
+#: classes/rpc.php:621 classes/pref/filters.php:659
 msgid "Create filter"
 msgstr "Создать фильтр"
 
-#: classes/rpc.php:815
+#: classes/rpc.php:622
 msgid "Un/collapse sidebar"
 msgstr "Свернуть/развернуть боковую панель"
 
-#: classes/rpc.php:816
+#: classes/rpc.php:623
 msgid "Show help dialog"
 msgstr "Показать диалог помощи"
 
-#: classes/dlg.php:30 classes/dlg.php:57 classes/dlg.php:89 classes/dlg.php:153
-#: classes/dlg.php:187 classes/dlg.php:204 classes/pref/filters.php:172
-#: classes/pref/feeds.php:1524 classes/pref/feeds.php:1584
-#: classes/backend.php:87 plugins/af_psql_trgm/init.php:111
-#: plugins/share/init.php:133
+#: classes/rpc.php:754
+msgid "Shift"
+msgstr "Shift"
+
+#: classes/rpc.php:757
+msgid "Ctrl"
+msgstr "Ctrl"
+
+#: classes/rpc.php:782 plugins/af_psql_trgm/init.php:112
+#: plugins/share/init.php:270 js/PrefHelpers.js:469 js/Feeds.js:271
+#: js/CommonDialogs.js:273 js/PrefHelpers.js:66 js/PrefHelpers.js:794
 msgid "Close this window"
 msgstr "Закрыть это окно"
 
-#: classes/dlg.php:41
-msgid "Your Public OPML URL is:"
-msgstr "Ссылка на ваш опубликованный OPML:"
+#: classes/handler/public.php:273 classes/pref/prefs.php:1393
+#: include/login_form.php:134
+msgid "Default profile"
+msgstr "Профиль по умолчанию"
 
-#: classes/dlg.php:54 classes/dlg.php:184 plugins/share/init.php:130
-msgid "Generate new URL"
+#: classes/handler/public.php:396
+msgid "Incorrect username or password"
+msgstr "Некорректное имя пользователя или пароль"
+
+#: classes/handler/public.php:448
+msgid "Password recovery"
+msgstr "Восстановление пароля"
+
+#: classes/handler/public.php:488 classes/handler/public.php:518
+#: classes/handler/public.php:591 classes/handler/public.php:714
+#: classes/handler/public.php:721 classes/handler/public.php:744
+#: plugins/bookmarklets/init.php:91 plugins/bookmarklets/init.php:136
+#: plugins/bookmarklets/init.php:154 plugins/bookmarklets/init.php:159
+msgid "Return to Tiny Tiny RSS"
+msgstr "Вернуться к Tiny Tiny RSS"
+
+#: classes/handler/public.php:491
+msgid ""
+"You will need to provide valid account name and email. Password reset link "
+"will be sent to your email address."
+msgstr ""
+"Введите ваш логин и электронный адрес. Ссылка для сброса пароля будет "
+"выслана на указанный адрес."
+
+#: classes/handler/public.php:498 classes/pref/feeds.php:641
+#: plugins/bookmarklets/init.php:302 include/login_form.php:105
+#: js/CommonDialogs.js:543 js/PrefUsers.js:64
+msgid "Login:"
+msgstr "Логин:"
+
+#: classes/handler/public.php:503
+msgid "Email:"
+msgstr "E-mail:"
+
+#: classes/handler/public.php:511
+#, php-format
+msgid "How much is %d + %d:"
+msgstr "Сколько будет %d плюс %d:"
+
+#: classes/handler/public.php:517 classes/pref/users.php:240
+msgid "Reset password"
+msgstr "Сбросить пароль"
+
+#: classes/handler/public.php:529
+msgid "Some of the required form parameters are missing or incorrect."
+msgstr "Некоторые поля формы пусты или некорректно заполнены."
+
+#: classes/handler/public.php:533 classes/handler/public.php:598
+msgid "Go back"
+msgstr "Перейти назад"
+
+#: classes/handler/public.php:574
+msgid "[tt-rss] Password reset request"
+msgstr "[tt-rss] Уведомление о смене пароля"
+
+#: classes/handler/public.php:594
+msgid "Sorry, login and email combination not found."
+msgstr "Извините, комбинация логина и электронного адреса не обнаружена."
+
+#: classes/handler/public.php:617
+msgid "Your access level is insufficient to run this script."
+msgstr "В доступе отказано - недостаточный уровень привилегий."
+
+#: classes/handler/public.php:681
+msgid "Database Updater"
+msgstr "Обновление базы данных"
+
+#: classes/handler/public.php:694
+#, php-format
+msgid "Performing updates to version %d"
+msgstr "Выполнение обновления до версии %d"
+
+#: classes/handler/public.php:709 classes/handler/public.php:736
+#: js/PrefHelpers.js:389 js/PrefHelpers.js:737
+msgid "Update"
+msgstr "Обновить"
+
+#: classes/handler/public.php:729
+#, fuzzy, php-format
+#| msgid ""
+#| "Tiny Tiny RSS database needs update to the latest version (%d to %d)."
+msgid "Database schema needs update to the latest version (%d to %d)."
+msgstr ""
+"Базе данных Tiny Tiny RSS потребуется обновление до последней версии  (с <b>"
+"%d</b> до <b>%d</b>)."
+
+#: classes/pref/labels.php:168
+#, php-format
+msgid "Created label <b>%s</b>"
+msgstr "Добавлена метка <b>%s</b>"
+
+#: classes/pref/labels.php:180 classes/pref/prefs.php:834
+#: classes/pref/prefs.php:1424 classes/pref/filters.php:649
+#: classes/pref/users.php:222 classes/pref/feeds.php:904
+#: js/CommonFilters.js:436 js/CommonFilters.js:469 js/CommonDialogs.js:236
+msgid "Select"
+msgstr "Выбрать"
+
+#: classes/pref/prefs.php:30 classes/pref/feeds.php:601
+msgid "General"
+msgstr "Общие"
+
+#: classes/pref/prefs.php:51
+msgid "Articles"
+msgstr "Статьи"
+
+#: classes/pref/prefs.php:64
+msgid "Digest"
+msgstr "Дайджест"
+
+#: classes/pref/prefs.php:69
+msgid "Advanced"
+msgstr "Расширенные"
+
+#: classes/pref/prefs.php:80
+msgid "Debugging"
+msgstr "Отладка"
+
+#: classes/pref/prefs.php:86
+msgid "Never apply these tags automatically (comma-separated list)."
+msgstr ""
+"Никогда не назначать эти тэги автоматически (список разделенный запятыми)."
+
+#: classes/pref/prefs.php:90
+msgid "Blacklisted tags"
+msgstr "Черный список тегов"
+
+#: classes/pref/prefs.php:91
+msgid "Default language"
+msgstr "Язык по умолчанию"
+
+#: classes/pref/prefs.php:91
+msgid "Used for full-text search"
+msgstr "Используется для полнотекстового поиска"
+
+#: classes/pref/prefs.php:92
+msgid "Mark read on scroll"
+msgstr "Обозначать статьи прочитанными при прокрутке"
+
+#: classes/pref/prefs.php:92
+msgid "Mark articles as read as you scroll past them"
+msgstr "Помечать статьи как прочитанные при пролистывании"
+
+#: classes/pref/prefs.php:93
+msgid "Always expand articles"
+msgstr "Всегда разворачивать статьи"
+
+#: classes/pref/prefs.php:94
+msgid "Combined mode"
+msgstr "Комбинированный режим"
+
+#: classes/pref/prefs.php:94
+msgid "Show flat list of articles instead of separate panels"
+msgstr "Показать развёрнутый список статей, вместо отдельных панелей"
+
+#: classes/pref/prefs.php:95
+msgid "Confirm marking feeds as read"
+msgstr "Подтверждать обозначение канала прочитанным"
+
+#: classes/pref/prefs.php:96
+msgid "Default update interval"
+msgstr "Интервал обновления по умолчанию"
+
+#: classes/pref/prefs.php:97
+msgid "Mark sent articles as read"
+msgstr "Пометить отправленные статьи как прочитанные"
+
+#: classes/pref/prefs.php:98
+msgid "Enable digest"
+msgstr "Включить дайджест по электронной почте"
+
+#: classes/pref/prefs.php:98
+msgid "Send daily digest of new (and unread) headlines to your e-mail address"
+msgstr ""
+"Отправлять дайджест новых (и непрочитанных) заголовков на вашу электронную "
+"почту"
+
+#: classes/pref/prefs.php:99
+msgid "Try to send around this time"
+msgstr "Попытаться посылать дайджесты в районе этого времени"
+
+#: classes/pref/prefs.php:99
+msgid "Time in UTC"
+msgstr "Время в UTC"
+
+#: classes/pref/prefs.php:100
+msgid "Enable API"
+msgstr "Включить API"
+
+#: classes/pref/prefs.php:100
+msgid "Allows accessing this account through the API"
+msgstr "Позволяет иметь доступ к этой учетной записи через API"
+
+#: classes/pref/prefs.php:101
+msgid "Enable categories"
+msgstr "Включить категории"
+
+#: classes/pref/prefs.php:102
+msgid "Maximum age of fresh articles"
+msgstr "Максимальный возраст свежих статей"
+
+#: classes/pref/prefs.php:102
+msgid "hours"
+msgstr "часа(ов)"
+
+#: classes/pref/prefs.php:103
+msgid "Hide read feeds"
+msgstr "Скрыть прочитанные каналы"
+
+#: classes/pref/prefs.php:104
+msgid "Always show special feeds"
+msgstr "Всегда показывать специальные каналы"
+
+#: classes/pref/prefs.php:104
+msgid "While hiding read feeds"
+msgstr "Когда скрываются прочитанные каналы"
+
+#: classes/pref/prefs.php:105
+msgid "Long date format"
+msgstr "Длинный формат даты"
+
+#: classes/pref/prefs.php:105
+msgid ""
+"Syntax is identical to PHP <a href='http://php.net/manual/function.date."
+"php'>date()</a> function."
+msgstr ""
+"Используется синтаксис, аналогичный функции <a href='http://php.net/manual/"
+"function.date.php'>date()</a> в PHP."
+
+#: classes/pref/prefs.php:106
+msgid "Automatically show next feed"
+msgstr "Автоматически показывать следующий канал"
+
+#: classes/pref/prefs.php:106
+msgid "After marking one as read"
+msgstr "После маркировки прочитанным"
+
+#: classes/pref/prefs.php:107
+msgid "Purge articles older than"
+msgstr "Очистить статьи старше чем"
+
+#: classes/pref/prefs.php:107
+msgid "<strong>days</strong> (0 disables)"
+msgstr "<strong>дней</strong> (0 - отключён)"
+
+#: classes/pref/prefs.php:108
+msgid "Purge unread articles"
+msgstr "Очистить непрочитанные статьи"
+
+#: classes/pref/prefs.php:109
+msgid "Short date format"
+msgstr "Короткий формат даты"
+
+#: classes/pref/prefs.php:110
+msgid "Show content preview in headlines"
+msgstr "Показывать предпросмотр содержимого в списке заголовков"
+
+#: classes/pref/prefs.php:111
+msgid "SSL client certificate"
+msgstr "Клиентский SSL сертификат"
+
+#: classes/pref/prefs.php:112 classes/pref/feeds.php:588
+#: js/CommonDialogs.js:462
+msgid "Do not embed media"
+msgstr "Не показывать медиа-контент"
+
+#: classes/pref/prefs.php:113
+msgid "Time zone"
+msgstr "Часовой пояс"
+
+#: classes/pref/prefs.php:114
+msgid "Group by feed"
+msgstr "Группировать по каналу"
+
+#: classes/pref/prefs.php:114
+msgid "Group multiple-feed output by originating feed"
+msgstr "Группировать многопоточный канал по исходному"
+
+#: classes/pref/prefs.php:115
+msgid "Language"
+msgstr "Язык"
+
+#: classes/pref/prefs.php:116
+msgid "Theme"
+msgstr "Тема"
+
+#: classes/pref/prefs.php:117
+msgid "Don't enforce DISTINCT headlines"
+msgstr ""
+
+#: classes/pref/prefs.php:117
+#, fuzzy
+msgid "May produce duplicate entries"
+msgstr "Разрешить дубликаты статей"
+
+#: classes/pref/prefs.php:118
+#, fuzzy
+msgid "Show article and feed IDs"
+msgstr "Показать статьи"
+
+#: classes/pref/prefs.php:118
+#, fuzzy
+msgid "In the headlines buffer"
+msgstr "Сортировать каналы по дате, указанной в канале"
+
+#: classes/pref/prefs.php:119
+#, fuzzy
+#| msgid "Disable updates"
+msgid "Disable conditional counter updates"
+msgstr "Не обновлять"
+
+#: classes/pref/prefs.php:119
+msgid "May increase server load"
+msgstr ""
+
+#: classes/pref/prefs.php:220
+msgid "The configuration was saved."
+msgstr "Конфигурация сохранена."
+
+#: classes/pref/prefs.php:262
+msgid "Your personal data has been saved."
+msgstr "Ваши данные были сохранены."
+
+#: classes/pref/prefs.php:292
+msgid "Full name:"
+msgstr "Полное имя:"
+
+#: classes/pref/prefs.php:297 js/PrefUsers.js:98
+msgid "E-mail:"
+msgstr "Электронная почта:"
+
+#: classes/pref/prefs.php:305 classes/pref/feeds.php:670
+#: plugins/af_psql_trgm/init.php:193 plugins/note/init.php:51
+#: plugins/af_readability/init.php:91 plugins/nsfw/init.php:101
+#: plugins/af_redditimgur/init.php:100 js/CommonDialogs.js:586
+#: js/CommonFilters.js:232 js/CommonFilters.js:316 js/CommonFilters.js:516
+#: js/PrefLabelTree.js:170 js/PrefUsers.js:119
+msgid "Save"
+msgstr "Сохранить"
+
+#: classes/pref/prefs.php:356
+msgid "Old password:"
+msgstr "Старый пароль:"
+
+#: classes/pref/prefs.php:361 js/PrefUsers.js:84
+msgid "New password:"
+msgstr "Новый пароль:"
+
+#: classes/pref/prefs.php:366
+msgid "Confirm password:"
+msgstr "Подтверждение пароля:"
+
+#: classes/pref/prefs.php:374
+msgid "Change password"
+msgstr "Изменить пароль"
+
+#: classes/pref/prefs.php:381
+#, php-format
+msgid ""
+"Authentication module used for this session (<b>%s</b>) does not provide an "
+"ability to set passwords."
+msgstr ""
+"Модуль авторизации для этой сессии (<b>%s</b>) не предоставляет возможность "
+"смены паролей."
+
+#: classes/pref/prefs.php:398
+#, fuzzy
+msgid "Generate password"
 msgstr "Создать новую ссылку"
 
-#: classes/dlg.php:68
-msgid ""
-"Update daemon is enabled in configuration, but daemon process is not "
-"running, which prevents all feeds from updating. Please start the daemon "
-"process or contact instance owner."
-msgstr ""
-"Демон обновлений разрешён в вашей конфигурации, но процесс демона не "
-"запущен. Он необходим для обновления всех каналов.\n"
-"Пожалуйста, запустите демон обновлений или сообщите администратору."
+#: classes/pref/prefs.php:404 classes/pref/feeds.php:938
+msgid "Remove selected"
+msgstr "Удалить выбранное"
 
-#: classes/dlg.php:72 classes/dlg.php:81
-msgid "Last update:"
-msgstr "Последнее обновление:"
+#: classes/pref/prefs.php:440 classes/pref/prefs.php:492
+msgid "Your password:"
+msgstr "Ваш пароль:"
 
-#: classes/dlg.php:77
-msgid ""
-"Update daemon is taking too long to perform a feed update. This could "
-"indicate a problem like crash or a hang. Please check the daemon process or "
-"contact instance owner."
-msgstr ""
-"Tiny Tiny RSS определил что демон обновлений не работает уже очень давно.\n"
-"Это обозначает что существует проблема подобная краху или зависанию демона.\n"
-"Пожалуйста проверьте процесс демона или сообщите администратору."
+#: classes/pref/prefs.php:448
+msgid "Disable OTP"
+msgstr "Отключить одноразовый пароль"
 
-#: classes/dlg.php:170
-#, php-format
-msgid "%s can be accessed via the following secret URL:"
-msgstr "Вы можете опубликовать %s с помощью следующего секретного URL:"
+#: classes/pref/prefs.php:470
+msgid "OTP Key:"
+msgstr "Ключ OTP:"
 
-#: classes/dlg.php:181 classes/pref/filters.php:997 classes/pref/prefs.php:791
-#: classes/pref/prefs.php:902 classes/pref/prefs.php:936
-#: classes/pref/prefs.php:982 classes/pref/prefs.php:997
-#: plugins/bookmarklets/init.php:45
+#: classes/pref/prefs.php:497
+msgid "One time password:"
+msgstr "Одноразовый пароль:"
+
+#: classes/pref/prefs.php:505
+msgid "Enable OTP"
+msgstr "Включить одноразовые пароли"
+
+#: classes/pref/prefs.php:519
+msgid "Personal data"
+msgstr "Личные данные"
+
+#: classes/pref/prefs.php:522
+msgid "Password"
+msgstr "Пароль"
+
+#: classes/pref/prefs.php:525
+#, fuzzy
+msgid "App passwords"
+msgstr "Старый пароль:"
+
+#: classes/pref/prefs.php:528
+#, fuzzy
+msgid "Authenticator (OTP)"
+msgstr "Авторизация"
+
+#: classes/pref/prefs.php:539
+msgid "Some preferences are only available in default profile."
+msgstr "Некоторые настройки доступны только в профиле по умолчанию."
+
+#: classes/pref/prefs.php:628
+msgid "default"
+msgstr "по умолчанию"
+
+#: classes/pref/prefs.php:636
+msgid "Customize"
+msgstr "Изменить пользовательские стили"
+
+#: classes/pref/prefs.php:638
+msgid "More themes..."
+msgstr "Больше тем…"
+
+#: classes/pref/prefs.php:669
+#, fuzzy
+#| msgid "Preview article"
+msgid "Preview"
+msgstr "Предварительный просмотр"
+
+#: classes/pref/prefs.php:695
+msgid "Register"
+msgstr "Регистрация"
+
+#: classes/pref/prefs.php:699 classes/pref/system.php:101
+msgid "Clear"
+msgstr "Очистить"
+
+#: classes/pref/prefs.php:703 classes/pref/prefs.php:869
+#: plugins/bookmarklets/init.php:364 js/CommonDialogs.js:641
 msgid "More info..."
 msgstr "Подробнее…"
 
-#: classes/dlg.php:196
-msgid ""
-"You are using default tt-rss password. Please change it in the Preferences "
-"(Personal data / Authentication)."
-msgstr ""
-"Вы используете пароль tt-rss по умолчанию. Пожалуйста, измените его в "
-"настройках (Личные данные / Аутентификация)."
+#: classes/pref/prefs.php:711
+#, php-format
+msgid "Current server time: %s"
+msgstr "Текущее время на сервере: %s"
 
-#: classes/dlg.php:201
-msgid "Open Preferences"
-msgstr "Настройки"
+#: classes/pref/prefs.php:759
+msgid "Save configuration"
+msgstr "Сохранить конфигурацию"
+
+#: classes/pref/prefs.php:762
+#, fuzzy
+msgid "Save and exit"
+msgstr "Отметить статьи выше как прочитанные"
+
+#: classes/pref/prefs.php:769 js/PrefHelpers.js:127
+msgid "Manage profiles"
+msgstr "Управление профилями"
+
+#: classes/pref/prefs.php:774
+msgid "Reset to defaults"
+msgstr "Сбросить настройки"
+
+#: classes/pref/prefs.php:829 classes/pref/filters.php:645
+#: classes/pref/users.php:217 classes/pref/feeds.php:900 js/Feeds.js:626
+#: js/Feeds.js:621
+msgid "Search"
+msgstr "Поиск"
+
+#: classes/pref/prefs.php:837 classes/pref/prefs.php:1427
+#: classes/pref/filters.php:652 classes/pref/users.php:225
+#: classes/pref/feeds.php:907 js/CommonFilters.js:440 js/CommonFilters.js:472
+#: js/PrefFeedTree.js:506 js/PrefHelpers.js:169 js/Headlines.js:620
+msgid "All"
+msgstr "Все"
+
+#: classes/pref/prefs.php:839 classes/pref/prefs.php:1429
+#: classes/pref/filters.php:654 classes/pref/users.php:227
+#: classes/pref/feeds.php:909 js/CommonFilters.js:442 js/CommonFilters.js:474
+#: js/CommonDialogs.js:241
+msgid "None"
+msgstr "Ничего"
+
+#: classes/pref/prefs.php:867
+#, php-format
+msgid ""
+"The following plugins use per-feed content hooks. This may cause excessive "
+"data usage and origin server load resulting in a ban of your instance: <b>"
+"%s</b>"
+msgstr ""
+
+#: classes/pref/prefs.php:883 js/CommonFilters.js:230
+#, fuzzy
+msgid "More info"
+msgstr "подробнее"
+
+#: classes/pref/prefs.php:886
+#, fuzzy
+#| msgid "Enable selected plugins"
+msgid "Enable selected"
+msgstr "Активировать выбранные плагины"
+
+#: classes/pref/prefs.php:889
+msgid "Reload"
+msgstr ""
+
+#: classes/pref/prefs.php:896
+#, fuzzy
+#| msgid "Perform updates"
+msgid "Check for updates"
+msgstr "Применить обновления"
+
+#: classes/pref/prefs.php:903
+#, fuzzy
+#| msgid "Mail plugin"
+msgid "Install plugin"
+msgstr "Почтовый плагин"
+
+#: classes/pref/prefs.php:916
+msgid "Personal data / Authentication"
+msgstr "Персональные данные / Аутентификация"
+
+#: classes/pref/prefs.php:930 classes/pref/feeds.php:1078
+msgid "Plugins"
+msgstr "Плагины"
+
+#: classes/pref/prefs.php:963
+msgid "Incorrect one time password"
+msgstr "Неверный одноразовый пароль"
+
+#: classes/pref/prefs.php:966 classes/pref/prefs.php:1004
+msgid "Incorrect password"
+msgstr "Неверный пароль"
+
+#: classes/pref/prefs.php:1019
+#, php-format
+msgid "v%.2f, by %s"
+msgstr "v%.2f, by %s"
+
+#: classes/pref/prefs.php:1032
+#, fuzzy, php-format
+#| msgid "v%.2f, by %s"
+msgid "v%s, by %s"
+msgstr "v%.2f, by %s"
+
+#: classes/pref/prefs.php:1438
+msgid "Description"
+msgstr "Описание"
+
+#: classes/pref/prefs.php:1439
+#, fuzzy
+msgid "Created"
+msgstr "Создать"
+
+#: classes/pref/prefs.php:1440
+#, fuzzy
+msgid "Last used"
+msgstr "Последнее обновление:"
+
+#: classes/pref/prefs.php:1485
+#, php-format
+msgid ""
+"Generated password <strong>%s</strong> for %s. Please remember it for future "
+"reference."
+msgstr ""
+"Сгенерирован пароль <strong>%s</strong> для %s. Пожалуйста запомните его."
+
+#: classes/pref/system.php:24
+msgid "Test message from tt-rss"
+msgstr ""
+
+#: classes/pref/system.php:82 js/PrefHelpers.js:595
+msgid "Refresh"
+msgstr "Обновить"
+
+#: classes/pref/system.php:87
+msgid "&lt;&lt;"
+msgstr ""
+
+#: classes/pref/system.php:91
+#, php-format
+msgid "Page %d of %d"
+msgstr "Страница %d из %d"
+
+#: classes/pref/system.php:96
+msgid "&gt;&gt;"
+msgstr ""
+
+#: classes/pref/system.php:105
+msgid "Severity:"
+msgstr "Строгость:"
+
+#: classes/pref/system.php:109
+#, fuzzy
+msgid "Errors"
+msgstr "Ошибка"
+
+#: classes/pref/system.php:110
+msgid "Warnings"
+msgstr "Предупреждения"
+
+#: classes/pref/system.php:111
+#, fuzzy
+msgid "Everything"
+msgstr "Снять выделение"
+
+#: classes/pref/system.php:121
+msgid "Error"
+msgstr "Ошибка"
+
+#: classes/pref/system.php:122
+msgid "Filename"
+msgstr "Имя файла"
+
+#: classes/pref/system.php:123
+msgid "Message"
+msgstr "Сообщение"
+
+#: classes/pref/system.php:125
+msgid "Date"
+msgstr "Дата"
+
+#: classes/pref/system.php:169
+#, fuzzy
+#| msgid "Event Log"
+msgid "Event log"
+msgstr "Журнал событий"
+
+#: classes/pref/system.php:175
+#, fuzzy
+#| msgid "Save configuration"
+msgid "Mail configuration"
+msgstr "Сохранить конфигурацию"
+
+#: classes/pref/system.php:202
+msgid "To:"
+msgstr "Кому:"
+
+#: classes/pref/system.php:204
+#, fuzzy
+msgid "Send test email"
+msgstr "Отправить письмо"
+
+#: classes/pref/system.php:210
+msgid "PHP Information"
+msgstr "Информация о PHP"
+
+#: classes/pref/filters.php:197 classes/pref/filters.php:208
+#: classes/pref/filters.php:426 classes/pref/filters.php:847
+msgid "All feeds"
+msgstr "Все каналы"
+
+#: classes/pref/filters.php:219 classes/pref/filters.php:446
+msgid "(inverse)"
+msgstr "(Инвертирован)"
+
+#: classes/pref/filters.php:215 classes/pref/filters.php:445
+#, php-format
+msgid "%s on %s in %s %s"
+msgstr "%s на %s в %s %s"
+
+#: classes/pref/filters.php:661
+msgid "Combine"
+msgstr "Комбинировать"
+
+#: classes/pref/filters.php:663 classes/pref/feeds.php:921
+#: classes/pref/feeds.php:936
+msgid "Reset sort order"
+msgstr "Сбросить сортировку"
+
+#: classes/pref/filters.php:665 classes/pref/users.php:236
+#: js/CommonDialogs.js:578 js/CommonFilters.js:514
+msgid "Remove"
+msgstr "Удалить"
+
+#: classes/pref/filters.php:720
+msgid "[No caption]"
+msgstr "[Нет заголовка]"
+
+#: classes/pref/filters.php:722
+#, php-format
+msgid "%s (%d rule)"
+msgid_plural "%s (%d rules)"
+msgstr[0] "%s (%d метка)"
+msgstr[1] "%s (%d метки)"
+msgstr[2] "%s (%d меток)"
+
+#: classes/pref/filters.php:736
+msgid "matches any rule"
+msgstr "удовлетворяет любому правилу"
+
+#: classes/pref/filters.php:737
+msgid "inverse"
+msgstr "обратный"
+
+#: classes/pref/filters.php:740
+#, php-format
+msgid "%s (+%d action)"
+msgid_plural "%s (+%d actions)"
+msgstr[0] "%s (+%d действие)"
+msgstr[1] "%s (+%d действия)"
+msgstr[2] "%s (+%d действий)"
+
+#: classes/pref/filters.php:900 classes/pref/feeds.php:247
+#: classes/digest.php:116 classes/opml.php:544 classes/feeds.php:1250
+#: include/controls.php:177
+msgid "Uncategorized"
+msgstr "Без категории"
+
+#: classes/pref/users.php:56
+msgid "Registered"
+msgstr "Зарегистрирован"
+
+#: classes/pref/users.php:61
+msgid "Last logged in"
+msgstr "Последний вход"
+
+#: classes/pref/users.php:66
+msgid "Subscribed feeds"
+msgstr "Подписан на каналы"
+
+#: classes/pref/users.php:71
+msgid "Stored articles"
+msgstr "Сохраненные статьи"
+
+#: classes/pref/users.php:101 classes/userhelper.php:223
+msgid "User not found"
+msgstr "Пользователь не найден"
+
+#: classes/pref/users.php:171
+#, php-format
+msgid "Added user %s with password %s"
+msgstr "Добавлен пользователь %s с паролем %s"
+
+#: classes/pref/users.php:174
+#, php-format
+msgid "Could not create user %s"
+msgstr "Не могу добавить пользователя %s"
+
+#: classes/pref/users.php:177
+#, php-format
+msgid "User %s already exists."
+msgstr "Пользователь %s уже существует."
+
+#: classes/pref/users.php:232
+msgid "Create user"
+msgstr "Добавить пользователя"
+
+#: classes/pref/users.php:272
+msgid "Click to edit"
+msgstr "Щёлкните для редактирования"
+
+#: classes/pref/feeds.php:77 classes/pref/feeds.php:233
+#: classes/pref/feeds.php:281 classes/pref/feeds.php:287
+#: classes/pref/feeds.php:316
+#, php-format
+msgid "(%d feed)"
+msgid_plural "(%d feeds)"
+msgstr[0] "(%d канал)"
+msgstr[1] "(%d канала)"
+msgstr[2] "(%d каналов)"
+
+#: classes/pref/feeds.php:533
+#, fuzzy, php-format
+msgid "(%d day)"
+msgid_plural "(%d days)"
+msgstr[0] "(%d канал)"
+msgstr[1] "(%d канала)"
+msgstr[2] "(%d каналов)"
+
+#: classes/pref/feeds.php:535 classes/pref/feeds.php:583
+#, fuzzy
+msgid "Disabled"
+msgstr "Отключить одноразовый пароль"
+
+#: classes/pref/feeds.php:539
+#, php-format
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d день"
+msgstr[1] "%d дня"
+msgstr[2] "%d дней"
+
+#: classes/pref/feeds.php:565
+msgid "Check to enable field"
+msgstr "Проверить доступность поля"
+
+#: classes/pref/feeds.php:581
+#, fuzzy, php-format
+msgid "(%d days)"
+msgstr "(%d канал)"
+
+#: classes/pref/feeds.php:586 js/CommonDialogs.js:460
+msgid "Include in e-mail digest"
+msgstr "Включить в e-mail дайджест"
+
+#: classes/pref/feeds.php:587 js/CommonDialogs.js:461
+msgid "Always display image attachments"
+msgstr "Всегда показывать вложенные изображения"
+
+#: classes/pref/feeds.php:589 js/CommonDialogs.js:463
+msgid "Cache media"
+msgstr "Кэшировать медиа-контент"
+
+#: classes/pref/feeds.php:590 js/CommonDialogs.js:464
+msgid "Mark updated articles as unread"
+msgstr "Отметить обновлённые статьи как непрочитанные"
+
+#: classes/pref/feeds.php:605 js/PrefFeedTree.js:426 js/CommonDialogs.js:500
+msgid "Place in category:"
+msgstr "Поместить в категорию:"
+
+#: classes/pref/feeds.php:613 js/Feeds.js:608 js/CommonDialogs.js:516
+msgid "Language:"
+msgstr "Язык:"
+
+#: classes/pref/feeds.php:624 js/CommonDialogs.js:526
+#, fuzzy
+msgid "Update interval:"
+msgstr "Интервал обновления по умолчанию"
+
+#: classes/pref/feeds.php:631 js/CommonDialogs.js:530
+msgid "Article purging:"
+msgstr "Удаление сообщений:"
+
+#: classes/pref/feeds.php:638 plugins/auth_internal/init.php:101
+#: js/PrefFeedTree.js:434
+msgid "Authentication"
+msgstr "Авторизация"
+
+#: classes/pref/feeds.php:647 plugins/bookmarklets/init.php:309
+#: include/login_form.php:114 js/CommonDialogs.js:549
+msgid "Password:"
+msgstr "Пароль:"
+
+#: classes/pref/feeds.php:654
+msgid "Options"
+msgstr "Опции"
+
+#: classes/pref/feeds.php:671 plugins/note/init.php:52
+#: plugins/bookmarklets/init.php:282 js/CommonDialogs.js:587
+#: js/CommonFilters.js:233 js/CommonFilters.js:317 js/CommonFilters.js:517
+#: js/CommonFilters.js:521 js/Feeds.js:622 js/PrefFeedTree.js:454
+#: js/PrefHelpers.js:211 js/PrefHelpers.js:285 js/Article.js:346
+msgid "Cancel"
+msgstr "Отмена"
+
+#: classes/pref/feeds.php:876
+msgid "Feeds with errors"
+msgstr "Каналы с ошибками"
+
+#: classes/pref/feeds.php:882
+msgid "Inactive feeds"
+msgstr "Неактивные каналы"
+
+#: classes/pref/feeds.php:919
+msgid "Edit selected feeds"
+msgstr "Редактировать выбранные каналы"
+
+#: classes/pref/feeds.php:923 js/PrefFeedTree.js:396
+msgid "Batch subscribe"
+msgstr "Массовая подписка"
+
+#: classes/pref/feeds.php:931
+msgid "Categories"
+msgstr "Категории"
+
+#: classes/pref/feeds.php:934
+msgid "Add category"
+msgstr "Добавить категорию"
+
+#: classes/pref/feeds.php:987
+msgid "Choose file..."
+msgstr "Выберите файл..."
+
+#: classes/pref/feeds.php:995
+msgid "Import OPML"
+msgstr "Импортировать OPML"
+
+#: classes/pref/feeds.php:1006
+msgid "Export OPML"
+msgstr "Экспортировать OPML"
+
+#: classes/pref/feeds.php:1011
+#, fuzzy
+#| msgid "Include settings"
+msgid "Include tt-rss settings"
+msgstr "Включить настройки"
+
+#: classes/pref/feeds.php:1017
+msgid "Published OPML"
+msgstr "Опубликованный OPML"
+
+#: classes/pref/feeds.php:1023
+msgid "Display published OPML URL"
+msgstr "Отобразить публичный OPML URL"
+
+#: classes/pref/feeds.php:1038
+msgid "Display URL"
+msgstr "Показать URL"
+
+#: classes/pref/feeds.php:1043
+msgid "Clear all generated URLs"
+msgstr "Очистить все созданные URL"
+
+#: classes/pref/feeds.php:1055
+#, fuzzy
+msgid "My feeds"
+msgstr "Мои каналы"
+
+#: classes/pref/feeds.php:1060
+msgid "OPML"
+msgstr "OPML"
+
+#: classes/pref/feeds.php:1065
+#, fuzzy
+msgid "Sharing"
+msgstr "Опубликовать"
+
+#: classes/userhelper.php:221
+#, php-format
+msgid "Changed password of user %s to %s"
+msgstr "Пароль пользователя %s изменен на %s"
 
 #: classes/opml.php:28 classes/opml.php:32
 msgid "OPML Utility"
@@ -916,1164 +1528,53 @@ msgstr "Не могу переместить загруженный файл."
 msgid "Error: please upload OPML file."
 msgstr "Ошибка: пожалуйста загрузите OPML файл."
 
-#: classes/opml.php:617
+#: classes/opml.php:619
 msgid "Error: unable to find moved OPML file."
 msgstr "Ошибка: не могу найти перемещенный OPML файл."
 
-#: classes/opml.php:626
+#: classes/opml.php:628
 msgid "Error while parsing document."
 msgstr "Ошибка при разборе документа."
 
-#: classes/pref/users.php:6 classes/pref/system.php:8
-msgid "Your access level is insufficient to open this tab."
-msgstr "Вашего уровня доступа недостаточно для открытия этой вкладки."
-
-#: classes/pref/users.php:26
-msgid "Edit user"
-msgstr "Редактировать пользователя"
-
-#: classes/pref/users.php:63 classes/pref/feeds.php:668
-#: classes/pref/feeds.php:914 classes/pref/feeds.php:1694
-#: plugins/auth_internal/init.php:69
-msgid "Authentication"
-msgstr "Авторизация"
-
-#: classes/pref/users.php:68
-msgid "Access level: "
-msgstr "Уровень доступа: "
-
-#: classes/pref/users.php:82 classes/pref/prefs.php:398
-msgid "New password:"
-msgstr "Новый пароль:"
-
-#: classes/pref/users.php:90 classes/pref/filters.php:457
-#: classes/pref/filters.php:895 classes/pref/feeds.php:699
-#: classes/pref/feeds.php:936
-msgid "Options"
-msgstr "Опции"
-
-#: classes/pref/users.php:94 classes/pref/prefs.php:320
-msgid "E-mail:"
-msgstr "Электронная почта:"
-
-#: classes/pref/users.php:107
-msgid "User details"
-msgstr "Подробнее"
-
-#: classes/pref/users.php:148 classes/pref/users.php:390
-msgid "Registered"
-msgstr "Зарегистрирован"
-
-#: classes/pref/users.php:149
-msgid "Last logged in"
-msgstr "Последний вход"
-
-#: classes/pref/users.php:157
-msgid "Subscribed feeds count"
-msgstr "Количество подписанных каналов"
-
-#: classes/pref/users.php:158
-msgid "Stored articles"
-msgstr "Сохраненные статьи"
-
-#: classes/pref/users.php:162 classes/pref/users.php:389
-msgid "Subscribed feeds"
-msgstr "Подписан на каналы"
-
-#: classes/pref/users.php:188
-msgid "User not found"
-msgstr "Пользователь не найден"
-
-#: classes/pref/users.php:259
-#, php-format
-msgid "Added user %s with password %s"
-msgstr "Добавлен пользователь %s с паролем %s"
-
-#: classes/pref/users.php:266
-#, php-format
-msgid "Could not create user %s"
-msgstr "Не могу добавить пользователя %s"
-
-#: classes/pref/users.php:270
-#, php-format
-msgid "User %s already exists."
-msgstr "Пользователь %s уже существует."
-
-#: classes/pref/users.php:295
-#, php-format
-msgid "Changed password of user %s to %s"
-msgstr "Пароль пользователя %s изменен на %s"
-
-#: classes/pref/users.php:330 classes/pref/filters.php:754
-#: classes/pref/feeds.php:1247 classes/feeds.php:783 js/Feeds.js:569
-msgid "Search"
-msgstr "Поиск"
-
-#: classes/pref/users.php:340 classes/pref/filters.php:358
-#: classes/pref/filters.php:418 classes/pref/filters.php:758
-#: classes/pref/filters.php:844 classes/pref/filters.php:873
-#: classes/pref/labels.php:257 classes/pref/prefs.php:1203
-#: classes/pref/prefs.php:1313 classes/pref/feeds.php:1251
-#: classes/pref/feeds.php:1479 classes/pref/feeds.php:1536
-msgid "Select"
-msgstr "Выбрать"
-
-#: classes/pref/users.php:343 classes/pref/filters.php:361
-#: classes/pref/filters.php:421 classes/pref/filters.php:761
-#: classes/pref/filters.php:847 classes/pref/filters.php:876
-#: classes/pref/labels.php:260 classes/pref/prefs.php:1206
-#: classes/pref/prefs.php:1316 classes/pref/feeds.php:1254
-#: classes/pref/feeds.php:1482 classes/pref/feeds.php:1539 classes/feeds.php:69
-msgid "All"
-msgstr "Все"
-
-#: classes/pref/users.php:345 classes/pref/filters.php:363
-#: classes/pref/filters.php:423 classes/pref/filters.php:763
-#: classes/pref/filters.php:849 classes/pref/filters.php:878
-#: classes/pref/labels.php:262 classes/pref/prefs.php:1208
-#: classes/pref/prefs.php:1318 classes/pref/feeds.php:1256
-#: classes/pref/feeds.php:1484 classes/pref/feeds.php:1541 classes/feeds.php:72
-msgid "None"
-msgstr "Ничего"
-
-#: classes/pref/users.php:348
-msgid "Create user"
-msgstr "Добавить пользователя"
-
-#: classes/pref/users.php:352 classes/pref/filters.php:773
-msgid "Edit"
-msgstr "Редактировать"
-
-#: classes/pref/users.php:354 classes/pref/filters.php:500
-#: classes/pref/filters.php:780 classes/pref/labels.php:269
-#: classes/pref/feeds.php:798
-msgid "Remove"
-msgstr "Удалить"
-
-#: classes/pref/users.php:356 classes/handler/public.php:994
-msgid "Reset password"
-msgstr "Сбросить пароль"
-
-#: classes/pref/users.php:387 classes/pref/feeds.php:674
-#: classes/pref/feeds.php:920 classes/pref/feeds.php:1697 classes/feeds.php:720
-msgid "Login"
-msgstr "Пользователь"
-
-#: classes/pref/users.php:388
-msgid "Access Level"
-msgstr "Уровень доступа"
-
-#: classes/pref/users.php:391
-msgid "Last login"
-msgstr "Последний вход"
-
-#: classes/pref/users.php:408
-msgid "Click to edit"
-msgstr "Щёлкните для редактирования"
-
-#: classes/pref/users.php:424
-msgid "No users defined."
-msgstr "Пользователи не определены."
-
-#: classes/pref/users.php:426
-msgid "No matching users found."
-msgstr "Подходящих пользователей не найдено."
-
-#: classes/pref/filters.php:231 classes/pref/filters.php:555
-msgid "(inverse)"
-msgstr "(Инвертирован)"
-
-#: classes/pref/filters.php:227 classes/pref/filters.php:554
-#, php-format
-msgid "%s on %s in %s %s"
-msgstr "%s на %s в %s %s"
-
-#: classes/pref/filters.php:347 classes/pref/filters.php:832
-#: classes/pref/labels.php:25
-msgid "Caption"
-msgstr "Заголовок"
-
-#: classes/pref/filters.php:352 classes/pref/filters.php:838
-#: classes/pref/filters.php:956
-msgid "Match"
-msgstr "Искать"
-
-#: classes/pref/filters.php:367 classes/pref/filters.php:427
-#: classes/pref/filters.php:853 classes/pref/filters.php:882
-msgid "Add"
-msgstr "Добавить"
-
-#: classes/pref/filters.php:370 classes/pref/filters.php:430
-#: classes/pref/filters.php:856 classes/pref/filters.php:885
-#: classes/feeds.php:87
-msgid "Delete"
-msgstr "Удалить"
-
-#: classes/pref/filters.php:411 classes/pref/filters.php:866
-msgid "Apply actions"
-msgstr "Применить действия"
-
-#: classes/pref/filters.php:468 classes/pref/filters.php:901
-msgid "Enabled"
-msgstr "Включен"
-
-#: classes/pref/filters.php:479 classes/pref/filters.php:906
-msgid "Match any rule"
-msgstr "Удовлетворяет любому правилу"
-
-#: classes/pref/filters.php:490 classes/pref/filters.php:911
-msgid "Inverse matching"
-msgstr "Инвертировать фильтр"
-
-#: classes/pref/filters.php:504 classes/pref/filters.php:920
-msgid "Test"
-msgstr "Проверить"
-
-#: classes/pref/filters.php:770
-msgid "Combine"
-msgstr "Комбинировать"
-
-#: classes/pref/filters.php:776 classes/pref/feeds.php:1267
-#: classes/pref/feeds.php:1281
-msgid "Reset sort order"
-msgstr "Сбросить сортировку"
-
-#: classes/pref/filters.php:922
-msgid "Create"
-msgstr "Создать"
-
-#: classes/pref/filters.php:972
-msgid "Inverse regular expression matching"
-msgstr "Инвертировать совпадение с регулярным выражением"
-
-#: classes/pref/filters.php:976
-msgid "on field"
-msgstr "по полю"
-
-#: classes/pref/filters.php:979 js/PrefFilterTree.js:46
-msgid "in"
-msgstr "в"
-
-#: classes/pref/filters.php:1000
-msgid "Save rule"
-msgstr "Сохранить правило"
-
-#: classes/pref/filters.php:1000 js/CommonFilters.js:132
-msgid "Add rule"
-msgstr "Добавить правило"
-
-#: classes/pref/filters.php:1023
-msgid "Perform Action"
-msgstr "Выполнить действия"
-
-#: classes/pref/filters.php:1074
-msgid "No actions available"
-msgstr "Нет доступных действий"
-
-#: classes/pref/filters.php:1093
-msgid "Save action"
-msgstr "Сохранить действие"
-
-#: classes/pref/filters.php:1093 js/CommonFilters.js:162
-msgid "Add action"
-msgstr "Добавить действие"
-
-#: classes/pref/filters.php:1121
-msgid "[No caption]"
-msgstr "[Нет заголовка]"
-
-#: classes/pref/filters.php:1123
-#, php-format
-msgid "%s (%d rule)"
-msgid_plural "%s (%d rules)"
-msgstr[0] "%s (%d метка)"
-msgstr[1] "%s (%d метки)"
-msgstr[2] "%s (%d меток)"
-
-#: classes/pref/filters.php:1137
-msgid "matches any rule"
-msgstr "удовлетворяет любому правилу"
-
-#: classes/pref/filters.php:1138
-msgid "inverse"
-msgstr "обратный"
-
-#: classes/pref/filters.php:1141
-#, php-format
-msgid "%s (+%d action)"
-msgid_plural "%s (+%d actions)"
-msgstr[0] "%s (+%d действие)"
-msgstr[1] "%s (+%d действия)"
-msgstr[2] "%s (+%d действий)"
-
-#: classes/pref/labels.php:38
-msgid "Colors"
-msgstr "Цвета"
-
-#: classes/pref/labels.php:42
-msgid "Foreground:"
-msgstr "Передний план:"
-
-#: classes/pref/labels.php:42
-msgid "Background:"
-msgstr "Фон:"
-
-#: classes/pref/labels.php:231
-#, php-format
-msgid "Created label <b>%s</b>"
-msgstr "Добавлена метка <b>%s</b>"
-
-#: classes/pref/labels.php:272
-msgid "Clear colors"
-msgstr "Очистить цвета"
-
-#: classes/pref/prefs.php:20 classes/pref/feeds.php:521
-msgid "General"
-msgstr "Общие"
-
-#: classes/pref/prefs.php:41
-msgid "Articles"
-msgstr "Статьи"
-
-#: classes/pref/prefs.php:54
-msgid "Digest"
-msgstr "Дайджест"
-
-#: classes/pref/prefs.php:59
-msgid "Advanced"
-msgstr "Расширенные"
-
-#: classes/pref/prefs.php:70
-msgid "Never apply these tags automatically (comma-separated list)."
-msgstr ""
-"Никогда не назначать эти тэги автоматически (список разделенный запятыми)."
-
-#: classes/pref/prefs.php:74
-msgid "Allow duplicate articles"
-msgstr "Разрешить дубликаты статей"
-
-#: classes/pref/prefs.php:75
-msgid "Blacklisted tags"
-msgstr "Черный список тегов"
-
-#: classes/pref/prefs.php:76
-msgid "Default language"
-msgstr "Язык по умолчанию"
-
-#: classes/pref/prefs.php:76
-msgid "Used for full-text search"
-msgstr "Используется для полнотекстового поиска"
-
-#: classes/pref/prefs.php:77
-msgid "Mark read on scroll"
-msgstr "Обозначать статьи прочитанными при прокрутке"
-
-#: classes/pref/prefs.php:77
-msgid "Mark articles as read as you scroll past them"
-msgstr "Помечать статьи как прочитанные при пролистывании"
-
-#: classes/pref/prefs.php:78
-msgid "Always expand articles"
-msgstr "Всегда разворачивать статьи"
-
-#: classes/pref/prefs.php:79
-msgid "Combined mode"
-msgstr "Комбинированный режим"
-
-#: classes/pref/prefs.php:79
-msgid "Show flat list of articles instead of separate panels"
-msgstr "Показать развёрнутый список статей, вместо отдельных панелей"
-
-#: classes/pref/prefs.php:80
-msgid "Confirm marking feeds as read"
-msgstr "Подтверждать обозначение канала прочитанным"
-
-#: classes/pref/prefs.php:81
-msgid "Amount of articles to display at once"
-msgstr "Количество статей на странице"
-
-#: classes/pref/prefs.php:82
-msgid "Default update interval"
-msgstr "Интервал обновления по умолчанию"
-
-#: classes/pref/prefs.php:83
-msgid "Mark sent articles as read"
-msgstr "Пометить отправленные статьи как прочитанные"
-
-#: classes/pref/prefs.php:84
-msgid "Enable digest"
-msgstr "Включить дайджест по электронной почте"
-
-#: classes/pref/prefs.php:84
-msgid "Send daily digest of new (and unread) headlines to your e-mail address"
-msgstr ""
-"Отправлять дайджест новых (и непрочитанных) заголовков на вашу электронную "
-"почту"
-
-#: classes/pref/prefs.php:85
-msgid "Try to send around this time"
-msgstr "Попытаться посылать дайджесты в районе этого времени"
-
-#: classes/pref/prefs.php:85
-msgid "Time in UTC"
-msgstr "Время в UTC"
-
-#: classes/pref/prefs.php:86
-msgid "Enable API"
-msgstr "Включить API"
-
-#: classes/pref/prefs.php:86
-msgid "Allows accessing this account through the API"
-msgstr "Позволяет иметь доступ к этой учетной записи через API"
-
-#: classes/pref/prefs.php:87
-msgid "Enable categories"
-msgstr "Включить категории"
-
-#: classes/pref/prefs.php:88
-msgid "Sort feeds by unread articles count"
-msgstr "Сортировать каналы по количеству непрочитанных статей"
-
-#: classes/pref/prefs.php:89
-msgid "Maximum age of fresh articles"
-msgstr "Максимальный возраст свежих статей"
-
-#: classes/pref/prefs.php:89
-msgid "hours"
-msgstr "часа(ов)"
-
-#: classes/pref/prefs.php:90
-msgid "Hide read feeds"
-msgstr "Скрыть прочитанные каналы"
-
-#: classes/pref/prefs.php:91
-msgid "Always show special feeds"
-msgstr "Всегда показывать специальные каналы"
-
-#: classes/pref/prefs.php:91
-msgid "While hiding read feeds"
-msgstr "Когда скрываются прочитанные каналы"
-
-#: classes/pref/prefs.php:92
-msgid "Long date format"
-msgstr "Длинный формат даты"
-
-#: classes/pref/prefs.php:92
-msgid ""
-"Syntax is identical to PHP <a href='http://php.net/manual/function.date."
-"php'>date()</a> function."
-msgstr ""
-"Используется синтаксис, аналогичный функции <a href='http://php.net/manual/"
-"function.date.php'>date()</a> в PHP."
-
-#: classes/pref/prefs.php:93
-msgid "Automatically show next feed"
-msgstr "Автоматически показывать следующий канал"
-
-#: classes/pref/prefs.php:93
-msgid "After marking one as read"
-msgstr "После маркировки прочитанным"
-
-#: classes/pref/prefs.php:94
-msgid "Purge articles older than"
-msgstr "Очистить статьи старше чем"
-
-#: classes/pref/prefs.php:94
-msgid "<strong>days</strong> (0 disables)"
-msgstr "<strong>дней</strong> (0 - отключён)"
-
-#: classes/pref/prefs.php:95
-msgid "Purge unread articles"
-msgstr "Очистить непрочитанные статьи"
-
-#: classes/pref/prefs.php:96
-msgid "Reverse headline order (oldest first)"
-msgstr "Обратный порядок заголовков (старые впереди)"
-
-#: classes/pref/prefs.php:97
-msgid "Short date format"
-msgstr "Короткий формат даты"
-
-#: classes/pref/prefs.php:98
-msgid "Show content preview in headlines"
-msgstr "Показывать предпросмотр содержимого в списке заголовков"
-
-#: classes/pref/prefs.php:99
-msgid "Sort headlines by feed date"
-msgstr "Сортировать каналы по дате, указанной в канале"
-
-#: classes/pref/prefs.php:99
-msgid "Use feed-specified date to sort headlines instead of local import date."
-msgstr ""
-"Использовать заданную для канала дату для сортировки заголовков вместо даты "
-"импорта."
-
-#: classes/pref/prefs.php:100
-msgid "SSL client certificate"
-msgstr "Клиентский SSL сертификат"
-
-#: classes/pref/prefs.php:101 classes/pref/feeds.php:746
-#: classes/pref/feeds.php:955
-msgid "Do not embed media"
-msgstr "Не показывать медиа-контент"
-
-#: classes/pref/prefs.php:102
-msgid "Strip unsafe tags from articles"
-msgstr "Вырезать небезопасные теги из статей"
-
-#: classes/pref/prefs.php:102
-msgid "Strip all but most common HTML tags when reading articles."
-msgstr "Вырезать все, кроме основных HTML тегов при показе статей."
-
-#: classes/pref/prefs.php:103 js/PrefHelpers.js:153
-msgid "Customize stylesheet"
-msgstr "Изменить пользовательские стили"
-
-#: classes/pref/prefs.php:104
-msgid "Time zone"
-msgstr "Часовой пояс"
-
-#: classes/pref/prefs.php:105
-msgid "Group by feed"
-msgstr "Группировать по каналу"
-
-#: classes/pref/prefs.php:105
-msgid "Group multiple-feed output by originating feed"
-msgstr "Группировать многопоточный канал по исходному"
-
-#: classes/pref/prefs.php:106
-msgid "Language"
-msgstr "Язык"
-
-#: classes/pref/prefs.php:107
-msgid "Theme"
-msgstr "Тема"
-
-#: classes/pref/prefs.php:213
-msgid "The configuration was saved."
-msgstr "Конфигурация сохранена."
-
-#: classes/pref/prefs.php:256
-msgid "Your personal data has been saved."
-msgstr "Ваши данные были сохранены."
-
-#: classes/pref/prefs.php:272
-msgid "Your preferences are now set to default values."
-msgstr "Ваши настройки сброшены по умолчанию."
-
-#: classes/pref/prefs.php:283
-msgid "Personal data / Authentication"
-msgstr "Персональные данные / Аутентификация"
-
-#: classes/pref/prefs.php:286
-msgid "Personal data"
-msgstr "Личные данные"
-
-#: classes/pref/prefs.php:315
-msgid "Full name:"
-msgstr "Полное имя:"
-
-#: classes/pref/prefs.php:328
-msgid "Access level:"
-msgstr "Уровень доступа:"
-
-#: classes/pref/prefs.php:339
-msgid "Save data"
-msgstr "Сохранить"
-
-#: classes/pref/prefs.php:351 classes/pref/feeds.php:682
-#: classes/pref/feeds.php:928 classes/pref/feeds.php:1698 classes/feeds.php:724
-msgid "Password"
-msgstr "Пароль"
-
-#: classes/pref/prefs.php:389
-msgid "Changing your current password will disable OTP."
-msgstr "Изменение текущего пароля приведет к отключению OTP."
-
-#: classes/pref/prefs.php:393
-msgid "Old password:"
-msgstr "Старый пароль:"
-
-#: classes/pref/prefs.php:403
-msgid "Confirm password:"
-msgstr "Подтверждение пароля:"
-
-#: classes/pref/prefs.php:413
-msgid "Change password"
-msgstr "Изменить пароль"
-
-#: classes/pref/prefs.php:418
-#, php-format
-msgid ""
-"Authentication module used for this session (<b>%s</b>) does not provide an "
-"ability to set passwords."
-msgstr ""
-
-#: classes/pref/prefs.php:424
-#, fuzzy
-msgid "App passwords"
-msgstr "Старый пароль:"
-
-#: classes/pref/prefs.php:436
-#, fuzzy
-msgid "Generate new password"
-msgstr "Создать новую ссылку"
-
-#: classes/pref/prefs.php:440
-#, fuzzy
-msgid "Remove selected passwords"
-msgstr "Удалить выбранных пользователей?"
-
-#: classes/pref/prefs.php:444
-msgid "One time passwords / Authenticator"
-msgstr "Одноразовые пароли / Аутентификатор"
-
-#: classes/pref/prefs.php:474 classes/pref/prefs.php:535
-msgid "Your password:"
-msgstr "Ваш пароль:"
-
-#: classes/pref/prefs.php:484
-msgid "Disable OTP"
-msgstr "Отключить одноразовый пароль"
-
-#: classes/pref/prefs.php:494
-#, fuzzy
-msgid ""
-"Scan the following code by the Authenticator application or copy the key "
-"manually"
-msgstr "Просканируйте следующий код в программу Аутентификатор:"
-
-#: classes/pref/prefs.php:500
-#, fuzzy
-msgid "Use the following OTP key with a compatible Authenticator application"
-msgstr "Просканируйте следующий код в программу Аутентификатор:"
-
-#: classes/pref/prefs.php:508
-msgid "OTP Key:"
-msgstr ""
-
-#: classes/pref/prefs.php:541
-msgid "One time password:"
-msgstr "Одноразовый пароль:"
-
-#: classes/pref/prefs.php:548
-msgid "Enable OTP"
-msgstr "Включить одноразовые пароли"
-
-#: classes/pref/prefs.php:601
-msgid "Some preferences are only available in default profile."
-msgstr "Некоторые настройки доступны только в профиле по умолчанию."
-
-#: classes/pref/prefs.php:709
-msgid "default"
-msgstr "по умолчанию"
-
-#: classes/pref/prefs.php:719
-msgid "Customize"
-msgstr "Изменить пользовательские стили"
-
-#: classes/pref/prefs.php:722
-msgid "More themes..."
-msgstr "Больше тем…"
-
-#: classes/pref/prefs.php:783
-msgid "Register"
-msgstr "Регистрация"
-
-#: classes/pref/prefs.php:787 classes/pref/system.php:44
-msgid "Clear"
-msgstr "Очистить"
-
-#: classes/pref/prefs.php:798
-#, php-format
-msgid "Current server time: %s"
-msgstr "Текущее время на сервере: %s"
-
-#: classes/pref/prefs.php:827
-msgid "Save configuration"
-msgstr "Сохранить конфигурацию"
-
-#: classes/pref/prefs.php:831
-msgid "Save and exit preferences"
-msgstr "Сохранить и закрыть настройки"
-
-#: classes/pref/prefs.php:836
-msgid "Manage profiles"
-msgstr "Управление профилями"
-
-#: classes/pref/prefs.php:839
-msgid "Reset to defaults"
-msgstr "Сбросить настройки"
-
-#: classes/pref/prefs.php:853 classes/pref/feeds.php:803
-msgid "Plugins"
-msgstr "Плагины"
-
-#: classes/pref/prefs.php:900
-#, php-format
-msgid ""
-"The following plugins use per-feed content hooks. This may cause excessive "
-"data usage and origin server load resulting in a ban of your instance: <b>"
-"%s</b>"
-msgstr ""
-
-#: classes/pref/prefs.php:906
-msgid "System plugins"
-msgstr "Системные плагины"
-
-#: classes/pref/prefs.php:940 classes/pref/prefs.php:986
-#, php-format
-msgid "v%.2f, by %s"
-msgstr "v%.2f, by %s"
-
-#: classes/pref/prefs.php:948
-msgid "User plugins"
-msgstr "Пользовательские плагины"
-
-#: classes/pref/prefs.php:975
-msgid "Clear data"
-msgstr "Очистить данные"
-
-#: classes/pref/prefs.php:1000
-msgid "Enable selected plugins"
-msgstr "Активировать выбранные плагины"
-
-#: classes/pref/prefs.php:1092
-msgid "Incorrect one time password"
-msgstr "Неверный одноразовый пароль"
-
-#: classes/pref/prefs.php:1097 classes/pref/prefs.php:1151
-msgid "Incorrect password"
-msgstr "Неверный пароль"
-
-#: classes/pref/prefs.php:1175
-msgid ""
-"You can override colors, fonts and layout of your currently selected theme "
-"with custom CSS declarations here."
-msgstr ""
-"Вы можете задавать свои цвета, шрифты и макет Вашей текущей схемы с помощью "
-"собственных указанных здесь CSS."
-
-#: classes/pref/prefs.php:1182
-msgid ""
-"User CSS has been applied, you might need to reload the page to see all "
-"changes."
-msgstr ""
-
-#: classes/pref/prefs.php:1190
-msgid "Apply"
-msgstr ""
-
-#: classes/pref/prefs.php:1192
-#, fuzzy
-msgid "Save and reload"
-msgstr "Отметить статьи выше как прочитанные"
-
-#: classes/pref/prefs.php:1217
-msgid "Create profile"
-msgstr "Создать профиль"
-
-#: classes/pref/prefs.php:1236 classes/pref/prefs.php:1256
-msgid "(active)"
-msgstr "(активно)"
-
-#: classes/pref/prefs.php:1287
-msgid "Remove selected profiles"
-msgstr "Удалить выбранные профили"
-
-#: classes/pref/prefs.php:1289
-msgid "Activate profile"
-msgstr "Активировать профиль"
-
-#: classes/pref/prefs.php:1326
-msgid "Description"
-msgstr "Описание"
-
-#: classes/pref/prefs.php:1327
-#, fuzzy
-msgid "Created"
-msgstr "Создать"
-
-#: classes/pref/prefs.php:1328
-#, fuzzy
-msgid "Last used"
-msgstr "Последнее обновление:"
-
-#: classes/pref/prefs.php:1381
-#, php-format
-msgid ""
-"Generated password <strong>%s</strong> for %s. Please remember it for future "
-"reference."
-msgstr ""
-
-#: classes/pref/feeds.php:28
-msgid "Check to enable field"
-msgstr "Проверить доступность поля"
-
-#: classes/pref/feeds.php:77 classes/pref/feeds.php:233
-#: classes/pref/feeds.php:281 classes/pref/feeds.php:287
-#: classes/pref/feeds.php:316
-#, php-format
-msgid "(%d feed)"
-msgid_plural "(%d feeds)"
-msgstr[0] "(%d канал)"
-msgstr[1] "(%d канала)"
-msgstr[2] "(%d каналов)"
-
-#: classes/pref/feeds.php:537
-msgid "Feed Title"
-msgstr "Заголовок"
-
-#: classes/pref/feeds.php:548 classes/handler/public.php:597
-msgid "URL:"
-msgstr "URL:"
-
-#: classes/pref/feeds.php:550
-msgid "Feed URL"
-msgstr "URL канала"
-
-#: classes/pref/feeds.php:571 classes/pref/feeds.php:844
-#: classes/pref/feeds.php:1685 classes/feeds.php:694
-msgid "Place in category:"
-msgstr "Поместить в категорию:"
-
-#: classes/pref/feeds.php:585
-msgid "Site URL:"
-msgstr "Сайт:"
-
-#: classes/pref/feeds.php:587
-msgid "Site URL"
-msgstr "Сайт"
-
-#: classes/pref/feeds.php:603 classes/pref/feeds.php:859 classes/feeds.php:768
-msgid "Language:"
-msgstr "Язык:"
-
-#: classes/pref/feeds.php:612 classes/pref/feeds.php:870
-msgid "Update"
-msgstr "Обновить"
-
-#: classes/pref/feeds.php:621 classes/pref/feeds.php:877
-msgid "Interval:"
-msgstr "Интервал:"
-
-#: classes/pref/feeds.php:637 classes/pref/feeds.php:895
-msgid "Article purging:"
-msgstr "Удаление сообщений:"
-
-#: classes/pref/feeds.php:644
+#: classes/config.php:219
 #, fuzzy, php-format
-msgid "(%d day)"
-msgid_plural "(%d days)"
-msgstr[0] "(%d канал)"
-msgstr[1] "(%d канала)"
-msgstr[2] "(%d каналов)"
+msgid "Git error [RC=%d]: %s"
+msgstr "Фатальная ошибка"
 
-#: classes/pref/feeds.php:646 classes/pref/feeds.php:903
-#, fuzzy
-msgid "Disabled"
-msgstr "Отключить одноразовый пароль"
-
-#: classes/pref/feeds.php:650
-#, php-format
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-
-#: classes/pref/feeds.php:686
-msgid ""
-"<b>Hint:</b> you need to fill in your login information if your feed "
-"requires authentication, except for Twitter feeds."
-msgstr ""
-"<b>Подсказка:</b> Вам потребуется задать Ваши учетные данные, если канал "
-"требует авторизацию, за исключением каналов в Twitter."
-
-#: classes/pref/feeds.php:697 classes/feeds.php:736
-msgid "This feed requires authentication."
-msgstr "Этот канал требует авторизации."
-
-#: classes/pref/feeds.php:715 classes/pref/feeds.php:941
-msgid "Include in e-mail digest"
-msgstr "Включить в e-mail дайджест"
-
-#: classes/pref/feeds.php:731 classes/pref/feeds.php:948
-msgid "Always display image attachments"
-msgstr "Всегда показывать вложенные изображения"
-
-#: classes/pref/feeds.php:761 classes/pref/feeds.php:962
-msgid "Cache media"
-msgstr "Кэшировать медиа-контент"
-
-#: classes/pref/feeds.php:776 classes/pref/feeds.php:969
-msgid "Mark updated articles as unread"
-msgstr "Отметить обновлённые статьи как непрочитанные"
-
-#: classes/pref/feeds.php:780
-msgid "Icon"
-msgstr "Иконка"
-
-#: classes/pref/feeds.php:788 classes/pref/feeds.php:1354
-msgid "Choose file..."
-msgstr "Выберите файл..."
-
-#: classes/pref/feeds.php:796
-msgid "Replace"
-msgstr "Заменить"
-
-#: classes/pref/feeds.php:901
-#, fuzzy, php-format
-msgid "(%d days)"
-msgstr "(%d канал)"
-
-#: classes/pref/feeds.php:1220
-msgid "Feeds with errors"
-msgstr "Каналы с ошибками"
-
-#: classes/pref/feeds.php:1229
-msgid "Inactive feeds"
-msgstr "Неактивные каналы"
-
-#: classes/pref/feeds.php:1265
-msgid "Edit selected feeds"
-msgstr "Редактировать выбранные каналы"
-
-#: classes/pref/feeds.php:1269 js/PrefFeedTree.js:348
-msgid "Batch subscribe"
-msgstr "Массовая подписка"
-
-#: classes/pref/feeds.php:1276
-msgid "Categories"
-msgstr "Категории"
-
-#: classes/pref/feeds.php:1279
-msgid "Add category"
-msgstr "Добавить категорию"
-
-#: classes/pref/feeds.php:1283
-msgid "Remove selected"
-msgstr "Удалить выбранное"
-
-#: classes/pref/feeds.php:1341
-msgid "OPML"
-msgstr "OPML"
-
-#: classes/pref/feeds.php:1343
-msgid ""
-"Using OPML you can export and import your feeds, filters, labels and Tiny "
-"Tiny RSS settings."
-msgstr ""
-"Используя OPML Вы можете экспортировать и импортировать Ваши каналы, "
-"фильтры, метки и настройки Tiny Tiny RSS."
-
-#: classes/pref/feeds.php:1361
-msgid "Import OPML"
-msgstr "Импортировать OPML"
-
-#: classes/pref/feeds.php:1369
-msgid "Export OPML"
-msgstr "Экспортировать OPML"
-
-#: classes/pref/feeds.php:1373
-msgid "Include settings"
-msgstr "Включить настройки"
-
-#: classes/pref/feeds.php:1380
-msgid "Published OPML"
-msgstr "Опубликованный OPML"
-
-#: classes/pref/feeds.php:1382
-msgid ""
-"Your OPML can be published publicly and can be subscribed by anyone who "
-"knows the URL below."
-msgstr ""
-"Ваш OPML может быть опубликован и на него могут подписаться те, кто знает "
-"URL, указанный ниже."
-
-#: classes/pref/feeds.php:1384
-msgid ""
-"Published OPML does not include your Tiny Tiny RSS settings, feeds that "
-"require authentication or feeds hidden from Popular feeds."
-msgstr ""
-"Опубликованный OPML не содержит настроек Tiny Tiny RSS settings, каналов с "
-"авторизацией или каналов скрытых из списка \"Популярные\"."
-
-#: classes/pref/feeds.php:1386
-msgid "Public OPML URL"
-msgstr "Публичная ссылка на OPML"
-
-#: classes/pref/feeds.php:1387
-msgid "Display published OPML URL"
-msgstr "Отобразить публичный OPML URL"
-
-#: classes/pref/feeds.php:1395
-msgid "Published & shared articles / Generated feeds"
-msgstr "Опубликованные & общие каналы / Автоматически созданные каналы"
-
-#: classes/pref/feeds.php:1397
-msgid ""
-"Published articles can be subscribed by anyone who knows the following URL:"
-msgstr ""
-"На опубликованные статьи может быть подписан любой кому известен следующий "
-"URL:"
-
-#: classes/pref/feeds.php:1402 classes/feeds.php:39 classes/feeds.php:40
-#: classes/feeds.php:106 classes/feeds.php:107
-msgid "Show as feed"
-msgstr "Показать как канал"
-
-#: classes/pref/feeds.php:1403
-msgid "Display URL"
-msgstr "Показать URL"
-
-#: classes/pref/feeds.php:1406
-msgid "Clear all generated URLs"
-msgstr "Очистить все созданные URL"
-
-#: classes/pref/feeds.php:1505 classes/pref/feeds.php:1562
-msgid "Click to edit feed"
-msgstr "Щёлкните для редактирования"
-
-#: classes/pref/feeds.php:1522 classes/pref/feeds.php:1581
-msgid "Unsubscribe from selected feeds"
-msgstr "Отписаться от выбранных каналов"
-
-#: classes/pref/feeds.php:1676
-msgid "One valid feed per line (no detection is done)"
-msgstr "Один действительный RSS канал на строчку (проверка не производится)"
-
-#: classes/pref/feeds.php:1707
-msgid "Feeds require authentication."
-msgstr "Каналы требуют авторизацию."
-
-#: classes/pref/feeds.php:1712 classes/feeds.php:741
-#: classes/handler/public.php:796
-msgid "Subscribe"
-msgstr "Подписаться"
-
-#: classes/pref/system.php:32
-msgid "Event Log"
-msgstr "Журнал событий"
-
-#: classes/pref/system.php:41
-msgid "Refresh"
-msgstr "Обновить"
-
-#: classes/pref/system.php:48
-msgid "Severity:"
-msgstr ""
-
-#: classes/pref/system.php:51
-#, fuzzy
-msgid "Errors"
-msgstr "Ошибка"
-
-#: classes/pref/system.php:52
-msgid "Warnings"
-msgstr ""
-
-#: classes/pref/system.php:53
-#, fuzzy
-msgid "Everything"
-msgstr "Снять выделение"
-
-#: classes/pref/system.php:65
-msgid "Error"
-msgstr "Ошибка"
-
-#: classes/pref/system.php:66
-msgid "Filename"
-msgstr "Имя файла"
-
-#: classes/pref/system.php:67
-msgid "Message"
-msgstr "Сообщение"
-
-#: classes/pref/system.php:69
-msgid "Date"
-msgstr "Дата"
-
-#: classes/pref/system.php:130
-msgid "PHP Information"
-msgstr "Информация о PHP"
-
-#: classes/feeds.php:46
-#, php-format
-msgid "Last updated: %s"
-msgstr "Последнее обновление: %s"
-
-#: classes/feeds.php:67
-msgid "Select..."
-msgstr "Выбрать..."
-
-#: classes/feeds.php:71
-msgid "Invert"
-msgstr "Инвертировать"
-
-#: classes/feeds.php:74
-msgid "Selection toggle:"
-msgstr "Переключить выбранное:"
-
-#: classes/feeds.php:80
-msgid "Selection:"
-msgstr "Выбрано:"
-
-#: classes/feeds.php:83
-msgid "Set score"
-msgstr "Оценить"
-
-#: classes/feeds.php:86
-msgid "Move back"
-msgstr "Переместить назад"
-
-#: classes/feeds.php:89
-msgid "Archive"
-msgstr "Архивировать"
-
-#: classes/feeds.php:93 classes/feeds.php:98 plugins/mailto/init.php:24
-#: plugins/mail/init.php:76
-msgid "Forward by email"
-msgstr "Отправить по почте"
-
-#: classes/feeds.php:102
-msgid "Feed:"
-msgstr "Канал:"
-
-#: classes/feeds.php:158 classes/feeds.php:554
+#: classes/feeds.php:54 classes/feeds.php:467
 msgid "Feed not found."
 msgstr "Канал не найден."
 
-#: classes/feeds.php:221
+#: classes/feeds.php:119
 msgid "Never"
 msgstr "Никогда"
 
-#: classes/feeds.php:277 classes/feeds.php:1301
+#: classes/feeds.php:198 classes/feeds.php:1122
 msgid "Archived articles"
 msgstr "Архив статей"
 
-#: classes/feeds.php:351
+#: classes/feeds.php:257
 msgid "Collapse article"
 msgstr "Свернуть статью"
 
-#: classes/feeds.php:381
+#: classes/feeds.php:280
 #, php-format
 msgid "Imported at %s"
 msgstr "Импортировано в %s"
 
-#: classes/feeds.php:445
+#: classes/feeds.php:356
 msgid "No unread articles found to display."
 msgstr "Не найдено не прочитанных статей."
 
-#: classes/feeds.php:448
+#: classes/feeds.php:359
 msgid "No updated articles found to display."
 msgstr "Не найдено не прочитанных статей."
 
-#: classes/feeds.php:451
+#: classes/feeds.php:362
 msgid "No starred articles found to display."
 msgstr "Не найдено отмеченных статей."
 
-#: classes/feeds.php:455
+#: classes/feeds.php:366
 msgid ""
 "No articles found to display. You can assign articles to labels manually "
 "from article header context menu (applies to all selected articles) or use a "
@@ -2083,388 +1584,91 @@ msgstr ""
 "меню заголовка статьи (будет присвоено всем выбранным статьям) или "
 "используйте фильтр."
 
-#: classes/feeds.php:457
+#: classes/feeds.php:368
 msgid "No articles found to display."
 msgstr "Статей не найдено."
 
-#: classes/feeds.php:474 classes/feeds.php:630
+#: classes/feeds.php:385 classes/feeds.php:536
 #, php-format
 msgid "Feeds last updated at %s"
 msgstr "Последнее обновление в %s"
 
-#: classes/feeds.php:486 classes/feeds.php:642
+#: classes/feeds.php:397 classes/feeds.php:548
 msgid "Some feeds have update errors (click for details)"
 msgstr "Некоторые каналы не могут быть обновлены (щёлкните для подробностей)"
 
-#: classes/feeds.php:619
+#: classes/feeds.php:525
 msgid "No feed selected."
 msgstr "Канал не выбран."
 
-#: classes/feeds.php:686
-msgid "Feed or site URL"
-msgstr "Канал или URL сайта"
-
-#: classes/feeds.php:703
-msgid "Available feeds"
-msgstr "Доступные каналы"
-
-#: classes/feeds.php:762
-#, php-format
-msgid "Search %s..."
-msgstr "Поиск %s…"
-
-#: classes/feeds.php:770
-msgid "Used for word stemming"
-msgstr "Используется стемминга слов"
-
-#: classes/feeds.php:780
-msgid "Search syntax"
-msgstr "Искать метку"
-
-#: classes/feeds.php:1293
+#: classes/feeds.php:1114
 msgid "Starred articles"
 msgstr "Отмеченные"
 
-#: classes/feeds.php:1295
+#: classes/feeds.php:1116
 msgid "Published articles"
 msgstr "Опубликованные"
 
-#: classes/feeds.php:1297
+#: classes/feeds.php:1118
 msgid "Fresh articles"
 msgstr "Свежие"
 
-#: classes/feeds.php:1429
+#: classes/feeds.php:1252
 msgid "Special"
 msgstr "Особые"
 
-#: classes/feeds.php:1520
+#: classes/feeds.php:1343
 #, php-format
 msgid "Incorrect search syntax: %s."
 msgstr "Неверный синтаксис поиска: %s."
 
-#: classes/feeds.php:1710
+#: classes/feeds.php:1533
 #, php-format
 msgid "Search results: %s"
 msgstr "Результаты поиска: %s"
-
-#: classes/handler/public.php:519 plugins/bookmarklets/init.php:41
-msgid "Share with Tiny Tiny RSS"
-msgstr "Опубликовать с помощью Tiny Tiny RSS"
-
-#: classes/handler/public.php:592
-msgid "Title:"
-msgstr "Заголовок:"
-
-#: classes/handler/public.php:602
-msgid "Content:"
-msgstr "Содержимое:"
-
-#: classes/handler/public.php:607
-msgid "Labels:"
-msgstr "Метки:"
-
-#: classes/handler/public.php:617
-msgid "Share"
-msgstr "Опубликовать"
-
-#: classes/handler/public.php:619
-msgid "Shared article will appear in the Published feed."
-msgstr "Опубликованная статья появится в канале \"Опубликованные\"."
-
-#: classes/handler/public.php:715
-msgid "Incorrect username or password"
-msgstr "Некорректное имя пользователя или пароль"
-
-#: classes/handler/public.php:809
-#, php-format
-msgid "Already subscribed to <b>%s</b>."
-msgstr "Канал <b>%s</b> уже подписан."
-
-#: classes/handler/public.php:812
-#, php-format
-msgid "Subscribed to <b>%s</b>."
-msgstr "Добавлена подписка на <b>%s</b>."
-
-#: classes/handler/public.php:815
-#, php-format
-msgid "Could not subscribe to <b>%s</b>."
-msgstr "Не могу подписаться на <b>%s</b>."
-
-#: classes/handler/public.php:818
-#, php-format
-msgid "No feeds found in <b>%s</b>."
-msgstr "Не найдены каналы в <b>%s</b>."
-
-#: classes/handler/public.php:824
-#, php-format
-msgid "Could not subscribe to <b>%s</b>.<br>Can't download the Feed URL."
-msgstr "Не могу подписаться на <b>%s</b>. Не могу загрузить URL канала."
-
-#: classes/handler/public.php:835
-msgid "Multiple feed URLs found:"
-msgstr "Найдено несколько URL каналов:"
-
-#: classes/handler/public.php:848
-msgid "Subscribe to selected feed"
-msgstr "Подписаться на выбранный канал"
-
-#: classes/handler/public.php:872
-msgid "Edit subscription options"
-msgstr "Редактировать опции  подписки"
-
-#: classes/handler/public.php:925
-msgid "Password recovery"
-msgstr "Восстановление пароля"
-
-#: classes/handler/public.php:968
-msgid ""
-"You will need to provide valid account name and email. Password reset link "
-"will be sent to your email address."
-msgstr ""
-"Введите ваш логин и электронный адрес. Ссылка для сброса пароля будет "
-"выслана на указанный адрес."
-
-#: classes/handler/public.php:988
-#, php-format
-msgid "How much is %d + %d:"
-msgstr "Сколько будет %d плюс %d:"
-
-#: classes/handler/public.php:1006
-msgid "Some of the required form parameters are missing or incorrect."
-msgstr "Некоторые поля формы пусты или некорректно заполнены."
-
-#: classes/handler/public.php:1010 classes/handler/public.php:1075
-msgid "Go back"
-msgstr "Перейти назад"
-
-#: classes/handler/public.php:1051
-msgid "[tt-rss] Password reset request"
-msgstr "[tt-rss] Уведомление о смене пароля"
-
-#: classes/handler/public.php:1071
-msgid "Sorry, login and email combination not found."
-msgstr "Извините, комбинация логина и электронного адреса не обнаружена."
-
-#: classes/handler/public.php:1094
-msgid "Your access level is insufficient to run this script."
-msgstr "В доступе отказано - недостаточный уровень привилегий."
-
-#: classes/handler/public.php:1135
-msgid "Database Updater"
-msgstr "Обновление базы данных"
-
-#: classes/handler/public.php:1146
-#, php-format
-msgid "Performing updates to version %d"
-msgstr "Выполнение обновления до версии %d"
-
-#: classes/handler/public.php:1151
-#, php-format
-msgid "Updating to version %d"
-msgstr "Обновляется до версии %d"
-
-#: classes/handler/public.php:1164
-msgid "Try again"
-msgstr "Попробуйте ещё раз"
-
-#: classes/handler/public.php:1170
-msgid "Completed."
-msgstr "Завершено."
-
-#: classes/handler/public.php:1187
-#, php-format
-msgid "Tiny Tiny RSS database needs update to the latest version (%d to %d)."
-msgstr ""
-"Базе данных Tiny Tiny RSS потребуется обновление до последней версии  (с <b>"
-"%d</b> до <b>%d</b>)."
-
-#: classes/handler/public.php:1199
-msgid "Perform updates"
-msgstr "Применить обновления"
 
 #: classes/timehelper.php:8
 #, php-format
 msgid "%d min"
 msgstr "%d мин"
 
-#: classes/backend.php:58
-msgid "Shift"
-msgstr "Shift"
-
-#: classes/backend.php:61
-msgid "Ctrl"
-msgstr "Ctrl"
-
-#: plugins/bookmarklets/init.php:23
-msgid "Bookmarklets"
-msgstr "Букмарклеты"
-
-#: plugins/bookmarklets/init.php:25
-msgid ""
-"Drag the link below to your browser toolbar, open the feed you're interested "
-"in in your browser and click on the link to subscribe to it."
-msgstr ""
-"Перетащите ссылку ниже на панель Вашего броузера, откройте интересующий Вас "
-"канал и нажмите на ссылку, чтоб подписаться на него."
-
-#: plugins/bookmarklets/init.php:29
-#, php-format
-msgid "Subscribe to %s in Tiny Tiny RSS?"
-msgstr "Подписаться на %s в Tiny Tiny RSS?"
-
-#: plugins/bookmarklets/init.php:34
-msgid "Subscribe in Tiny Tiny RSS"
-msgstr "Подписаться в Tiny Tiny RSS"
-
-#: plugins/bookmarklets/init.php:37
-msgid "Use this bookmarklet to publish arbitrary pages using Tiny Tiny RSS"
-msgstr ""
-"Используйте этот букмарклет для опубликования отдельных страниц с помощью "
-"Tiny Tiny RSS"
-
-#: plugins/af_readability/init.php:25
-msgid "Data saved."
-msgstr "Данные сохранены."
-
-#: plugins/af_readability/init.php:47
-msgid "Inline content"
-msgstr "Встроить контент"
-
-#: plugins/af_readability/init.php:48
-#, fuzzy
-msgid "Append content"
-msgstr "Встроить контент"
-
-#: plugins/af_readability/init.php:57
-#, fuzzy
-msgid "Toggle full article text"
-msgstr "Количество статей по умолчанию"
-
-#: plugins/af_readability/init.php:64
-msgid "Readability settings (af_readability)"
-msgstr "Настройки Readability (af_readability)"
-
-#: plugins/af_readability/init.php:70 plugins/af_psql_trgm/init.php:166
-msgid "Global settings"
-msgstr "Общие настройки"
-
-#: plugins/af_readability/init.php:99
-msgid ""
-"Provide full-text services to core code (bookmarklets) and other plugins"
-msgstr ""
-"Предоставление полнотекстовых сервисов для основного кода (букмарклетов) и "
-"других плагинов"
-
-#: plugins/af_readability/init.php:117 plugins/af_psql_trgm/init.php:207
-msgid "Currently enabled for (click to edit):"
-msgstr "Сейчас включён для (нажмите для изменения):"
-
-#: plugins/af_readability/init.php:125
-msgid "(append)"
-msgstr ""
-
-#: plugins/af_readability/init.php:136
-msgid "Readability"
-msgstr "Удобство чтения"
-
-#: plugins/af_readability/init.php:148
-msgid "Inline article content"
-msgstr "Встроить содержимое статьи"
-
-#: plugins/af_readability/init.php:153
-msgid "Append to summary, instead of replacing it"
-msgstr ""
-
-#: plugins/note/init.php:26 plugins/note/note.js:10
-msgid "Edit article note"
-msgstr "Редактировать заметку"
-
-#: plugins/auth_internal/init.php:81
+#: plugins/auth_internal/init.php:112
 msgid "Please enter your one time password:"
 msgstr "Пожалуйста, введите Ваш одноразовый пароль:"
 
-#: plugins/auth_internal/init.php:256
+#: plugins/auth_internal/init.php:114
+#, fuzzy
+#| msgid "Content"
+msgid "Continue"
+msgstr "Содержимое"
+
+#: plugins/auth_internal/init.php:221
 msgid "Password has been changed."
 msgstr "Пароль был изменен."
 
-#: plugins/auth_internal/init.php:258
+#: plugins/auth_internal/init.php:223
 msgid "Old password is incorrect."
 msgstr "Старый пароль неправилен."
 
-#: plugins/mailto/init.php:47 plugins/mailto/init.php:55
-#: plugins/mail/init.php:120 plugins/mail/init.php:128
-msgid "[Forwarded]"
-msgstr "[Переслано]"
-
-#: plugins/mailto/init.php:47 plugins/mail/init.php:120
-msgid "Multiple articles"
-msgstr "Все статьи"
-
-#: plugins/mailto/init.php:71
-msgid "Clicking the following link to invoke your mail client:"
-msgstr "Кликните по следующей ссылке, чтоб запустить Ваш почтовый клиент:"
-
-#: plugins/mailto/init.php:75
-msgid "Forward selected article(s) by email."
-msgstr "Переслать выбранные статьи по электронной почте."
-
-#: plugins/mailto/init.php:78
-msgid ""
-"You should be able to edit the message before sending in your mail client."
-msgstr ""
-"Вы сможете отредактировать сообщение перед посылкой в почтовом клиенте."
-
-#: plugins/mailto/init.php:83
-msgid "Close this dialog"
-msgstr "Закрыть это окно"
-
-#: plugins/toggle_sidebar/init.php:27
-msgid "Toggle sidebar"
-msgstr "Переключить боковую панель"
-
-#: plugins/close_button/init.php:28
-msgid "Close article"
-msgstr "Закрыть статью"
-
-#: plugins/af_redditimgur/init.php:33
-msgid "Reddit content settings (af_redditimgur)"
-msgstr "Настройки контента с Reddit (af_redditimgur)"
-
-#: plugins/af_redditimgur/init.php:66
-msgid "Extract missing content using Readability (requires af_readability)"
-msgstr "Извлекать содержимое с помощью Readability (требует af_readability)"
-
-#: plugins/af_redditimgur/init.php:72
-msgid "Enable additional duplicate checking"
-msgstr "Включить дополнительную проверку дубликатов"
-
-#: plugins/af_redditimgur/init.php:78
-#, php-format
-msgid "Rewrite Reddit URLs to %s"
-msgstr ""
-
-#: plugins/af_redditimgur/init.php:96 plugins/af_proxy_http/init.php:244
-msgid "Configuration saved"
-msgstr "Конфигурация сохранена"
-
-#: plugins/af_psql_trgm/init.php:29
+#: plugins/af_psql_trgm/init.php:31
 #, php-format
 msgid "Data saved (%s, %d)"
 msgstr "Данные сохранены (%s, %d)"
 
-#: plugins/af_psql_trgm/init.php:120
+#: plugins/af_psql_trgm/init.php:121
 msgid "Show related articles"
 msgstr "Показать похожие статьи"
 
-#: plugins/af_psql_trgm/init.php:127 plugins/af_psql_trgm/init.php:236
-msgid "Mark similar articles as read"
+#: plugins/af_psql_trgm/init.php:134
+#, fuzzy
+msgid "Mark similar articles as read (af_psql_trgm)"
 msgstr "Пометить похожие статьи как прочитанные"
 
-#: plugins/af_psql_trgm/init.php:172
+#: plugins/af_psql_trgm/init.php:164
 msgid "Minimum similarity:"
 msgstr "Минимальное сходство:"
 
-#: plugins/af_psql_trgm/init.php:178
+#: plugins/af_psql_trgm/init.php:172
 msgid ""
 "PostgreSQL trigram extension returns string similarity as a floating point "
 "number (0-1). Setting it too low might produce false positives, zero "
@@ -2474,161 +1678,572 @@ msgstr ""
 "плавающей запятой (0-1). Установка слишком низкого значения может привести к "
 "ложным срабатываниям, ноль отключает проверку."
 
-#: plugins/af_psql_trgm/init.php:183
+#: plugins/af_psql_trgm/init.php:177
 msgid "Minimum title length:"
 msgstr "Минимальная длинна заголовка:"
 
-#: plugins/af_psql_trgm/init.php:192
-msgid "Enable for all feeds:"
+#: plugins/af_psql_trgm/init.php:187
+#, fuzzy
+msgid "Enable for all feeds."
 msgstr "Включить для всех каналов:"
 
-#: plugins/af_psql_trgm/init.php:224
-msgid "Similarity (pg_trgm)"
+#: plugins/af_psql_trgm/init.php:206 plugins/af_readability/init.php:108
+msgid "Currently enabled for (click to edit):"
+msgstr "Сейчас включён для (нажмите для изменения):"
+
+#: plugins/af_psql_trgm/init.php:226
+#, fuzzy
+msgid "Similarity (af_psql_trgm)"
 msgstr "Сходство (pg_trgm)"
 
-#: plugins/share/init.php:45
-msgid "You can disable all articles shared by unique URLs here."
-msgstr ""
-"Здесь Вы можете отключить все статьи в общем доступе через уникальные URL."
+#: plugins/af_psql_trgm/init.php:232
+msgid "Mark similar articles as read"
+msgstr "Пометить похожие статьи как прочитанные"
 
-#: plugins/share/init.php:48
+#: plugins/note/init.php:26 plugins/note/note.js:6
+msgid "Edit article note"
+msgstr "Редактировать заметку"
+
+#: plugins/af_readability/init.php:27
+msgid "Data saved."
+msgstr "Данные сохранены."
+
+#: plugins/af_readability/init.php:44
+msgid "Inline content"
+msgstr "Встроить контент"
+
+#: plugins/af_readability/init.php:45
+#, fuzzy
+msgid "Append content"
+msgstr "Встроить контент"
+
+#: plugins/af_readability/init.php:54
+#, fuzzy
+msgid "Toggle full article text"
+msgstr "Количество статей по умолчанию"
+
+#: plugins/af_readability/init.php:64
+msgid "Readability settings (af_readability)"
+msgstr "Настройки Readability (af_readability)"
+
+#: plugins/af_readability/init.php:85
+msgid ""
+"Provide full-text services to core code (bookmarklets) and other plugins"
+msgstr ""
+"Предоставление полнотекстовых сервисов для основного кода (букмарклетов) и "
+"других плагинов"
+
+#: plugins/af_readability/init.php:115
+msgid "(append)"
+msgstr "(добавить)"
+
+#: plugins/af_readability/init.php:130
+msgid "Readability"
+msgstr "Удобство чтения"
+
+#: plugins/af_readability/init.php:135
+msgid "Inline article content"
+msgstr "Встроить содержимое статьи"
+
+#: plugins/af_readability/init.php:141
+msgid "Append to summary, instead of replacing it"
+msgstr "Добавить к краткому содержанию, а не заменить его"
+
+#: plugins/bookmarklets/init.php:88 js/CommonDialogs.js:93
+msgid "Subscribe"
+msgstr "Подписаться"
+
+#: plugins/bookmarklets/init.php:101
+#, php-format
+msgid "Already subscribed to <b>%s</b>."
+msgstr "Канал <b>%s</b> уже подписан."
+
+#: plugins/bookmarklets/init.php:104
+#, php-format
+msgid "Subscribed to <b>%s</b>."
+msgstr "Добавлена подписка на <b>%s</b>."
+
+#: plugins/bookmarklets/init.php:107
+#, php-format
+msgid "Could not subscribe to <b>%s</b>."
+msgstr "Не могу подписаться на <b>%s</b>."
+
+#: plugins/bookmarklets/init.php:110
+#, php-format
+msgid "No feeds found in <b>%s</b>."
+msgstr "Не найдены каналы в <b>%s</b>."
+
+#: plugins/bookmarklets/init.php:116
+#, php-format
+msgid "Could not subscribe to <b>%s</b>.<br>Can't download the Feed URL."
+msgstr "Не могу подписаться на <b>%s</b>. Не могу загрузить URL канала."
+
+#: plugins/bookmarklets/init.php:127
+msgid "Multiple feed URLs found:"
+msgstr "Найдено несколько URL каналов:"
+
+#: plugins/bookmarklets/init.php:135
+msgid "Subscribe to selected feed"
+msgstr "Подписаться на выбранный канал"
+
+#: plugins/bookmarklets/init.php:153
+msgid "Edit subscription options"
+msgstr "Редактировать опции  подписки"
+
+#: plugins/bookmarklets/init.php:184 plugins/bookmarklets/init.php:361
+msgid "Share with Tiny Tiny RSS"
+msgstr "Опубликовать с помощью Tiny Tiny RSS"
+
+#: plugins/bookmarklets/init.php:256
+msgid "Title:"
+msgstr "Заголовок:"
+
+#: plugins/bookmarklets/init.php:261
+msgid "URL:"
+msgstr "URL:"
+
+#: plugins/bookmarklets/init.php:266
+msgid "Content:"
+msgstr "Содержимое:"
+
+#: plugins/bookmarklets/init.php:271
+msgid "Labels:"
+msgstr "Метки:"
+
+#: plugins/bookmarklets/init.php:281
+msgid "Share"
+msgstr "Опубликовать"
+
+#: plugins/bookmarklets/init.php:283
+msgid "Shared article will appear in the Published feed."
+msgstr "Опубликованная статья появится в канале \"Опубликованные\"."
+
+#: plugins/bookmarklets/init.php:322 include/login_form.php:179
+msgid "Log in"
+msgstr "Войти"
+
+#: plugins/bookmarklets/init.php:343
+#, php-format
+msgid "Subscribe to %s in Tiny Tiny RSS?"
+msgstr "Подписаться на %s в Tiny Tiny RSS?"
+
+#: plugins/bookmarklets/init.php:350
+msgid "Bookmarklets"
+msgstr "Букмарклеты"
+
+#: plugins/bookmarklets/init.php:352
+msgid ""
+"Drag the link below to your browser toolbar, open the feed you're interested "
+"in in your browser and click on the link to subscribe to it."
+msgstr ""
+"Перетащите ссылку ниже на панель Вашего броузера, откройте интересующий Вас "
+"канал и нажмите на ссылку, чтоб подписаться на него."
+
+#: plugins/bookmarklets/init.php:355
+msgid "Subscribe in Tiny Tiny RSS"
+msgstr "Подписаться в Tiny Tiny RSS"
+
+#: plugins/bookmarklets/init.php:358
+msgid "Use this bookmarklet to publish arbitrary pages using Tiny Tiny RSS"
+msgstr ""
+"Используйте этот букмарклет для опубликования отдельных страниц с помощью "
+"Tiny Tiny RSS"
+
+#: plugins/af_comics/init.php:62
+msgid "Feeds supported by af_comics"
+msgstr "Фид поддерживается af_comics"
+
+#: plugins/af_comics/init.php:64
+msgid "The following comics are currently supported:"
+msgstr "Поддерживаются следующие комиксы:"
+
+#: plugins/nsfw/init.php:44
+msgid "Not work safe (click to toggle)"
+msgstr "Не безопасно на работе (кликните, чтоб переключить)"
+
+#: plugins/nsfw/init.php:76
+msgid "NSFW Plugin"
+msgstr "Не-безопасно-на-работе плагин"
+
+#: plugins/nsfw/init.php:91
+#, fuzzy
+msgid "Tags to consider NSFW (comma-separated):"
+msgstr "Теги для признания Не Безопасным на Работе (разделенные запятой)"
+
+#: plugins/nsfw/init.php:113
+msgid "Configuration saved."
+msgstr "Конфигурация сохранена."
+
+#: plugins/af_redditimgur/init.php:44
+msgid "Reddit content settings (af_redditimgur)"
+msgstr "Настройки контента с Reddit (af_redditimgur)"
+
+#: plugins/af_redditimgur/init.php:62
+#, fuzzy
+msgid "Apply tags to NSFW posts (comma-separated list):"
+msgstr "Теги для признания Не Безопасным на Работе (разделенные запятой)"
+
+#: plugins/af_redditimgur/init.php:71
+msgid "Extract missing content using Readability (requires af_readability)"
+msgstr "Извлекать содержимое с помощью Readability (требует af_readability)"
+
+#: plugins/af_redditimgur/init.php:78
+msgid "Enable additional duplicate checking"
+msgstr "Включить дополнительную проверку дубликатов"
+
+#: plugins/af_redditimgur/init.php:85
+#, php-format
+msgid "Rewrite Reddit URLs to %s"
+msgstr "Переписать ссылки с Reddit на %s"
+
+#: plugins/af_redditimgur/init.php:93
+msgid "Import score, limit maximum to:"
+msgstr ""
+
+#: plugins/af_redditimgur/init.php:124
+msgid "Configuration saved"
+msgstr "Конфигурация сохранена"
+
+#: plugins/toggle_sidebar/init.php:27
+msgid "Toggle sidebar"
+msgstr "Переключить боковую панель"
+
+#: plugins/share/init.php:42
+#, fuzzy
+msgid "Article unshared"
+msgstr "Расшарить статью по ссылке"
+
+#: plugins/share/init.php:54
 msgid "Unshare all articles"
 msgstr "Убрать все статьи из общего доступа"
 
-#: plugins/share/init.php:81
+#: plugins/share/init.php:64
+msgid "Shared URLs cleared."
+msgstr "Общие URL очищены."
+
+#: plugins/share/init.php:83
 msgid "Share by URL"
 msgstr "Опубликовать статью по URL"
 
-#: plugins/share/init.php:103
+#: plugins/share/init.php:251
 msgid "You can share this article by the following unique URL:"
 msgstr ""
 "Вы можете опубликовать данную статью с помощью следующего уникального URL:"
 
-#: plugins/share/init.php:127
+#: plugins/share/init.php:263
+msgid "Article not found."
+msgstr "Статья не найдена."
+
+#: plugins/share/init.php:268
 msgid "Unshare article"
 msgstr "Убрать статью из общего доступа"
 
-#: plugins/nsfw/init.php:30 plugins/nsfw/init.php:42
-msgid "Not work safe (click to toggle)"
-msgstr "Не безопасно на работе (кликните, чтоб переключить)"
+#: plugins/share/init.php:269 js/CommonDialogs.js:644 js/PrefHelpers.js:852
+msgid "Generate new URL"
+msgstr "Создать новую ссылку"
 
-#: plugins/nsfw/init.php:53
-msgid "NSFW Plugin"
-msgstr "Не-безопасно-на-работе плагин"
+#: include/login_form.php:126
+msgid "I forgot my password"
+msgstr "Восстановить пароль"
 
-#: plugins/nsfw/init.php:80
-msgid "Tags to consider NSFW (comma-separated)"
-msgstr "Теги для признания Не Безопасным на Работе (разделенные запятой)"
+#: include/login_form.php:131
+msgid "Profile:"
+msgstr "Профиль:"
 
-#: plugins/nsfw/init.php:101
-msgid "Configuration saved."
-msgstr "Конфигурация сохранена."
+#: include/login_form.php:144
+msgid "Use less traffic"
+msgstr "Использовать меньше трафика"
 
-#: plugins/af_proxy_http/init.php:206
-#, fuzzy
-msgid "Image proxy settings (af_proxy_http)"
-msgstr "Настройки прокси картинок (af_zz_imgproxy)"
-
-#: plugins/af_proxy_http/init.php:230
-msgid "Enable proxy for all remote images."
-msgstr "Включить прокси для всех удаленных картинок."
-
-#: plugins/af_comics/init.php:51
-msgid "Feeds supported by af_comics"
-msgstr "Фид поддерживается af_comics"
-
-#: plugins/af_comics/init.php:53
-msgid "The following comics are currently supported:"
-msgstr "Поддерживаются следующие комиксы:"
-
-#: plugins/vf_shared/init.php:17 plugins/vf_shared/init.php:73
-msgid "Shared articles"
-msgstr "Общие статьи"
-
-#: plugins/mail/init.php:29
-msgid "Mail addresses saved."
-msgstr "Почтовый адрес сохранен."
-
-#: plugins/mail/init.php:36
-msgid "Mail plugin"
-msgstr "Почтовый плагин"
-
-#: plugins/mail/init.php:38
-msgid "You can set predefined email addressed here (comma-separated list):"
+#: include/login_form.php:148
+msgid "Does not display images in articles, reduces automatic refreshes."
 msgstr ""
-"Вы можете настроить предпочитаемые почтовые адреса тут (разделенные запятой):"
+"Не отображать изображения в статьях, уменьшает количество автоматических "
+"обновлений."
 
-#: plugins/mail/init.php:150
-msgid "To:"
-msgstr "Кому:"
+#: include/login_form.php:156 js/Feeds.js:281
+msgid "Safe mode"
+msgstr "Безопасный режим"
 
-#: plugins/mail/init.php:165
-msgid "Subject:"
-msgstr "Заголовок:"
+#: include/login_form.php:161
+msgid "Uses default theme and prevents all plugins from loading."
+msgstr "Использует тему по умолчанию и отключает все плагины."
 
-#: plugins/mail/init.php:181
-msgid "Send e-mail"
-msgstr "Отправить письмо"
+#: include/login_form.php:169
+msgid "Remember me"
+msgstr "Запомнить меня"
 
-#: js/App.js:309
-msgid "Help"
-msgstr "Помощь"
+#: include/sessions.php:32
+msgid "Session failed to validate (password changed)"
+msgstr "Ошибка проверки сессии (пароль изменен)"
 
-#: js/App.js:534
-msgid "Error explained"
-msgstr "Ошибка разъяснена"
+#: include/sessions.php:36
+msgid "Session failed to validate (user not found)"
+msgstr "Ошибка проверки сессии (пользователь не найден)"
 
-#: js/App.js:551
+#: include/functions.php:49
+msgid "Detect automatically"
+msgstr "Определять автоматически"
+
+#: js/Feeds.js:261
+msgid "Your password is at default value"
+msgstr "Используется пароль по умолчанию"
+
+#: js/Feeds.js:263
+msgid ""
+"You are using default tt-rss password. Please change it in the Preferences "
+"(Personal data / Authentication)."
+msgstr ""
+"Вы используете пароль tt-rss по умолчанию. Пожалуйста, измените его в "
+"настройках (Личные данные / Аутентификация)."
+
+#: js/Feeds.js:422
+msgid "Mark all articles as read?"
+msgstr "Пометить все статьи как прочитанные?"
+
+#: js/Feeds.js:426
+msgid "Marking all feeds as read..."
+msgstr "Помечаю все каналы как прочитанные..."
+
+#: js/Feeds.js:443
+msgid "Mark %w in %s older than 1 day as read?"
+msgstr "Отметить %w в %s старше 1 дня как прочитанные?"
+
+#: js/Feeds.js:446
+msgid "Mark %w in %s older than 1 week as read?"
+msgstr "Отметить %w в %s старше 1 недели как прочитанные?"
+
+#: js/Feeds.js:449
+msgid "Mark %w in %s older than 2 weeks as read?"
+msgstr "Отметить %w в %s старше 2 недель как прочитанные?"
+
+#: js/Feeds.js:452
+msgid "Mark %w in %s as read?"
+msgstr "Отметить %w в %s как прочитанные?"
+
+#: js/Feeds.js:455
+msgid "search results"
+msgstr "результаты поиска"
+
+#: js/Feeds.js:455
+msgid "all articles"
+msgstr "все статьи"
+
+#: js/Feeds.js:496
+#, javascript-format
+msgid "Mark all articles in %s as read?"
+msgstr "Отметить все статьи в %s как прочитанные?"
+
+#: js/Feeds.js:617
+msgid "Search syntax"
+msgstr "Синтаксис запросов"
+
+#: js/common.js:448
+msgid "Click to close"
+msgstr "Нажмите, чтобы закрыть"
+
+#: js/PrefLabelTree.js:71
+#, fuzzy
+#| msgid "Edit rule"
+msgid "Edit label"
+msgstr "Редактировать правило"
+
+#: js/PrefLabelTree.js:143
+msgid "Foreground:"
+msgstr "Передний план:"
+
+#: js/PrefLabelTree.js:144
+msgid "Background:"
+msgstr "Фон:"
+
+#: js/PrefLabelTree.js:189
+msgid "Reset selected labels to default colors?"
+msgstr "Сбросить текущие метки на цвета по умолчанию?"
+
+#: js/PrefLabelTree.js:202 js/PrefLabelTree.js:222
+msgid "No labels selected."
+msgstr "Нет выбранных меток."
+
+#: js/PrefLabelTree.js:209
+msgid "Remove selected labels?"
+msgstr "Удалить выбранные метки?"
+
+#: js/PrefLabelTree.js:210
+msgid "Removing selected labels..."
+msgstr "Выбранные метки удаляются..."
+
+#: js/App.js:411
+msgid "Keyboard shortcuts"
+msgstr "Горячие Клавиши"
+
+#: js/App.js:472
+#, fuzzy
+msgid "Update daemon is not running."
+msgstr ""
+"<span onclick=\"App.explainError(3)\">Демон обновления не обновляет каналы</"
+"span>"
+
+#: js/App.js:485
+#, fuzzy
+msgid "Update daemon is not updating feeds."
+msgstr ""
+"<span onclick=\"App.explainError(3)\">Демон обновления не обновляет каналы</"
+"span>"
+
+#: js/App.js:569
+msgid ""
+"URL scheme reported by your browser (%a) doesn't match server-configured "
+"SELF_URL_PATH (%b), check X-Forwarded-Proto."
+msgstr ""
+
+#: js/App.js:576
 msgid "Fatal error"
 msgstr "Фатальная ошибка"
 
-#: js/Article.js:35
-msgid "Please enter new score for selected articles:"
-msgstr "Пожалуйста, укажите новый рейтинг для выбранных статей:"
+#: js/App.js:601
+msgid "Unhandled exception"
+msgstr "Необрабатываемое исключение"
 
-#: js/Article.js:61 plugins/mailto/init.js:7 plugins/mail/mail.js:7
-#: js/Headlines.js:749 js/Headlines.js:775 js/Headlines.js:787
-#: js/Headlines.js:915 js/Headlines.js:933 js/Headlines.js:951
-#: js/Headlines.js:1092 js/Headlines.js:1128
-msgid "No articles selected."
-msgstr "Нет выбранных статей."
+#: js/App.js:829
+#, fuzzy
+#| msgid "New version of Tiny Tiny RSS is available!"
+msgid "Updates for Tiny Tiny RSS are available."
+msgstr "Доступная новая версия Tiny Tiny RSS!"
 
-#: js/Article.js:69
-msgid "Please enter new score for this article:"
-msgstr "Пожалуйста, укажите новый рейтинг для этой статьи:"
+#: js/App.js:832
+msgid "Updates for some local plugins are available."
+msgstr ""
 
-#: js/Article.js:129
-msgid "Article URL:"
-msgstr "URL статьи:"
+#: js/App.js:1042
+msgid "Please enable mail or mailto plugin first."
+msgstr "Пожалуйста, сначала включите плагин mail или mailto."
 
-#: js/Article.js:167
-msgid "comments"
-msgstr "комментарии"
+#: js/App.js:1093 js/App.js:1221 js/CommonDialogs.js:328
+msgid "You can't edit this kind of feed."
+msgstr "Вы не можете редактировать этот канал."
 
-#: js/Article.js:170
-msgid "comment"
-msgid_plural "comments"
-msgstr[0] "комментарий"
-msgstr[1] "комментария"
-msgstr[2] "комментариев"
+#: js/App.js:1159
+#, fuzzy
+msgid "Please enable af_readability first."
+msgstr "Пожалуйста, сначала включите плагин mail или mailto."
 
-#: js/CommonDialogs.js:12
-msgid "Remove stored feed icon?"
-msgstr "Удалить сохраненную иконку канала?"
+#: js/App.js:1172 js/App.js:1262
+msgid "Widescreen is not available in combined mode."
+msgstr "Широкоэкранный режим недоступен в комбинированном режиме."
 
-#: js/CommonDialogs.js:39
-msgid "Please select an image file to upload."
-msgstr "Пожалуйста, выберите файл с изображением для загрузки."
+#: js/App.js:1230
+msgid "Please select some feed first."
+msgstr "Пожалуйста выберите какой-нибудь канал."
 
-#: js/CommonDialogs.js:40
-msgid "Upload new icon for this feed?"
-msgstr "Загрузить новую иконку для канала?"
+#: js/App.js:1235
+msgid "You can't unsubscribe from the category."
+msgstr "Нельзя отписаться от категории."
 
-#: js/CommonDialogs.js:89
-msgid "Subscribe to Feed"
-msgstr "Подписаться на канал"
+#: js/App.js:1241 js/CommonDialogs.js:302 js/CommonDialogs.js:343
+#, javascript-format
+msgid "Unsubscribe from %s?"
+msgstr "Отписаться от %s?"
 
-#: js/CommonDialogs.js:119
+#: js/PrefFeedTree.js:73
+msgid "Edit category"
+msgstr "Редактировать категорию"
+
+#: js/PrefFeedTree.js:80
+msgid "Remove category"
+msgstr "Удалить категорию"
+
+#: js/PrefFeedTree.js:179
+#, javascript-format
+msgid ""
+"Remove category %s? Any nested feeds would be placed into Uncategorized."
+msgstr ""
+"Удалите категорию %s? Все вложенные каналы будут помещены в \"Без категории"
+"\"."
+
+#: js/PrefFeedTree.js:180
+msgid "Removing category..."
+msgstr "Удаляю категорию..."
+
+#: js/PrefFeedTree.js:192
+msgid "Unsubscribe from selected feeds?"
+msgstr "Отписаться от выбранных каналов?"
+
+#: js/PrefFeedTree.js:194
+msgid "Unsubscribing from selected feeds..."
+msgstr "Выбранные каналы удаляются..."
+
+#: js/PrefFeedTree.js:207 js/PrefFeedTree.js:276 js/PrefFeedTree.js:292
+#: js/PrefFeedTree.js:497 js/CommonDialogs.js:230
+msgid "No feeds selected."
+msgstr "Нет выбранных каналов."
+
+#: js/PrefFeedTree.js:242
+msgid "Remove selected categories?"
+msgstr "Удалить выбранные категории?"
+
+#: js/PrefFeedTree.js:243
+msgid "Removing selected categories..."
+msgstr "Выбранные категории удаляются..."
+
+#: js/PrefFeedTree.js:255
+msgid "No categories selected."
+msgstr "Нет выбранных категорий."
+
+#: js/PrefFeedTree.js:303
+#, fuzzy
+#| msgid "Edit Multiple Feeds"
+msgid "Edit multiple feeds"
+msgstr "Редактировать несколько каналов"
+
+#: js/PrefFeedTree.js:332
+msgid "Save changes to selected feeds?"
+msgstr "Сохранить изменения выбранных каналов?"
+
+#: js/PrefFeedTree.js:344 js/CommonDialogs.js:430 js/PrefUsers.js:42
+#: js/CommonFilters.js:391
+msgid "Saving data..."
+msgstr "Идёт сохранение..."
+
+#: js/PrefFeedTree.js:381
+msgid "Category title:"
+msgstr "Название категории:"
+
+#: js/PrefFeedTree.js:384
+msgid "Creating category..."
+msgstr "Создаю категорию..."
+
+#: js/PrefFeedTree.js:399
+msgid "Subscribing to feeds..."
+msgstr "Подписываюсь на каналы..."
+
+#: js/PrefFeedTree.js:417
+msgid "One valid feed per line (no detection is done)"
+msgstr "Один действительный RSS канал на строчку (проверка не производится)"
+
+#: js/PrefFeedTree.js:470
+msgid "Feeds without recent updates"
+msgstr "Давно не обновлявшиеся каналы"
+
+#: js/PrefFeedTree.js:478 js/CommonDialogs.js:209
+msgid "Remove selected feeds?"
+msgstr "Удалить выбранные каналы?"
+
+#: js/PrefFeedTree.js:479 js/CommonDialogs.js:210
+msgid "Removing selected feeds..."
+msgstr "Выбранные каналы удаляются..."
+
+#: js/PrefFeedTree.js:520
+msgid "Click to edit feed"
+msgstr "Щёлкните для редактирования"
+
+#: js/CommonDialogs.js:30
+msgid ""
+"Provided URL is a HTML page referencing multiple feeds, please select "
+"required feed from the dropdown menu below."
+msgstr ""
+"Эта ссылка - HTML страница, которая включает в себя несколько каналов. "
+"Выберите нужный из списка внизу."
+
+#: js/CommonDialogs.js:122
 msgid ""
 "Failed to parse output. This can indicate server timeout and/or network "
 "issues. Backend output was logged to browser console."
@@ -2637,34 +2252,34 @@ msgstr ""
 "или проблемы с сетью. Выходные данные сервера были записаны в консоль "
 "браузера."
 
-#: js/CommonDialogs.js:134
-#, perl-format
+#: js/CommonDialogs.js:136
+#, javascript-format
 msgid "Subscribed to %s"
 msgstr "Подписаны на %s"
 
-#: js/CommonDialogs.js:143
+#: js/CommonDialogs.js:145
 msgid "Specified URL seems to be invalid."
 msgstr "Указанный URL выглядит неправильно."
 
-#: js/CommonDialogs.js:146
+#: js/CommonDialogs.js:148
 msgid "Specified URL doesn't seem to contain any feeds."
 msgstr "Указанный URL не содержит каналов."
 
-#: js/CommonDialogs.js:159
+#: js/CommonDialogs.js:161
 msgid "Expand to select feed"
 msgstr "Развернуть к выбранному каналу"
 
-#: js/CommonDialogs.js:171
-#, perl-format
+#: js/CommonDialogs.js:173
+#, javascript-format
 msgid "Couldn't download the specified URL: %s"
 msgstr "Не могу загрузить указанный URL: %s"
 
-#: js/CommonDialogs.js:174
-#, perl-format
+#: js/CommonDialogs.js:176
+#, javascript-format
 msgid "XML validation failed: %s"
 msgstr "Проверка XML прошла неудачно: %s"
 
-#: js/CommonDialogs.js:177
+#: js/CommonDialogs.js:179
 msgid "You are already subscribed to this feed."
 msgstr "Вы уже подписаны на этот канал."
 
@@ -2672,337 +2287,474 @@ msgstr "Вы уже подписаны на этот канал."
 msgid "Feeds with update errors"
 msgstr "Канала с ошибками обновления"
 
-#: js/CommonDialogs.js:210 js/PrefFeedTree.js:383
-msgid "Remove selected feeds?"
-msgstr "Удалить выбранные каналы?"
-
-#: js/CommonDialogs.js:231 js/CommonDialogs.js:316 js/PrefFeedTree.js:169
-#: js/PrefFeedTree.js:231 js/PrefFeedTree.js:247 js/PrefFeedTree.js:399
-msgid "No feeds selected."
-msgstr "Нет выбранных каналов."
-
-#: js/CommonDialogs.js:256
-msgid "More Feeds"
-msgstr "Больше каналов"
-
-#: js/CommonDialogs.js:348
-msgid ""
-"Remove selected feeds from the archive? Feeds with stored articles will not "
-"be removed."
-msgstr ""
-"Удалить выбранные каналы из архива? Каналы с сохраненным статьями удалены не "
-"будут."
-
-#: js/CommonDialogs.js:370
+#: js/CommonDialogs.js:283
 msgid "Please enter label caption:"
 msgstr "Пожалуйста, введите заголовок метки:"
 
-#: js/CommonDialogs.js:394 js/App.js:1208
-#, perl-format
-msgid "Unsubscribe from %s?"
-msgstr "Отписаться от %s?"
+#: js/CommonDialogs.js:305
+msgid "Removing feed..."
+msgstr "Канал удаляется..."
 
-#: js/CommonDialogs.js:422 js/App.js:1057 js/App.js:1188
-msgid "You can't edit this kind of feed."
-msgstr "Вы не можете редактировать этот канал."
+#: js/CommonDialogs.js:353
+#, fuzzy
+msgid "Please select an image file."
+msgstr "Пожалуйста, выберите файл с изображением для загрузки."
 
-#: js/CommonDialogs.js:436
-msgid "Edit Feed"
-msgstr "Редактировать канал"
+#: js/CommonDialogs.js:373
+msgid "Icon file is too large."
+msgstr ""
 
-#: js/CommonDialogs.js:460
+#: js/CommonDialogs.js:376
+msgid "Upload failed."
+msgstr "Ошибка загрузки."
+
+#: js/CommonDialogs.js:406
+msgid "Remove stored feed icon?"
+msgstr "Удалить сохраненную иконку канала?"
+
+#: js/CommonDialogs.js:407
+msgid "Removing feed icon..."
+msgstr "Удаляется иконка канала..."
+
+#: js/CommonDialogs.js:410
+msgid "Feed icon removed."
+msgstr "Иконка канала удалена."
+
+#: js/CommonDialogs.js:574
+#, fuzzy
+msgid "Upload new icon..."
+msgstr "Загрузить новую иконку для канала?"
+
+#: js/CommonDialogs.js:603
+msgid "Show as feed"
+msgstr "Показать как канал"
+
+#: js/CommonDialogs.js:605
 msgid "Generate new syndication address for this feed?"
 msgstr "Создать новый адрес распространения для этого канала?"
 
-#: js/Feeds.js:231
-msgid "Your password is at default value"
-msgstr "Используется пароль по умолчанию"
+#: js/CommonDialogs.js:607 js/PrefHelpers.js:821
+msgid "Trying to change address..."
+msgstr "Попытка изменить адрес.."
 
-#: js/PrefFeedTree.js:37
-msgid "Edit category"
-msgstr "Редактировать категорию"
+#: js/CommonDialogs.js:625 js/PrefHelpers.js:835
+msgid "Could not change feed URL."
+msgstr "Не получилось изменить URL канала."
 
-#: js/PrefFeedTree.js:44
-msgid "Remove category"
-msgstr "Удалить категорию"
+#: js/CommonDialogs.js:632
+msgid "%s can be accessed via the following secret URL:"
+msgstr "Вы можете опубликовать %s с помощью следующего секретного URL:"
 
-#: js/PrefFeedTree.js:141
-#, perl-format
-msgid ""
-"Remove category %s? Any nested feeds would be placed into Uncategorized."
-msgstr ""
-"Удалите категорию %s? Все вложенные каналы будут помещены в \"Без категории"
-"\"."
-
-#: js/PrefFeedTree.js:154
-msgid "Unsubscribe from selected feeds?"
-msgstr "Отписаться от выбранных каналов?"
-
-#: js/PrefFeedTree.js:197
-msgid "Remove selected categories?"
-msgstr "Удалить выбранные категории?"
-
-#: js/PrefFeedTree.js:210
-msgid "No categories selected."
-msgstr "Нет выбранных категорий."
-
-#: js/PrefFeedTree.js:261
-msgid "Edit Multiple Feeds"
-msgstr "Редактировать несколько каналов"
-
-#: js/PrefFeedTree.js:285
-msgid "Save changes to selected feeds?"
-msgstr "Сохранить изменения выбранных каналов?"
-
-#: js/PrefFeedTree.js:316
-msgid "Rename category to:"
-msgstr "Переименовать категорию в:"
-
-#: js/PrefFeedTree.js:328
-msgid "Category title:"
-msgstr "Название категории:"
-
-#: js/PrefFeedTree.js:352
-msgid "Subscribing to feeds..."
-msgstr "Подписываюсь на каналы..."
-
-#: js/PrefFeedTree.js:374
-msgid "Feeds without recent updates"
-msgstr "Давно не обновлявшиеся каналы"
-
-#: js/PrefFilterTree.js:49
-msgid "Inverse"
-msgstr "(Инвертировать)"
-
-#: js/PrefFilterTree.js:108 js/PrefFilterTree.js:124 js/PrefFilterTree.js:235
-msgid "No filters selected."
-msgstr "Нет выбранных фильтров."
-
-#: js/PrefFilterTree.js:112
-msgid "Combine selected filters?"
-msgstr "Комбинировать выбранные фильтры?"
-
-#: js/PrefFilterTree.js:129
-msgid "Please select only one filter."
-msgstr "Пожалуйста выберите только один фильтр."
-
-#: js/PrefFilterTree.js:149
-msgid "Edit Filter"
-msgstr "Редактировать фильтр"
-
-#: js/PrefFilterTree.js:172
-msgid "Remove filter?"
-msgstr "Удалить фильтр?"
-
-#: js/PrefFilterTree.js:222
-msgid "Remove selected filters?"
-msgstr "Удалить выбранные фильтры?"
-
-#: js/PrefHelpers.js:19
+#: js/PrefHelpers.js:20
 #, fuzzy
 msgid "Remove selected app passwords?"
 msgstr "Удалить выбранных пользователей?"
 
-#: js/PrefHelpers.js:43
+#: js/PrefHelpers.js:45
 msgid "This will invalidate all previously generated feed URLs. Continue?"
 msgstr ""
 "Это сделает недействительными все ранее созданные URL канала. Продолжить?"
 
-#: js/PrefHelpers.js:60
+#: js/PrefHelpers.js:46 plugins/share/share_prefs.js:6
+msgid "Clearing URLs..."
+msgstr "Очистка URL..."
+
+#: js/PrefHelpers.js:49
+msgid "Generated URLs cleared."
+msgstr "Созданные URL очищены."
+
+#: js/PrefHelpers.js:59
+#, fuzzy
+#| msgid "Digest"
+msgid "Digest preview"
+msgstr "Дайджест"
+
+#: js/PrefHelpers.js:113
 msgid "Clear event log?"
 msgstr "Очистить журнал?"
 
-#: js/PrefHelpers.js:79
-msgid "Settings Profiles"
-msgstr "Профили настроек"
-
-#: js/PrefHelpers.js:88
+#: js/PrefHelpers.js:135
 msgid ""
 "Remove selected profiles? Active and default profiles will not be removed."
 msgstr ""
 "Удалить выбранные профили? Активный и профиль по умолчанию удалены не будут."
 
-#: js/PrefHelpers.js:103
+#: js/PrefHelpers.js:136
+msgid "Removing selected profiles..."
+msgstr "Выбранные профили удаляются..."
+
+#: js/PrefHelpers.js:145
 msgid "No profiles selected."
 msgstr "Нет выбранных профилей."
 
-#: js/PrefHelpers.js:110
+#: js/PrefHelpers.js:150
+msgid "Creating profile..."
+msgstr "Создаю профиль..."
+
+#: js/PrefHelpers.js:200
+msgid "(active)"
+msgstr "(активно)"
+
+#: js/PrefHelpers.js:221
 msgid "Activate selected profile?"
 msgstr "Активировать выбранный профиль?"
 
-#: js/PrefHelpers.js:119
+#: js/PrefHelpers.js:230
 msgid "Please choose a profile to activate."
 msgstr "Пожалуйста выберите какой-нибудь профиль."
 
-#: js/PrefHelpers.js:175
+#: js/PrefHelpers.js:243
+msgid "Customize stylesheet"
+msgstr "Изменить пользовательские стили"
+
+#: js/PrefHelpers.js:259
+msgid ""
+"You can override colors, fonts and layout of your currently selected theme "
+"with custom CSS declarations here."
+msgstr ""
+"Вы можете задавать свои цвета, шрифты и макет Вашей текущей схемы с помощью "
+"собственных указанных здесь CSS."
+
+#: js/PrefHelpers.js:268
+msgid ""
+"User CSS has been applied, you might need to reload the page to see all "
+"changes."
+msgstr ""
+"Пользовательский CSS был применен, чтобы увидеть изменения может "
+"потребоваться перезагрузка страницы."
+
+#: js/PrefHelpers.js:308
 msgid "Reset to defaults?"
 msgstr "Сбросить настройки?"
 
-#: js/PrefHelpers.js:183
-msgid "Clear stored data for this plugin?"
+#: js/PrefHelpers.js:393
+msgid "Clear data"
+msgstr "Очистить данные"
+
+#: js/PrefHelpers.js:396
+msgid "Uninstall"
+msgstr ""
+
+#: js/PrefHelpers.js:408 js/PrefHelpers.js:569
+msgid "Could not find any plugins for this search query."
+msgstr ""
+
+#: js/PrefHelpers.js:415
+#, fuzzy, javascript-format
+#| msgid "Clear stored data for this plugin?"
+msgid "Clear stored data for %s?"
 msgstr "Удалить сохраненные данные для этого плагина?"
 
-#: js/PrefHelpers.js:202
+#: js/PrefHelpers.js:424
+#, fuzzy, javascript-format
+#| msgid "User plugins"
+msgid "Uninstall plugin %s?"
+msgstr "Пользовательские плагины"
+
+#: js/PrefHelpers.js:433
+#, fuzzy
+#| msgid "Registration failed."
+msgid "Plugin uninstallation failed."
+msgstr "Неудачная регистрация."
+
+#: js/PrefHelpers.js:449
+#, fuzzy
+#| msgid "Mail plugin"
+msgid "Available plugins"
+msgstr "Почтовый плагин"
+
+#: js/PrefHelpers.js:462
+#, fuzzy
+#| msgid "Link instance"
+msgid "Plugin installer"
+msgstr "Связать инсталляцию"
+
+#: js/PrefHelpers.js:465
+#, fuzzy, javascript-format
+#| msgid "Importing, please wait..."
+msgid "Installing %s, please wait..."
+msgstr "Идет импорт, пожалуйста, подождите..."
+
+#: js/PrefHelpers.js:480 js/PrefHelpers.js:524 js/PrefHelpers.js:635
+msgid "Operation failed: check event log."
+msgstr ""
+
+#: js/PrefHelpers.js:484
+#, fuzzy
+#| msgid "E-mail has been changed."
+msgid "Plugin has been installed."
+msgstr "E-mail был изменен."
+
+#: js/PrefHelpers.js:488
+msgid "Plugin is already installed."
+msgstr ""
+
+#: js/PrefHelpers.js:498 js/PrefHelpers.js:652 js/PrefHelpers.js:718
+#, javascript-format
+msgid "Exited with RC: %d"
+msgstr ""
+
+#: js/PrefHelpers.js:549
+msgid "Already installed"
+msgstr ""
+
+#: js/PrefHelpers.js:560
+#, fuzzy
+#| msgid "Updated"
+msgid "Updated: %s"
+msgstr "Обновлено"
+
+#: js/PrefHelpers.js:577
+msgid "Looking for plugins..."
+msgstr ""
+
+#: js/PrefHelpers.js:596 js/PrefHelpers.js:738
+msgid "Close"
+msgstr ""
+
+#: js/PrefHelpers.js:614
+#, fuzzy
+#| msgid "User plugins"
+msgid "Update plugins"
+msgstr "Пользовательские плагины"
+
+#: js/PrefHelpers.js:629
+#, fuzzy
+#| msgid "Uploading, please wait..."
+msgid "Updating, please wait..."
+msgstr "Идет загрузка, пожалуйста подождите..."
+
+#: js/PrefHelpers.js:653
+#, fuzzy
+#| msgid "Updated"
+msgid "Update done."
+msgstr "Обновлено"
+
+#: js/PrefHelpers.js:677
+#, fuzzy
+#| msgid "No actions available"
+msgid "No updates available"
+msgstr "Нет доступных действий"
+
+#: js/PrefHelpers.js:689
+#, fuzzy, javascript-format
+#| msgid "Checking version... "
+msgid "Checking: %s"
+msgstr "Проверяется версия... "
+
+#: js/PrefHelpers.js:696
+#, javascript-format
+msgid "%s: Operation failed: check event log."
+msgstr ""
+
+#: js/PrefHelpers.js:719
+#, fuzzy
+msgid "Ready to update"
+msgstr "Готовы к обновлению."
+
+#: js/PrefHelpers.js:764
 msgid "Please choose an OPML file first."
 msgstr "Пожалуйста выберите файл OPML."
 
-#: js/PrefHelpers.js:226
+#: js/PrefHelpers.js:767
+msgid "Importing, please wait..."
+msgstr "Идет импорт, пожалуйста, подождите..."
+
+#: js/PrefHelpers.js:776
 msgid "OPML Import"
 msgstr "Импорт OPML"
 
-#: js/PrefHelpers.js:248
+#: js/PrefHelpers.js:787
+msgid ""
+"If you have imported labels and/or filters, you might need to reload "
+"preferences to see your new data."
+msgstr ""
+"Если вы импортировали метки или фильтры, вам возможно придется перезагрузить "
+"настройки чтобы увидеть новые данные."
+
+#: js/PrefHelpers.js:818
+msgid "Public OPML URL"
+msgstr "Публичная ссылка на OPML"
+
+#: js/PrefHelpers.js:820
 msgid "Replace current OPML publishing address with a new one?"
 msgstr "Изменить текущий адрес публикации OPML на новый?"
 
-#: js/common.js:216
-msgid "Click to close"
-msgstr "Нажмите, чтобы закрыть"
+#: js/PrefHelpers.js:843
+msgid "Your Public OPML URL is:"
+msgstr "Ссылка на ваш опубликованный OPML:"
 
-#: plugins/mailto/init.js:21 plugins/mail/mail.js:21
-msgid "Forward article by email"
-msgstr "Переслать статью по электронной почте"
+#: js/Headlines.js:610
+msgid "Cancel search"
+msgstr "Отменить поиск"
 
-#: plugins/af_psql_trgm/init.js:10
-msgid "Related articles"
-msgstr "Похожие статьи"
+#: js/Headlines.js:618
+msgid "Select..."
+msgstr "Выбрать..."
 
-#: plugins/share/share.js:10
-msgid "Share article by URL"
-msgstr "Расшарить статью по ссылке"
+#: js/Headlines.js:725 js/Headlines.js:776 js/Headlines.js:793
+msgid "Click to open next unread feed."
+msgstr "Щёлкните чтоб открыть следующий непрочитанный канал."
 
-#: plugins/share/share.js:13
-msgid "Generate new share URL for this article?"
-msgstr "Создать новый публичный URL для этой статьи?"
+#: js/Headlines.js:790
+msgid "New articles found, reload feed to continue."
+msgstr "Найдены новые статьи, обновите канал для продолжения."
 
-#: plugins/share/share.js:48
-msgid "Remove sharing for this article?"
+#: js/Headlines.js:839 js/Headlines.js:865 js/Headlines.js:877
+#: js/Headlines.js:1020 js/Headlines.js:1037 js/Headlines.js:1054
+#: js/Headlines.js:1191 js/Article.js:62
+msgid "No articles selected."
+msgstr "Нет выбранных статей."
+
+#: js/Headlines.js:991
+#, javascript-format
+msgid "%d article selected"
+msgid_plural "%d articles selected"
+msgstr[0] "%d статья выбрана"
+msgstr[1] "%d статьи выбрано"
+msgstr[2] "%d статей выбрано"
+
+#: js/Headlines.js:1062
+#, javascript-format
+msgid "Delete %d selected article in %s?"
+msgid_plural "Delete %d selected articles in %s?"
+msgstr[0] "Удалить %d выбранную статью в %s?"
+msgstr[1] "Удалить %d выбранные статьи в %s?"
+msgstr[2] "Удалить %d выбранных статей в %s?"
+
+#: js/Headlines.js:1064
+#, javascript-format
+msgid "Delete %d selected article?"
+msgid_plural "Delete %d selected articles?"
+msgstr[0] "Удалить %d выбранную статью?"
+msgstr[1] "Удалить %d выбранные статьи?"
+msgstr[2] "Удалить %d выбранных статей?"
+
+#: js/Headlines.js:1197
+#, javascript-format
+msgid "Mark %d selected article in %s as read?"
+msgid_plural "Mark %d selected articles in %s as read?"
+msgstr[0] "Отметить %d выбранную статью в %s как прочитанную?"
+msgstr[1] "Отметить %d выбранные статьи в %s как прочитанные?"
+msgstr[2] "Отметить %d выбранных статей в %s как прочитанные?"
+
+#: js/Headlines.js:1213
+msgid "No article is selected."
+msgstr "Нет выбранных статей."
+
+#: js/Headlines.js:1248
+msgid "No articles found to mark"
+msgstr "Статей для отметки не найдено"
+
+#: js/Headlines.js:1250
+#, javascript-format
+msgid "Mark %d article as read?"
+msgid_plural "Mark %d articles as read?"
+msgstr[0] "Отметить %d статью как прочитанную?"
+msgstr[1] "Отметить %d статьи как прочитанные?"
+msgstr[2] "Отметить %d статей как прочитанные?"
+
+#: js/Headlines.js:1309
+msgid "Open original article"
+msgstr "Показать оригинальное содержимое статьи"
+
+#: js/Headlines.js:1316
+msgid "Display article URL"
+msgstr "Отобразить URL статьи"
+
+#: js/Headlines.js:1423
+msgid "Assign label"
+msgstr "Применить метку"
+
+#: js/Headlines.js:1428
+msgid "Remove label"
+msgstr "Удалить метку"
+
+#: js/Headlines.js:1465
+msgid "Select articles in group"
+msgstr "Выбрать статьи в группе"
+
+#: js/Headlines.js:1475
+msgid "Mark group as read"
+msgstr "Пометить группу как прочитанную"
+
+#: js/Headlines.js:1487
+msgid "Mark feed as read"
+msgstr "Отметить канал как прочитанный"
+
+#: js/PrefFilterTree.js:47 js/CommonFilters.js:220
+msgid "in"
+msgstr "в"
+
+#: js/PrefFilterTree.js:50
+msgid "Inverse"
+msgstr "(Инвертировать)"
+
+#: js/PrefFilterTree.js:110 js/PrefFilterTree.js:139
+msgid "No filters selected."
+msgstr "Нет выбранных фильтров."
+
+#: js/PrefFilterTree.js:114
+msgid "Combine selected filters?"
+msgstr "Комбинировать выбранные фильтры?"
+
+#: js/PrefFilterTree.js:115
+msgid "Joining filters..."
+msgstr "Объединение фильтров..."
+
+#: js/PrefFilterTree.js:126
+msgid "Remove selected filters?"
+msgstr "Удалить выбранные фильтры?"
+
+#: js/PrefFilterTree.js:127
+msgid "Removing selected filters..."
+msgstr "Выбранные фильтры удаляются..."
+
+#: js/Article.js:36
+msgid "Please enter new score for selected articles:"
+msgstr "Пожалуйста, укажите новый рейтинг для выбранных статей:"
+
+#: js/Article.js:70
+msgid "Please enter new score for this article:"
+msgstr "Пожалуйста, укажите новый рейтинг для этой статьи:"
+
+#: js/Article.js:120
+msgid "Article URL:"
+msgstr "URL статьи:"
+
+#: js/Article.js:122
+#, fuzzy
+msgid "No URL could be displayed for this article."
 msgstr "Убрать данную статью из публичного доступа?"
 
-#: plugins/share/share_prefs.js:3
-msgid "This will invalidate all previously shared article URLs. Continue?"
-msgstr ""
-"Это сделает недействительными все ранее опубликованные URL статьи. "
-"Продолжить?"
+#: js/Article.js:144
+msgid "no tags"
+msgstr "нет тегов"
 
-#: plugins/mail/mail.js:30
-msgid "Error sending email:"
-msgstr "Ошибка при попытка отправить письмо:"
+#: js/Article.js:236
+msgid "comments"
+msgstr "комментарии"
 
-#: js/App.js:436
-msgid ""
-"<span onclick=\"App.explainError(1)\">Update daemon is not running.</span>"
-msgstr ""
-"<span onclick=\"App.explainError(1)\">Демон обновления не запущен.</span>"
+#: js/Article.js:239
+msgid "comment"
+msgid_plural "comments"
+msgstr[0] "комментарий"
+msgstr[1] "комментария"
+msgstr[2] "комментариев"
 
-#: js/App.js:449
-msgid ""
-"<span onclick=\"App.explainError(3)\">Update daemon is not updating feeds.</"
-"span>"
-msgstr ""
-"<span onclick=\"App.explainError(3)\">Демон обновления не обновляет каналы</"
-"span>"
-
-#: js/App.js:601
-msgid "Unhandled exception"
-msgstr "Необрабатываемое исключение"
-
-#: js/App.js:1003
-msgid "Please enable mail or mailto plugin first."
-msgstr "Пожалуйста, сначала включите плагин mail или mailto."
-
-#: js/App.js:1126
+#: js/Article.js:325
 #, fuzzy
-msgid "Please enable af_readability first."
-msgstr "Пожалуйста, сначала включите плагин mail или mailto."
+#| msgid "Articles"
+msgid "Article tags"
+msgstr "Статьи"
 
-#: js/App.js:1139 js/App.js:1229
-msgid "Widescreen is not available in combined mode."
-msgstr "Широкоэкранный режим недоступен в комбинированном режиме."
+#: js/Article.js:332
+msgid "Tags for this article (separated by commas):"
+msgstr "Теги для этой статьи (разделенные запятыми):"
 
-#: js/App.js:1197
-msgid "Please select some feed first."
-msgstr "Пожалуйста выберите какой-нибудь канал."
-
-#: js/App.js:1202
-msgid "You can't unsubscribe from the category."
-msgstr "Нельзя отписаться от категории."
-
-#: js/Article.js:267
-msgid "Edit article Tags"
-msgstr "Редактировать теги"
-
-#: js/Article.js:272
+#: js/Article.js:352
 msgid "Saving article tags..."
 msgstr "Сохранить теги статьи..."
-
-#: js/CommonDialogs.js:13
-msgid "Removing feed icon..."
-msgstr "Удаляется иконка канала..."
-
-#: js/CommonDialogs.js:18
-msgid "Feed icon removed."
-msgstr "Иконка канала удалена."
-
-#: js/CommonDialogs.js:41
-msgid "Uploading, please wait..."
-msgstr "Идет загрузка, пожалуйста подождите..."
-
-#: js/CommonDialogs.js:50
-msgid "Upload complete."
-msgstr "Загрузка завершена."
-
-#: js/CommonDialogs.js:65
-msgid "Upload failed: icon is too big."
-msgstr "Ошибка загрузки: иконка слишком большая."
-
-#: js/CommonDialogs.js:68
-msgid "Upload failed."
-msgstr "Ошибка загрузки."
-
-#: js/CommonDialogs.js:211 js/PrefFeedTree.js:384
-msgid "Removing selected feeds..."
-msgstr "Выбранные каналы удаляются..."
-
-#: js/CommonDialogs.js:397
-msgid "Removing feed..."
-msgstr "Канал удаляется..."
-
-#: js/CommonDialogs.js:440 js/PrefFeedTree.js:297 js/PrefFilterTree.js:205
-#: js/PrefUsers.js:42
-msgid "Saving data..."
-msgstr "Идёт сохранение..."
-
-#: js/CommonDialogs.js:462 js/PrefHelpers.js:249
-msgid "Trying to change address..."
-msgstr "Попытка изменить адрес.."
-
-#: js/CommonDialogs.js:482 js/PrefHelpers.js:265
-msgid "Could not change feed URL."
-msgstr "Не получилось изменить URL канала."
-
-#: js/CommonFilters.js:132
-msgid "Edit rule"
-msgstr "Редактировать правило"
-
-#: js/CommonFilters.js:162
-msgid "Edit action"
-msgstr "Редактировать действие"
-
-#: js/CommonFilters.js:203
-msgid "Looking for articles (%d processed, %f found)..."
-msgstr "Ищем статьи (%d обработано, %f найдено)..."
-
-#: js/CommonFilters.js:232
-msgid "Found %d articles matching this filter:"
-msgstr "Найдено %d удовлетворяющих фильтру статей:"
-
-#: js/CommonFilters.js:243
-msgid "Error while trying to get filter test results."
-msgstr "Ошибка при попытке загрузить больше результатов."
-
-#: js/CommonFilters.js:285
-msgid "Create Filter"
-msgstr "Создать фильтр"
 
 #: js/FeedTree.js:102
 msgid "Debug feed"
@@ -3012,243 +2764,35 @@ msgstr "Отладка канала"
 msgid "(Un)collapse"
 msgstr "Свернуть/развернуть"
 
-#: js/Feeds.js:387
-msgid "Mark all articles as read?"
-msgstr "Пометить все статьи как прочитанные?"
-
-#: js/Feeds.js:391
-msgid "Marking all feeds as read..."
-msgstr "Помечаю все каналы как прочитанные..."
-
-#: js/Feeds.js:409
-msgid "Mark %w in %s older than 1 day as read?"
-msgstr "Отметить %w в %s старше 1 дня как прочитанные?"
-
-#: js/Feeds.js:412
-msgid "Mark %w in %s older than 1 week as read?"
-msgstr "Отметить %w в %s старше 1 недели как прочитанные?"
-
-#: js/Feeds.js:415
-msgid "Mark %w in %s older than 2 weeks as read?"
-msgstr "Отметить %w в %s старше 2 недель как прочитанные?"
-
-#: js/Feeds.js:418
-msgid "Mark %w in %s as read?"
-msgstr "Отметить %w в %s как прочитанные?"
-
-#: js/Feeds.js:421
-msgid "search results"
-msgstr "результаты поиска"
-
-#: js/Feeds.js:421
-msgid "all articles"
-msgstr "все статьи"
-
-#: js/Feeds.js:464
-msgid "Mark all articles in %s as read?"
-msgstr "Отметить все статьи в %s как прочитанные?"
-
-#: js/Headlines.js:629 js/Headlines.js:679 js/Headlines.js:696
-msgid "Click to open next unread feed."
-msgstr "Щёлкните чтоб открыть следующий непрочитанный канал."
-
-#: js/Headlines.js:633
-msgid "Cancel search"
-msgstr "Отменить поиск"
-
-#: js/Headlines.js:693
-msgid "New articles found, reload feed to continue."
-msgstr "Найдены новые статьи, обновите канал для продолжения."
-
-#: js/Headlines.js:886
-msgid "%d article selected"
-msgid_plural "%d articles selected"
-msgstr[0] "%d статья выбрана"
-msgstr[1] "%d статьи выбрано"
-msgstr[2] "%d статей выбрано"
-
-#: js/Headlines.js:959
-msgid "Delete %d selected article in %s?"
-msgid_plural "Delete %d selected articles in %s?"
-msgstr[0] "Удалить %d выбранную статью в %s?"
-msgstr[1] "Удалить %d выбранные статьи в %s?"
-msgstr[2] "Удалить %d выбранных статей в %s?"
-
-#: js/Headlines.js:961
-msgid "Delete %d selected article?"
-msgid_plural "Delete %d selected articles?"
-msgstr[0] "Удалить %d выбранную статью?"
-msgstr[1] "Удалить %d выбранные статьи?"
-msgstr[2] "Удалить %d выбранных статей?"
-
-#: js/Headlines.js:1101
-msgid "Archive %d selected article in %s?"
-msgid_plural "Archive %d selected articles in %s?"
-msgstr[0] "Архивировать %d выбранную статью в %s?"
-msgstr[1] "Архивировать %d выбранные статьи в %s?"
-msgstr[2] "Архивировать %d выбранных статей в %s?"
-
-#: js/Headlines.js:1104
-msgid "Move %d archived article back?"
-msgid_plural "Move %d archived articles back?"
-msgstr[0] "Переместить %d архивированную статью назад?"
-msgstr[1] "Переместить %d архивированных статьи назад?"
-msgstr[2] "Переместить %d архивированных статей назад?"
-
-#: js/Headlines.js:1105
-msgid ""
-"Please note that unstarred articles might get purged on next feed update."
-msgstr ""
-"Пожалуйста, учтите, что не отмеченные звездочкой статьи могут быть удалены "
-"при следующем обновлении каналов."
-
-#: js/Headlines.js:1134
-msgid "Mark %d selected article in %s as read?"
-msgid_plural "Mark %d selected articles in %s as read?"
-msgstr[0] "Отметить %d выбранную статью в %s как прочитанную?"
-msgstr[1] "Отметить %d выбранные статьи в %s как прочитанные?"
-msgstr[2] "Отметить %d выбранных статей в %s как прочитанные?"
-
-#: js/Headlines.js:1150
-msgid "No article is selected."
-msgstr "Нет выбранных статей."
-
-#: js/Headlines.js:1185
-msgid "No articles found to mark"
-msgstr "Статей для отметки не найдено"
-
-#: js/Headlines.js:1187
-msgid "Mark %d article as read?"
-msgid_plural "Mark %d articles as read?"
-msgstr[0] "Отметить %d статью как прочитанную?"
-msgstr[1] "Отметить %d статьи как прочитанные?"
-msgstr[2] "Отметить %d статей как прочитанные?"
-
-#: js/Headlines.js:1237
-msgid "Open original article"
-msgstr "Показать оригинальное содержимое статьи"
-
-#: js/Headlines.js:1244
-msgid "Display article URL"
-msgstr "Отобразить URL статьи"
-
-#: js/Headlines.js:1351
-msgid "Assign label"
-msgstr "Применить метку"
-
-#: js/Headlines.js:1356
-msgid "Remove label"
-msgstr "Удалить метку"
-
-#: js/Headlines.js:1393
-msgid "Select articles in group"
-msgstr "Выбрать статьи в группе"
-
-#: js/Headlines.js:1403
-msgid "Mark group as read"
-msgstr "Пометить группу как прочитанную"
-
-#: js/Headlines.js:1415
-msgid "Mark feed as read"
-msgstr "Отметить канал как прочитанный"
-
-#: js/PrefFeedTree.js:142
-msgid "Removing category..."
-msgstr "Удаляю категорию..."
-
-#: js/PrefFeedTree.js:156
-msgid "Unsubscribing from selected feeds..."
-msgstr "Выбранные каналы удаляются..."
-
-#: js/PrefFeedTree.js:198
-msgid "Removing selected categories..."
-msgstr "Выбранные категории удаляются..."
-
-#: js/PrefFeedTree.js:331
-msgid "Creating category..."
-msgstr "Создаю категорию..."
-
-#: js/PrefFilterTree.js:113
-msgid "Joining filters..."
-msgstr "Объединение фильтров..."
-
-#: js/PrefFilterTree.js:177
-msgid "Removing filter..."
-msgstr "Удаление фильтра..."
-
-#: js/PrefFilterTree.js:223
-msgid "Removing selected filters..."
-msgstr "Выбранные фильтры удаляются..."
-
-#: js/PrefHelpers.js:44 plugins/share/share_prefs.js:4
-msgid "Clearing URLs..."
-msgstr "Очистка URL..."
-
-#: js/PrefHelpers.js:47
-msgid "Generated URLs cleared."
-msgstr "Созданные URL очищены."
-
-#: js/PrefHelpers.js:89
-msgid "Removing selected profiles..."
-msgstr "Выбранные профили удаляются..."
-
-#: js/PrefHelpers.js:124
-msgid "Creating profile..."
-msgstr "Создаю профиль..."
-
-#: js/PrefHelpers.js:205
-msgid "Importing, please wait..."
-msgstr "Идет импорт, пожалуйста, подождите..."
-
-#: js/PrefLabelTree.js:70
-msgid "Label Editor"
-msgstr "Редактор Меток"
-
-#: js/PrefLabelTree.js:127
-msgid "Reset selected labels to default colors?"
-msgstr "Сбросить текущие метки на цвета по умолчанию?"
-
-#: js/PrefLabelTree.js:140 js/PrefLabelTree.js:160
-msgid "No labels selected."
-msgstr "Нет выбранных меток."
-
-#: js/PrefLabelTree.js:147
-msgid "Remove selected labels?"
-msgstr "Удалить выбранные метки?"
-
-#: js/PrefLabelTree.js:148
-msgid "Removing selected labels..."
-msgstr "Выбранные метки удаляются..."
-
-#: js/PrefUsers.js:17
+#: js/PrefUsers.js:19
 msgid "Please enter username:"
 msgstr "Пожалуйста, введите имя пользователя:"
 
-#: js/PrefUsers.js:20
+#: js/PrefUsers.js:22
 msgid "Adding user..."
 msgstr "Пользователь добавляется..."
 
-#: js/PrefUsers.js:38
-msgid "User Editor"
-msgstr "Редактор пользователей"
+#: js/PrefUsers.js:39
+msgid "Edit user"
+msgstr "Редактировать пользователя"
 
-#: js/PrefUsers.js:59 js/PrefUsers.js:98 js/PrefUsers.js:105
+#: js/PrefUsers.js:136 js/PrefUsers.js:175
 msgid "No users selected."
 msgstr "Нет выбранных пользователей."
 
-#: js/PrefUsers.js:64 js/PrefUsers.js:110
+#: js/PrefUsers.js:141
 msgid "Please select one user."
 msgstr "Пожалуйста выберите одного пользователя."
 
-#: js/PrefUsers.js:68
+#: js/PrefUsers.js:145
 msgid "Reset password of selected user?"
 msgstr "Сбросить пароль выбранного пользователя?"
 
-#: js/PrefUsers.js:69
+#: js/PrefUsers.js:146
 msgid "Resetting password for selected user..."
 msgstr "Пароль пользователя сбрасывается..."
 
-#: js/PrefUsers.js:84
+#: js/PrefUsers.js:161
 msgid ""
 "Remove selected users? Neither default admin nor your account will be "
 "removed."
@@ -3256,34 +2800,736 @@ msgstr ""
 "Удалить выбранных пользователей? Ни администратор по умолчанию, ни Ваш "
 "аккаунт не могут быть удалены."
 
-#: js/PrefUsers.js:85
+#: js/PrefUsers.js:162
 msgid "Removing selected users..."
 msgstr "Выбранные пользователи удаляются..."
 
-#: plugins/af_readability/init.js:29
+#: js/CommonFilters.js:14
+#, fuzzy
+#| msgid "Edit Filter"
+msgid "Edit filter"
+msgstr "Редактировать фильтр"
+
+#: js/CommonFilters.js:14
+#, fuzzy
+#| msgid "Create filter"
+msgid "Create new filter"
+msgstr "Создать фильтр"
+
+#: js/CommonFilters.js:41
+#, javascript-format
+msgid "Looking for articles (%d processed, %f found)..."
+msgstr "Ищем статьи (%d обработано, %f найдено)..."
+
+#: js/CommonFilters.js:70
+#, javascript-format
+msgid "Found %d articles matching this filter:"
+msgstr "Найдено %d удовлетворяющих фильтру статей:"
+
+#: js/CommonFilters.js:79
+msgid "Error while trying to get filter test results."
+msgstr "Ошибка при попытке загрузить больше результатов."
+
+#: js/CommonFilters.js:170
+msgid "Edit rule"
+msgstr "Редактировать правило"
+
+#: js/CommonFilters.js:170
+msgid "Add rule"
+msgstr "Добавить правило"
+
+#: js/CommonFilters.js:214
+msgid "Inverse regular expression matching"
+msgstr "Инвертировать совпадение с регулярным выражением"
+
+#: js/CommonFilters.js:218
+#, fuzzy
+msgid "on"
+msgstr "Ничего"
+
+#: js/CommonFilters.js:246
+msgid "Edit action"
+msgstr "Редактировать действие"
+
+#: js/CommonFilters.js:246
+msgid "Add action"
+msgstr "Добавить действие"
+
+#: js/CommonFilters.js:356
+msgid "Remove filter?"
+msgstr "Удалить фильтр?"
+
+#: js/CommonFilters.js:361
+msgid "Removing filter..."
+msgstr "Удаление фильтра..."
+
+#: js/CommonFilters.js:446 js/CommonFilters.js:478
+msgid "Add"
+msgstr "Добавить"
+
+#: js/CommonFilters.js:449 js/CommonFilters.js:481
+msgid "Delete"
+msgstr "Удалить"
+
+#: js/CommonFilters.js:515 js/CommonFilters.js:519
+msgid "Test"
+msgstr "Проверить"
+
+#: js/CommonFilters.js:520
+msgid "Create"
+msgstr "Создать"
+
+#: plugins/af_psql_trgm/init.js:6
+msgid "Related articles"
+msgstr "Похожие статьи"
+
+#: plugins/note/note.js:9
+msgid "Saving article note..."
+msgstr "Сохраняю заметку..."
+
+#: plugins/af_readability/init.js:31
 #, fuzzy
 msgid "Unable to fetch full text for this article"
 msgstr "Пожалуйста, укажите новый рейтинг для этой статьи:"
 
-#: plugins/note/note.js:14
-msgid "Saving article note..."
-msgstr "Сохраняю заметку..."
-
-#: plugins/shorten_expanded/init.js:42
+#: plugins/shorten_expanded/init.js:41
 msgid "Click to expand article"
 msgstr "Щёлкните чтобы развернуть статью"
 
-#: plugins/share/share.js:15
+#: plugins/share/share.js:7
+msgid "Share article by URL"
+msgstr "Расшарить статью по ссылке"
+
+#: plugins/share/share.js:9
+msgid "Generate new share URL for this article?"
+msgstr "Создать новый публичный URL для этой статьи?"
+
+#: plugins/share/share.js:11
 msgid "Trying to change URL..."
 msgstr "Пытаюсь изменить URL..."
 
-#: plugins/share/share.js:40
+#: plugins/share/share.js:34
 msgid "Could not change URL."
 msgstr "Не получилось изменить URL."
 
-#: plugins/share/share_prefs.js:9
-msgid "Shared URLs cleared."
-msgstr "Общие URL очищены."
+#: plugins/share/share.js:42
+msgid "Remove sharing for this article?"
+msgstr "Убрать данную статью из публичного доступа?"
+
+#: plugins/share/share_prefs.js:5
+msgid "This will invalidate all previously shared article URLs. Continue?"
+msgstr ""
+"Это сделает недействительными все ранее опубликованные URL статьи. "
+"Продолжить?"
+
+#: js/Feeds.js:283
+msgid ""
+"Tiny Tiny RSS is running in safe mode. All themes and plugins are disabled. "
+"You will need to log out and back in to disable it."
+msgstr ""
+"Tiny Tiny RSS работает в безопасном режиме. Все темы и плагины отключены. "
+"Чтобы отключить этот режим, нужно выйти и войти снова."
+
+#: js/Feeds.js:610
+msgid "Used for word stemming"
+msgstr "Используется стемминга слов"
+
+#: js/App.js:609
+msgid "Stack trace"
+msgstr ""
+
+#: js/PrefFeedTree.js:369
+msgid "Rename category to:"
+msgstr "Переименовать категорию в:"
+
+#: js/PrefFeedTree.js:534
+msgid "Unsubscribe from selected feeds"
+msgstr "Отписаться от выбранных каналов"
+
+#: js/CommonDialogs.js:53
+msgid "Available feeds"
+msgstr "Доступные каналы"
+
+#: js/CommonDialogs.js:86
+msgid "This feed requires authentication."
+msgstr "Этот канал требует авторизации."
+
+#: js/CommonDialogs.js:506
+msgid "Site URL:"
+msgstr "Сайт:"
+
+#: js/PrefHelpers.js:177
+msgid "Create profile"
+msgstr "Создать профиль"
+
+#: js/PrefHelpers.js:208
+msgid "Remove selected profiles"
+msgstr "Удалить выбранные профили"
+
+#: js/PrefHelpers.js:210
+msgid "Activate profile"
+msgstr "Активировать профиль"
+
+#: js/PrefHelpers.js:278
+msgid "Apply"
+msgstr "Применить"
+
+#: js/PrefHelpers.js:331
+msgid "Selected plugins have been enabled. Reload?"
+msgstr ""
+
+#: js/PrefHelpers.js:660
+#, fuzzy
+#| msgid "Upload complete."
+msgid "Updates complete"
+msgstr "Загрузка завершена."
+
+#: js/PrefHelpers.js:674
+#, javascript-format
+msgid "Updates pending for %d plugin"
+msgid_plural "Updates pending for %d plugins"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: js/Headlines.js:622
+msgid "Invert"
+msgstr "Инвертировать"
+
+#: js/Headlines.js:630
+msgid "Set score"
+msgstr "Оценить"
+
+#: js/Headlines.js:635
+msgid "Delete permanently"
+msgstr "Удалить навсегда"
+
+#: js/Headlines.js:809
+msgid ""
+"Could not update headlines (invalid object received - see error console for "
+"details)"
+msgstr ""
+"Не удалось обновить заголовки (получен недопустимый объект - подробности см. "
+"в консоли ошибок)"
+
+#: js/Article.js:197
+msgid "Attachments"
+msgstr "Вложения"
+
+#: js/PrefUsers.js:76
+msgid "Access level: "
+msgstr "Уровень доступа: "
+
+#: js/CommonFilters.js:67
+msgid "No recent articles matching this filter have been found."
+msgstr "Не найдено недавних статей, удовлетворяющих фильтру."
+
+#~ msgid "Ignore Scoring"
+#~ msgstr "Игнорировать Оценки"
+
+#~ msgid "Updating to version %d"
+#~ msgstr "Обновляется до версии %d"
+
+#~ msgid "Try again"
+#~ msgstr "Попробуйте ещё раз"
+
+#~ msgid "Completed."
+#~ msgstr "Завершено."
+
+#~ msgid "Save data"
+#~ msgstr "Сохранить"
+
+#~ msgid "Changing your current password will disable OTP."
+#~ msgstr "Изменение текущего пароля приведет к отключению OTP."
+
+#, fuzzy
+#~ msgid "Remove selected passwords"
+#~ msgstr "Удалить выбранных пользователей?"
+
+#, fuzzy
+#~ msgid ""
+#~ "Scan the following code by the Authenticator application or copy the key "
+#~ "manually"
+#~ msgstr "Просканируйте следующий код в программу Аутентификатор:"
+
+#, fuzzy
+#~ msgid ""
+#~ "Use the following OTP key with a compatible Authenticator application"
+#~ msgstr "Просканируйте следующий код в программу Аутентификатор:"
+
+#~ msgid "Save and exit preferences"
+#~ msgstr "Сохранить и закрыть настройки"
+
+#~ msgid "System plugins"
+#~ msgstr "Системные плагины"
+
+#~ msgid ""
+#~ "Using OPML you can export and import your feeds, filters, labels and Tiny "
+#~ "Tiny RSS settings."
+#~ msgstr ""
+#~ "Используя OPML Вы можете экспортировать и импортировать Ваши каналы, "
+#~ "фильтры, метки и настройки Tiny Tiny RSS."
+
+#~ msgid ""
+#~ "Your OPML can be published publicly and can be subscribed by anyone who "
+#~ "knows the URL below."
+#~ msgstr ""
+#~ "Ваш OPML может быть опубликован и на него могут подписаться те, кто знает "
+#~ "URL, указанный ниже."
+
+#~ msgid ""
+#~ "Published OPML does not include your Tiny Tiny RSS settings, feeds that "
+#~ "require authentication or feeds hidden from Popular feeds."
+#~ msgstr ""
+#~ "Опубликованный OPML не содержит настроек Tiny Tiny RSS settings, каналов "
+#~ "с авторизацией или каналов скрытых из списка \"Популярные\"."
+
+#~ msgid ""
+#~ "Published articles can be subscribed by anyone who knows the following "
+#~ "URL:"
+#~ msgstr ""
+#~ "На опубликованные статьи может быть подписан любой кому известен "
+#~ "следующий URL:"
+
+#~ msgid "Close article"
+#~ msgstr "Закрыть статью"
+
+#~ msgid "Shared articles"
+#~ msgstr "Общие статьи"
+
+#, fuzzy
+#~ msgid "Image proxy settings (af_proxy_http)"
+#~ msgstr "Настройки прокси картинок (af_zz_imgproxy)"
+
+#~ msgid "Enable proxy for all remote images."
+#~ msgstr "Включить прокси для всех удаленных картинок."
+
+#~ msgid "Forward by email"
+#~ msgstr "Отправить по почте"
+
+#~ msgid "Mail addresses saved."
+#~ msgstr "Почтовый адрес сохранен."
+
+#~ msgid "You can set predefined email addressed here (comma-separated list):"
+#~ msgstr ""
+#~ "Вы можете настроить предпочитаемые почтовые адреса тут (разделенные "
+#~ "запятой):"
+
+#~ msgid "[Forwarded]"
+#~ msgstr "[Переслано]"
+
+#~ msgid "Multiple articles"
+#~ msgstr "Все статьи"
+
+#~ msgid "Subject:"
+#~ msgstr "Заголовок:"
+
+#, fuzzy
+#~ msgid "Forward by email (mailto:)"
+#~ msgstr "Отправить по почте"
+
+#, fuzzy
+#~ msgid "Click to open your mail client"
+#~ msgstr "Кликните по следующей ссылке, чтоб запустить Ваш почтовый клиент:"
+
+#~ msgid "Close this dialog"
+#~ msgstr "Закрыть это окно"
+
+#~ msgid "You can disable all articles shared by unique URLs here."
+#~ msgstr ""
+#~ "Здесь Вы можете отключить все статьи в общем доступе через уникальные URL."
+
+#~ msgid "Session failed to validate (schema version changed)"
+#~ msgstr "Ошибка проверки сессии (изменилась версия схемы)"
+
+#~ msgid "Session failed to validate (UA changed)."
+#~ msgstr "Ошибка проверки сессии (браузер изменен)."
+
+#~ msgid "Label Editor"
+#~ msgstr "Редактор Меток"
+
+#~ msgid "Caption"
+#~ msgstr "Заголовок"
+
+#~ msgid "Colors"
+#~ msgstr "Цвета"
+
+#~ msgid "Subscribe to Feed"
+#~ msgstr "Подписаться на канал"
+
+#~ msgid "Edit Feed"
+#~ msgstr "Редактировать канал"
+
+#~ msgid "Upload failed: icon is too big."
+#~ msgstr "Ошибка загрузки: иконка слишком большая."
+
+#~ msgid "Settings Profiles"
+#~ msgstr "Профили настроек"
+
+#~ msgid "Edit article Tags"
+#~ msgstr "Редактировать теги"
+
+#~ msgid "User Editor"
+#~ msgstr "Редактор пользователей"
+
+#~ msgid "Create Filter"
+#~ msgstr "Создать фильтр"
+
+#~ msgid "Save rule"
+#~ msgstr "Сохранить правило"
+
+#~ msgid "Save action"
+#~ msgstr "Сохранить действие"
+
+#~ msgid "Forward article by email"
+#~ msgstr "Переслать статью по электронной почте"
+
+#, fuzzy
+#~ msgid "Forward article by email (mailto:)"
+#~ msgstr "Переслать статью по электронной почте"
+
+#, fuzzy
+#~ msgid "Additional information"
+#~ msgstr "Показывать расширенную информацию в списке каналов"
+
+#~ msgid "Error sending email:"
+#~ msgstr "Ошибка при попытка отправить письмо:"
+
+#~ msgid "Amount of articles to display at once"
+#~ msgstr "Количество статей на странице"
+
+#~ msgid "Sort feeds by unread articles count"
+#~ msgstr "Сортировать каналы по количеству непрочитанных статей"
+
+#~ msgid "Reverse headline order (oldest first)"
+#~ msgstr "Обратный порядок заголовков (старые впереди)"
+
+#~ msgid ""
+#~ "Use feed-specified date to sort headlines instead of local import date."
+#~ msgstr ""
+#~ "Использовать заданную для канала дату для сортировки заголовков вместо "
+#~ "даты импорта."
+
+#~ msgid "Strip unsafe tags from articles"
+#~ msgstr "Вырезать небезопасные теги из статей"
+
+#~ msgid "Strip all but most common HTML tags when reading articles."
+#~ msgstr "Вырезать все, кроме основных HTML тегов при показе статей."
+
+#~ msgid "Your preferences are now set to default values."
+#~ msgstr "Ваши настройки сброшены по умолчанию."
+
+#~ msgid "Enabled"
+#~ msgstr "Включен"
+
+#~ msgid "Match any rule"
+#~ msgstr "Удовлетворяет любому правилу"
+
+#~ msgid "Inverse matching"
+#~ msgstr "Инвертировать фильтр"
+
+#~ msgid ""
+#~ "This program requires XmlHttpRequest to function properly. Your browser "
+#~ "doesn't seem to support it."
+#~ msgstr ""
+#~ "Программе требуется функционал XmlHttpRequest. Ваш браузер его не "
+#~ "поддерживает."
+
+#~ msgid ""
+#~ "This program requires cookies to function properly. Your browser doesn't "
+#~ "seem to support them."
+#~ msgstr ""
+#~ "Для работы программы необходимы куки. Ваш браузер их не поддерживает."
+
+#~ msgid "Backend sanity check failed."
+#~ msgstr "Произошла ошибка проверки бэкэнда."
+
+#~ msgid "Frontend sanity check failed."
+#~ msgstr "Произошла ошибка проверки фронтэнда."
+
+#~ msgid ""
+#~ "Incorrect database schema version. &lt;a href='db-updater.php'&gt;Please "
+#~ "update&lt;/a&gt;."
+#~ msgstr ""
+#~ "Некорректная версия базы данных. &lt;a href='update.php'&gt;Пожалуйста "
+#~ "обновите её&lt;/a&gt;."
+
+#~ msgid "Request not authorized."
+#~ msgstr "В доступе отказано."
+
+#~ msgid "No operation to perform."
+#~ msgstr "Операция не задана."
+
+#~ msgid ""
+#~ "Could not display feed: query failed. Please check label match syntax or "
+#~ "local configuration."
+#~ msgstr ""
+#~ "Не могу показать канал: ошибка в запросе. Пожалуйста, проверьте синтаксис "
+#~ "или локальную конфигурацию."
+
+#~ msgid "Denied. Your access level is insufficient to access this page."
+#~ msgstr "В доступе отказано - недостаточный уровень привилегий."
+
+#~ msgid "Configuration check failed"
+#~ msgstr "Тест конфигурации неудачен"
+
+#~ msgid ""
+#~ "Your version of MySQL is not currently supported. Please see official "
+#~ "site for more information."
+#~ msgstr ""
+#~ "Ваша версия MySQL сейчас не поддерживается. Пожалуйста \n"
+#~ "\t\tпрочитайте на официальном сайте подробную информацию."
+
+#~ msgid "SQL escaping test failed, check your database and PHP configuration"
+#~ msgstr ""
+#~ "неудавшийся тест экранирования SQL, проверьте вашу базу данных и "
+#~ "конфигурацию PHP"
+
+#~ msgid "Method not found"
+#~ msgstr "Метод не найден"
+
+#~ msgid "Plugin not found"
+#~ msgstr "Плагин не найден"
+
+#~ msgid "Encoding data as JSON failed"
+#~ msgstr "Представление как JSON неудачно"
+
+#~ msgid "Access level:"
+#~ msgstr "Уровень доступа:"
+
+#~ msgid "Match"
+#~ msgstr "Искать"
+
+#~ msgid "Apply actions"
+#~ msgstr "Применить действия"
+
+#~ msgid "on field"
+#~ msgstr "по полю"
+
+#~ msgid "Perform Action"
+#~ msgstr "Выполнить действия"
+
+#~ msgid "Feed Title"
+#~ msgstr "Заголовок"
+
+#~ msgid "Feed URL"
+#~ msgstr "URL канала"
+
+#~ msgid "Site URL"
+#~ msgstr "Сайт"
+
+#~ msgid "Interval:"
+#~ msgstr "Интервал:"
+
+#~ msgid "Login"
+#~ msgstr "Пользователь"
+
+#~ msgid "Icon"
+#~ msgstr "Иконка"
+
+#~ msgid "Replace"
+#~ msgstr "Заменить"
+
+#~ msgid "Clear colors"
+#~ msgstr "Очистить цвета"
+
+#~ msgid "One time passwords / Authenticator"
+#~ msgstr "Одноразовые пароли / Аутентификатор"
+
+#~ msgid "Your access level is insufficient to open this tab."
+#~ msgstr "Вашего уровня доступа недостаточно для открытия этой вкладки."
+
+#~ msgid "Edit"
+#~ msgstr "Редактировать"
+
+#~ msgid "User details"
+#~ msgstr "Подробнее"
+
+#~ msgid "Subscribed feeds count"
+#~ msgstr "Количество подписанных каналов"
+
+#~ msgid "Access Level"
+#~ msgstr "Уровень доступа"
+
+#~ msgid "Last login"
+#~ msgstr "Последний вход"
+
+#~ msgid "No users defined."
+#~ msgstr "Пользователи не определены."
+
+#~ msgid "No matching users found."
+#~ msgstr "Подходящих пользователей не найдено."
+
+#~ msgid ""
+#~ "<b>Hint:</b> you need to fill in your login information if your feed "
+#~ "requires authentication, except for Twitter feeds."
+#~ msgstr ""
+#~ "<b>Подсказка:</b> Вам потребуется задать Ваши учетные данные, если канал "
+#~ "требует авторизацию, за исключением каналов в Twitter."
+
+#~ msgid "Published & shared articles / Generated feeds"
+#~ msgstr "Опубликованные & общие каналы / Автоматически созданные каналы"
+
+#~ msgid "Feeds require authentication."
+#~ msgstr "Каналы требуют авторизацию."
+
+#~ msgid "Last updated: %s"
+#~ msgstr "Последнее обновление: %s"
+
+#, fuzzy
+#~ msgid "Select articles"
+#~ msgstr "Выбрать все статьи"
+
+#~ msgid "Feed or site URL"
+#~ msgstr "Канал или URL сайта"
+
+#~ msgid "Search %s..."
+#~ msgstr "Поиск %s…"
+
+#~ msgid "unknown type"
+#~ msgstr "неизвестный тип"
+
+#~ msgid "Global settings"
+#~ msgstr "Общие настройки"
+
+#~ msgid "Forward selected article(s) by email."
+#~ msgstr "Переслать выбранные статьи по электронной почте."
+
+#~ msgid ""
+#~ "You should be able to edit the message before sending in your mail client."
+#~ msgstr ""
+#~ "Вы сможете отредактировать сообщение перед посылкой в почтовом клиенте."
+
+#~ msgid "Help"
+#~ msgstr "Помощь"
+
+#~ msgid "Please select only one filter."
+#~ msgstr "Пожалуйста выберите только один фильтр."
+
+#~ msgid "Create new account"
+#~ msgstr "Создать новый аккаунт"
+
+#~ msgid "New user registrations are administratively disabled."
+#~ msgstr "Регистрация новых пользователей запрещена."
+
+#~ msgid ""
+#~ "Your temporary password will be sent to the specified email. Accounts, "
+#~ "which were not logged in once, are erased automatically 24 hours after "
+#~ "temporary password is sent."
+#~ msgstr ""
+#~ "Временный пароль будет отправлен на указанный e-mail. Если аккаунт не "
+#~ "будет активирован в течении 24 часов, то он будет удалён."
+
+#~ msgid "Desired login:"
+#~ msgstr "Желаемый логин:"
+
+#~ msgid "Check availability"
+#~ msgstr "Проверить доступность"
+
+#~ msgid "How much is two plus two:"
+#~ msgstr "Сколько будет, два плюс два:"
+
+#~ msgid "Submit registration"
+#~ msgstr "Зарегистрироваться"
+
+#~ msgid "Your registration information is incomplete."
+#~ msgstr "Не полностью заполнена ваша регистрационная информация."
+
+#~ msgid "Sorry, this username is already taken."
+#~ msgstr "Извините, такое имя пользователя уже существует."
+
+#~ msgid "Account created successfully."
+#~ msgstr "Аккаунт успешно создан."
+
+#~ msgid "New user registrations are currently closed."
+#~ msgstr "Регистрация новых пользователей временно закрыта."
+
+#~ msgid "Tiny Tiny RSS data update script."
+#~ msgstr "Скрипт обновления данных Tiny Tiny RSS."
+
+#, fuzzy
+#~ msgid "Safe mode (no plugins)"
+#~ msgstr "Системные плагины"
+
+#~ msgid "Tag cloud"
+#~ msgstr "Облако тегов"
+
+#~ msgid ""
+#~ "Update daemon is enabled in configuration, but daemon process is not "
+#~ "running, which prevents all feeds from updating. Please start the daemon "
+#~ "process or contact instance owner."
+#~ msgstr ""
+#~ "Демон обновлений разрешён в вашей конфигурации, но процесс демона не "
+#~ "запущен. Он необходим для обновления всех каналов.\n"
+#~ "Пожалуйста, запустите демон обновлений или сообщите администратору."
+
+#~ msgid "Last update:"
+#~ msgstr "Последнее обновление:"
+
+#~ msgid ""
+#~ "Update daemon is taking too long to perform a feed update. This could "
+#~ "indicate a problem like crash or a hang. Please check the daemon process "
+#~ "or contact instance owner."
+#~ msgstr ""
+#~ "Tiny Tiny RSS определил что демон обновлений не работает уже очень "
+#~ "давно.\n"
+#~ "Это обозначает что существует проблема подобная краху или зависанию "
+#~ "демона.\n"
+#~ "Пожалуйста проверьте процесс демона или сообщите администратору."
+
+#~ msgid "Open Preferences"
+#~ msgstr "Настройки"
+
+#~ msgid "Selection toggle:"
+#~ msgstr "Переключить выбранное:"
+
+#~ msgid "Selection:"
+#~ msgstr "Выбрано:"
+
+#~ msgid "Move back"
+#~ msgstr "Переместить назад"
+
+#~ msgid "Archive"
+#~ msgstr "Архивировать"
+
+#~ msgid "Feed:"
+#~ msgstr "Канал:"
+
+#~ msgid "Error explained"
+#~ msgstr "Ошибка разъяснена"
+
+#~ msgid "More Feeds"
+#~ msgstr "Больше каналов"
+
+#~ msgid ""
+#~ "Remove selected feeds from the archive? Feeds with stored articles will "
+#~ "not be removed."
+#~ msgstr ""
+#~ "Удалить выбранные каналы из архива? Каналы с сохраненным статьями удалены "
+#~ "не будут."
+
+#~ msgid ""
+#~ "<span onclick=\"App.explainError(1)\">Update daemon is not running.</span>"
+#~ msgstr ""
+#~ "<span onclick=\"App.explainError(1)\">Демон обновления не запущен.</span>"
+
+#~ msgid "Archive %d selected article in %s?"
+#~ msgid_plural "Archive %d selected articles in %s?"
+#~ msgstr[0] "Архивировать %d выбранную статью в %s?"
+#~ msgstr[1] "Архивировать %d выбранные статьи в %s?"
+#~ msgstr[2] "Архивировать %d выбранных статей в %s?"
+
+#~ msgid "Move %d archived article back?"
+#~ msgid_plural "Move %d archived articles back?"
+#~ msgstr[0] "Переместить %d архивированную статью назад?"
+#~ msgstr[1] "Переместить %d архивированных статьи назад?"
+#~ msgstr[2] "Переместить %d архивированных статей назад?"
+
+#~ msgid ""
+#~ "Please note that unstarred articles might get purged on next feed update."
+#~ msgstr ""
+#~ "Пожалуйста, учтите, что не отмеченные звездочкой статьи могут быть "
+#~ "удалены при следующем обновлении каналов."
 
 #~ msgid "There is no error, the file uploaded with success"
 #~ msgstr "Ошибок нет, файл загружен успешно"
@@ -3321,13 +3567,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Regular expression, without outer delimiters (i.e. slashes)"
 #~ msgstr "Регулярное выражение, без внешних разделителей (то есть косых черт)"
-
-#~ msgid ""
-#~ "Could not update headlines (invalid object received - see error console "
-#~ "for details)"
-#~ msgstr ""
-#~ "Не удалось обновить заголовки (получен недопустимый объект - подробности "
-#~ "см. в консоли ошибок)"
 
 #~ msgid "Toggle embed original"
 #~ msgstr "Переключить отображение оригинала"
@@ -3444,13 +3683,6 @@ msgstr "Общие URL очищены."
 #~ msgid "No feeds found."
 #~ msgstr "Каналы не найдены."
 
-#~ msgid ""
-#~ "If you have imported labels and/or filters, you might need to reload "
-#~ "preferences to see your new data."
-#~ msgstr ""
-#~ "Если вы импортировали метки или фильтры, вам возможно придется "
-#~ "перезагрузить настройки чтобы увидеть новые данные."
-
 #, fuzzy
 #~ msgid "Performing updates"
 #~ msgstr "Идет обновление..."
@@ -3490,9 +3722,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Author"
 #~ msgstr "Автор"
-
-#~ msgid "more info"
-#~ msgstr "подробнее"
 
 #~ msgid "More feeds"
 #~ msgstr "Другие каналы"
@@ -3644,9 +3873,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Not logged in"
 #~ msgstr "Вход не произведен"
-
-#~ msgid "Preview article"
-#~ msgstr "Предварительный просмотр"
 
 #~ msgid "Sorry, your browser does not support sandboxed iframes."
 #~ msgstr "Извините, Ваш броузер не поддерживает sandboxed iframes."
@@ -3853,9 +4079,6 @@ msgstr "Общие URL очищены."
 #~ msgid "Generate new key"
 #~ msgstr "Создать новый ключ"
 
-#~ msgid "Link instance"
-#~ msgstr "Связать инсталляцию"
-
 #~ msgid ""
 #~ "You can connect other instances of Tiny Tiny RSS to this one to share "
 #~ "Popular feeds. Link to this instance of Tiny Tiny RSS by using this URL:"
@@ -3930,9 +4153,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Details"
 #~ msgstr "Подробнее"
-
-#~ msgid "No recent articles matching this filter have been found."
-#~ msgstr "Не найдено недавних статей, удовлетворяющих фильтру."
 
 #~ msgid "All done. %d out of %d articles imported."
 #~ msgstr "Все сделано. %d из of %d статей импортированы."
@@ -4035,9 +4255,6 @@ msgstr "Общие URL очищены."
 #~ msgid "Unknown option: %s"
 #~ msgstr "Неизвестная опция: %s"
 
-#~ msgid "New version of Tiny Tiny RSS is available!"
-#~ msgstr "Доступная новая версия Tiny Tiny RSS!"
-
 #, fuzzy
 #~ msgid "Session failed to validate (user agent changed)"
 #~ msgstr "Ошибка проверки сессии (изменился идентификатор броузера)"
@@ -4103,10 +4320,6 @@ msgstr "Общие URL очищены."
 #~ "Вами файлы, когда обновление завершится."
 
 #, fuzzy
-#~ msgid "Ready to update."
-#~ msgstr "Готовы к обновлению."
-
-#, fuzzy
 #~ msgid "Start update"
 #~ msgstr "Обновить"
 
@@ -4150,10 +4363,6 @@ msgstr "Общие URL очищены."
 #, fuzzy
 #~ msgid "Published articles and generated feeds"
 #~ msgstr "Заново оценить статьи в выбранных каналах?"
-
-#, fuzzy
-#~ msgid "Articles shared by URL"
-#~ msgstr "Расшарить статью по ссылке"
 
 #~ msgid "These feeds have not been updated because of errors:"
 #~ msgstr "Эти каналы не были обновлены из-за ошибок:"
@@ -4266,9 +4475,6 @@ msgstr "Общие URL очищены."
 #~ msgid "Please backup your database before proceeding."
 #~ msgstr "Пожалуйста, сохраните вашу базу данных перед продолжением."
 
-#~ msgid "Checking version... "
-#~ msgstr "Проверяется версия... "
-
 #~ msgid "ERROR!"
 #~ msgstr "Ошибка!"
 
@@ -4298,9 +4504,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Link"
 #~ msgstr "Ссылка"
-
-#~ msgid "Content"
-#~ msgstr "Содержимое"
 
 #~ msgid "Article Date"
 #~ msgstr "Дата Статьи"
@@ -4372,9 +4575,6 @@ msgstr "Общие URL очищены."
 #~ msgid "Clearing credentials..."
 #~ msgstr "Очистить данные канала."
 
-#~ msgid "Updated"
-#~ msgstr "Обновлено"
-
 #~ msgid ""
 #~ "Your browser doesn't support Javascript, which is required\n"
 #~ "\t\t\tfor this application to function properly. Please check your\n"
@@ -4432,9 +4632,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "Press any key to close this window."
 #~ msgstr "Нажмите любую клавишу для закрытия этого окна"
-
-#~ msgid "My Feeds"
-#~ msgstr "Мои каналы"
 
 #~ msgid "Other Feeds"
 #~ msgstr "Другие каналы"
@@ -4754,9 +4951,6 @@ msgstr "Общие URL очищены."
 #~ "пользовательских группировках SQL запросов. Эта возможность строго "
 #~ "экспериментальная и не удобна в работе. Использовать с осторожностью."
 
-#~ msgid "Show additional information in feedlist"
-#~ msgstr "Показывать расширенную информацию в списке каналов"
-
 #~ msgid "Prefer more accurate feedlist counters to UI speed"
 #~ msgstr ""
 #~ "Предпочитать более точные счётчики списка каналов для скорости "
@@ -4903,9 +5097,6 @@ msgstr "Общие URL очищены."
 
 #~ msgid "(linked to %s)"
 #~ msgstr "(ссылка на %s)"
-
-#~ msgid "E-mail has been changed."
-#~ msgstr "E-mail был изменен."
 
 #~ msgid "Change e-mail"
 #~ msgstr "Изменить e-mail"

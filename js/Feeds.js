@@ -1,8 +1,9 @@
 'use strict'
 
-/* global __, App, Headlines, xhrPost, dojo, dijit, Form, fox, PluginHost, Notify, $$ */
+/* global __, App, Headlines, xhr, dojo, dijit, fox, PluginHost, Notify, fox */
 
 const	Feeds = {
+	_default_feed_id: -3,
 	counters_last_request: 0,
 	_active_feed_id: undefined,
 	_active_feed_is_cat: false,
@@ -12,6 +13,19 @@ const	Feeds = {
 	_search_query: false,
 	last_search_query: [],
 	_viewfeed_wait_timeout: false,
+	_feeds_holder_observer: new IntersectionObserver(
+		(entries/*, observer*/) => {
+			entries.forEach((entry) => {
+				//console.log('feeds',entry.target, entry.intersectionRatio);
+
+				if (entry.intersectionRatio == 0)
+					Feeds.onHide(entry);
+				else
+					Feeds.onShow(entry);
+			});
+		},
+		{threshold: [0, 1], root: document.querySelector("body")}
+	),
 	_counters_prev: [],
 	// NOTE: this implementation is incomplete
 	// for general objects but good enough for counters
@@ -99,40 +113,47 @@ const	Feeds = {
 		this.hideOrShowFeeds(App.getInitParam("hide_read_feeds"));
 		this._counters_prev = elems;
 
-		PluginHost.run(PluginHost.HOOK_COUNTERS_PROCESSED);
+		PluginHost.run(PluginHost.HOOK_COUNTERS_PROCESSED, elems);
 	},
 	reloadCurrent: function(method) {
 		if (this.getActive() != undefined) {
-			console.log("reloadCurrent: " + method);
+			console.log("reloadCurrent", this.getActive(), this.activeIsCat(), method);
 
 			this.open({feed: this.getActive(), is_cat: this.activeIsCat(), method: method});
 		}
-		return false; // block unneeded form submits
 	},
+	openDefaultFeed: function() {
+		this.open({feed: this._default_feed_id});
+	},
+   onViewModeChanged: function() {
+		// TODO: is this still needed?
+      App.find("body").setAttribute("view-mode",
+			dijit.byId("toolbar-main").getValues().view_mode);
+
+      return Feeds.reloadCurrent('');
+   },
 	openNextUnread: function() {
-		const is_cat = this.activeIsCat();
-		const nuf = this.getNextUnread(this.getActive(), is_cat);
-		if (nuf) this.open({feed: nuf, is_cat: is_cat});
+		const [feed, is_cat] = this.getNextUnread(this.getActive(), this.activeIsCat());
+
+		if (feed !== false)
+			this.open({feed: feed, is_cat: is_cat});
 	},
 	toggle: function() {
 		Element.toggle("feeds-holder");
-
-		const splitter = $("feeds-holder_splitter");
-
-		Element.visible("feeds-holder") ? splitter.show() : splitter.hide();
-
-		dijit.byId("main").resize();
-
-		Headlines.updateCurrentUnread();
 	},
 	cancelSearch: function() {
 		this._search_query = "";
 		this.reloadCurrent();
 	},
-	requestCounters: function() {
-		xhrPost("backend.php", {op: "rpc", method: "getAllCounters", seq: App.next_seq()}, (transport) => {
-			App.handleRpcJson(transport);
-		});
+	// null = get all data, [] would give empty response for specific type
+	requestCounters: function(feed_ids = null, label_ids = null) {
+		xhr.json("backend.php", {op: "rpc",
+							method: "getAllCounters",
+							"feed_ids[]": feed_ids,
+							"feed_id_count": feed_ids ? feed_ids.length : -1,
+							"label_ids[]": label_ids,
+							"label_id_count": label_ids ? label_ids.length : -1,
+							seq: App.next_seq()});
 	},
 	reload: function() {
 		try {
@@ -180,7 +201,7 @@ const	Feeds = {
 				dojo.disconnect(tmph);
 			});
 
-			$("feeds-holder").appendChild(tree.domNode);
+			App.byId("feeds-holder").appendChild(tree.domNode);
 
 			const tmph2 = dojo.connect(tree, 'onLoad', function () {
 				dojo.disconnect(tmph2);
@@ -199,8 +220,22 @@ const	Feeds = {
 			App.Error.report(e);
 		}
 	},
+	onHide: function() {
+		App.byId("feeds-holder_splitter").hide();
+
+		dijit.byId("main").resize();
+		Headlines.updateCurrentUnread();
+	},
+	onShow: function() {
+		App.byId("feeds-holder_splitter").show();
+
+		dijit.byId("main").resize();
+		Headlines.updateCurrentUnread();
+	},
 	init: function() {
 		console.log("in feedlist init");
+
+		this._feeds_holder_observer.observe(App.byId("feeds-holder"));
 
 		App.setLoadingProgress(50);
 
@@ -208,14 +243,14 @@ const	Feeds = {
 		//document.onkeypress = (event) => { return App.hotkeyHandler(event) };
 		window.onresize = () => { Headlines.scrollHandler(); }
 
-		/* global hash_get */
-		const hash_feed_id = hash_get('f');
-		const hash_feed_is_cat = hash_get('c') == "1";
+		const hash = App.Hash.get();
 
-		if (hash_feed_id != undefined) {
-			this.open({feed: hash_feed_id, is_cat: hash_feed_is_cat});
+		console.log('got hash', hash);
+
+		if (hash.f != undefined) {
+			this.open({feed: parseInt(hash.f), is_cat: parseInt(hash.c)});
 		} else {
-			this.open({feed: -3});
+			this.openDefaultFeed();
 		}
 
 		this.hideOrShowFeeds(App.getInitParam("hide_read_feeds"));
@@ -223,36 +258,47 @@ const	Feeds = {
 		if (App.getInitParam("is_default_pw")) {
 			console.warn("user password is at default value");
 
-			if (dijit.byId("defaultPasswordDlg"))
-				dijit.byId("defaultPasswordDlg").destroyRecursive();
+			const dialog = new fox.SingleUseDialog({
+				title: __("Your password is at default value"),
+				content: `<div class='alert alert-error'>
+					${__("You are using default tt-rss password. Please change it in the Preferences (Personal data / Authentication).")}
+				</div>
 
-			xhrPost("backend.php", {op: 'dlg', method: 'defaultpasswordwarning'}, (transport) => {
-				const dialog = new dijit.Dialog({
-					title: __("Your password is at default value"),
-					content: transport.responseText,
-					id: 'defaultPasswordDlg',
-					style: "width: 600px",
-					onCancel: function () {
-						return true;
-					},
-					onExecute: function () {
-						return true;
-					},
-					onClose: function () {
-						return true;
-					}
-				});
-
-				dialog.show();
+				<footer class='text-center'>
+					<button dojoType='dijit.form.Button' class='alt-primary' onclick="document.location.href = 'prefs.php'">
+						${__('Open Preferences')}
+					</button>
+					<button dojoType='dijit.form.Button' onclick="App.dialogOf(this).hide()">
+						${__('Close this window')}
+					</button>
+				</footer>`
 			});
+
+			dialog.show();
+		}
+
+		if (App.getInitParam("safe_mode")) {
+			const dialog = new fox.SingleUseDialog({
+				title: __("Safe mode"),
+				content: `<div class='alert alert-info'>
+						${__('Tiny Tiny RSS is running in safe mode. All themes and plugins are disabled. You will need to log out and back in to disable it.')}
+					</div>
+					<footer class='text-center'>
+						<button dojoType='dijit.form.Button' type='submit' class='alt-primary'>
+							${__('Close this window')}
+						</button>
+					</footer>`
+			});
+
+			dialog.show();
 		}
 
 		// bw_limit disables timeout() so we request initial counters separately
 		if (App.getInitParam("bw_limit")) {
-			this.requestCounters(true);
+			this.requestCounters();
 		} else {
 			setTimeout(() => {
-				this.requestCounters(true);
+				this.requestCounters();
 				setInterval(() => { this.requestCounters(); }, 60 * 1000)
 			}, 250);
 		}
@@ -266,15 +312,22 @@ const	Feeds = {
 	setActive: function(id, is_cat) {
 		console.log('setActive', id, is_cat);
 
-		/* global hash_set */
-		hash_set('f', id);
-		hash_set('c', is_cat ? 1 : 0);
+		window.requestIdleCallback(() => {
+			App.Hash.set({f: id, c: is_cat ? 1 : 0});
+		});
 
 		this._active_feed_id = id;
 		this._active_feed_is_cat = is_cat;
 
-		$("headlines-frame").setAttribute("feed-id", id);
-		$("headlines-frame").setAttribute("is-cat", is_cat ? 1 : 0);
+		const container = App.byId("headlines-frame");
+
+		// TODO @deprecated: these two should be removed (replaced with data- attributes below)
+		container.setAttribute("feed-id", id);
+		container.setAttribute("is-cat", is_cat ? 1 : 0);
+		// ^
+
+		container.setAttribute("data-feed-id", id);
+		container.setAttribute("data-is-cat", is_cat ? "true" : "false");
 
 		this.select(id, is_cat);
 
@@ -288,7 +341,7 @@ const	Feeds = {
 	toggleUnread: function() {
 		const hide = !App.getInitParam("hide_read_feeds");
 
-		xhrPost("backend.php", {op: "rpc", method: "setpref", key: "HIDE_READ_FEEDS", value: hide}, () => {
+		xhr.post("backend.php", {op: "rpc", method: "setpref", key: "HIDE_READ_FEEDS", value: hide}, () => {
 			this.hideOrShowFeeds(hide);
 			App.setInitParam("hide_read_feeds", hide);
 		});
@@ -299,14 +352,13 @@ const	Feeds = {
 		if (tree)
 			return tree.hideRead(hide, App.getInitParam("hide_read_shows_special"));*/
 
-		$$("body")[0].setAttribute("hide-read-feeds", !!hide);
-		$$("body")[0].setAttribute("hide-read-shows-special", !!App.getInitParam("hide_read_shows_special"));
+		App.findAll("body")[0].setAttribute("hide-read-feeds", !!hide);
+		App.findAll("body")[0].setAttribute("hide-read-shows-special", !!App.getInitParam("hide_read_shows_special"));
 	},
 	open: function(params) {
 		const feed = params.feed;
 		const is_cat = !!params.is_cat || false;
 		const offset = params.offset || 0;
-		const viewfeed_debug = params.viewfeed_debug;
 		const append = params.append || false;
 		const method = params.method;
 		// this is used to quickly switch between feeds, sets active but xhr is on a timeout
@@ -328,10 +380,7 @@ const	Feeds = {
 			}, 10 * 1000);
 		}
 
-		Form.enable("toolbar-main");
-
-		let query = Object.assign({op: "feeds", method: "view", feed: feed},
-			dojo.formToObject("toolbar-main"));
+		let query = {...{op: "feeds", method: "view", feed: feed}, ...dojo.formToObject("toolbar-main")};
 
 		if (method) query.m = method;
 
@@ -351,31 +400,21 @@ const	Feeds = {
 			query.m = "ForceUpdate";
 		}
 
-		Form.enable("toolbar-main");
-
-		if (!delayed)
-			if (!this.setExpando(feed, is_cat,
-				(is_cat) ? 'images/indicator_tiny.gif' : 'images/indicator_white.gif'))
-				Notify.progress("Loading, please wait...", true);
-
 		query.cat = is_cat;
 
 		this.setActive(feed, is_cat);
 
-		if (viewfeed_debug) {
-			window.open("backend.php?" +
-				dojo.objectToQuery(
-					Object.assign({csrf_token: App.getInitParam("csrf_token")}, query)
-				));
-		}
-
 		window.clearTimeout(this._viewfeed_wait_timeout);
 		this._viewfeed_wait_timeout = window.setTimeout(() => {
-			xhrPost("backend.php", query, (transport) => {
+
+			this.showLoading(feed, is_cat, true);
+			//Notify.progress("Loading, please wait...", true);*/
+
+			xhr.json("backend.php", query, (reply) => {
 				try {
 					window.clearTimeout(this._infscroll_timeout);
-					this.setExpando(feed, is_cat, 'images/blank_icon.gif');
-					Headlines.onLoaded(transport, offset, append);
+					this.showLoading(feed, is_cat, false);
+					Headlines.onLoaded(reply, offset, append);
 					PluginHost.run(PluginHost.HOOK_FEED_LOADED, [feed, is_cat]);
 				} catch (e) {
 					App.Error.report(e);
@@ -390,8 +429,7 @@ const	Feeds = {
 
 			Notify.progress("Marking all feeds as read...");
 
-			xhrPost("backend.php", {op: "feeds", method: "catchupAll"}, () => {
-				this.requestCounters(true);
+			xhr.json("backend.php", {op: "feeds", method: "catchupAll"}, () => {
 				this.reloadCurrent();
 			});
 
@@ -436,17 +474,15 @@ const	Feeds = {
 
 		Notify.progress("Loading, please wait...", true);
 
-		xhrPost("backend.php", catchup_query, (transport) => {
-			App.handleRpcJson(transport);
-
+		xhr.json("backend.php", catchup_query, () => {
 			const show_next_feed = App.getInitParam("on_catchup_show_next_feed");
 
 			// only select next unread feed if catching up entirely (as opposed to last week etc)
 			if (show_next_feed && !mode) {
-				const nuf = this.getNextUnread(feed, is_cat);
+				const [next_feed, next_is_cat] = this.getNextUnread(feed, is_cat);
 
-				if (nuf) {
-					this.open({feed: nuf, is_cat: is_cat});
+				if (next_feed !== false) {
+					this.open({feed: next_feed, is_cat: next_is_cat});
 				}
 			} else if (feed == this.getActive() && is_cat == this.activeIsCat()) {
 				this.reloadCurrent();
@@ -465,9 +501,9 @@ const	Feeds = {
 
 		if (App.getInitParam("confirm_feed_catchup") != 1 || confirm(str)) {
 
-			const rows = $$("#headlines-frame > div[id*=RROW][class*=Unread][data-orig-feed-id='" + id + "']");
+			const rows = App.findAll("#headlines-frame > div[id*=RROW][class*=Unread][data-orig-feed-id='" + id + "']");
 
-			rows.each((row) => {
+			rows.forEach((row) => {
 				row.removeClassName("Unread");
 			})
 		}
@@ -538,74 +574,119 @@ const	Feeds = {
 	setIcon: function(feed, is_cat, src) {
 		const tree = dijit.byId("feedTree");
 
-		if (tree) return tree.setFeedIcon(feed, is_cat, src);
+		if (tree) return tree.setIcon(feed, is_cat, src);
 	},
-	setExpando: function(feed, is_cat, src) {
+	showLoading: function(feed, is_cat, show) {
 		const tree = dijit.byId("feedTree");
 
-		if (tree) return tree.setFeedExpandoIcon(feed, is_cat, src);
+		if (tree) return tree.showLoading(feed, is_cat, show);
 
 		return false;
 	},
+	getNextFeed: function(feed, is_cat) {
+		const tree = dijit.byId("feedTree");
+
+		if (tree) return tree.getNextFeed(feed, is_cat, false);
+
+		return [false, false];
+	},
+	getPreviousFeed: function(feed, is_cat) {
+		const tree = dijit.byId("feedTree");
+
+		if (tree) return tree.getPreviousFeed(feed, is_cat);
+
+		return [false, false];
+	},
 	getNextUnread: function(feed, is_cat) {
 		const tree = dijit.byId("feedTree");
-		const nuf = tree.model.getNextUnreadFeed(feed, is_cat);
 
-		if (nuf)
-			return tree.model.store.getValue(nuf, 'bare_id');
+		if (tree) return tree.getNextUnread(feed, is_cat);
+
+		return [false, false];
 	},
 	search: function() {
-		if (dijit.byId("searchDlg"))
-			dijit.byId("searchDlg").destroyRecursive();
+		xhr.json("backend.php",
+					{op: "feeds", method: "search"},
+					(reply) => {
+						try {
+							const dialog = new fox.SingleUseDialog({
+								content: `
+									<form onsubmit='return false'>
+										<section>
+											<fieldset>
+												<input dojoType='dijit.form.ValidationTextBox' id='search_query'
+													style='font-size : 16px; width : 540px;'
+													placeHolder="${__("Search %s...").replace("%s", Feeds.getName(Feeds.getActive(), Feeds.activeIsCat()))}"
+													name='query' type='search' value=''>
+											</fieldset>
 
-		xhrPost("backend.php",
-					{op: "feeds", method: "search",
-						param: Feeds.getActive() + ":" + Feeds.activeIsCat()},
-					(transport) => {
+											${reply.show_language ?
+												`
+												<fieldset>
+													<label class='inline'>${__("Language:")}</label>
+													${App.FormFields.select_tag("search_language", reply.default_language, reply.all_languages,
+															{title: __('Used for word stemming')}, "search_language")}
+												</fieldset>
+												` : ''}
+										</section>
 
-						const dialog = new dijit.Dialog({
-							id: "searchDlg",
-							content: transport.responseText,
-							title: __("Search"),
-							style: "width: 600px",
-							execute: function () {
-								if (this.validate()) {
-									Feeds._search_query = this.attr('value');
+										<footer>
+											${reply.show_syntax_help ?
+												`${App.FormFields.button_tag(App.FormFields.icon("help") + " " + __("Search syntax"), "",
+													{class: 'alt-info pull-left', onclick: "window.open('https://tt-rss.org/wiki/SearchSyntax')"})}
+													` : ''}
 
-									// disallow empty queries
-									if (!Feeds._search_query.query)
-										Feeds._search_query = false;
+											${App.FormFields.submit_tag(App.FormFields.icon("search") + " " + __('Search'), {onclick: "App.dialogOf(this).execute()"})}
+											${App.FormFields.cancel_dialog_tag(__('Cancel'))}
+										</footer>
+									</form>
+								`,
+								title: __("Search"),
+								execute: function () {
+									if (this.validate()) {
+										Feeds._search_query = this.attr('value');
 
-									this.hide();
-									Feeds.reloadCurrent();
+										// disallow empty queries
+										if (!Feeds._search_query.query)
+											Feeds._search_query = false;
+
+										this.hide();
+										Feeds.reloadCurrent();
+									}
+								},
+							});
+
+							const tmph = dojo.connect(dialog, 'onShow', function () {
+								dojo.disconnect(tmph);
+
+								if (Feeds._search_query) {
+									if (Feeds._search_query.query)
+										dijit.byId('search_query')
+											.attr('value', Feeds._search_query.query);
+
+									if (Feeds._search_query.search_language)
+										dijit.byId('search_language')
+											.attr('value', Feeds._search_query.search_language);
 								}
-							},
-						});
+							});
 
-						const tmph = dojo.connect(dialog, 'onShow', function () {
-							dojo.disconnect(tmph);
-
-							if (Feeds._search_query) {
-								if (Feeds._search_query.query)
-									dijit.byId('search_query')
-										.attr('value', Feeds._search_query.query);
-
-								if (Feeds._search_query.search_language)
-									dijit.byId('search_language')
-										.attr('value', Feeds._search_query.search_language);
-							}
-
-						});
-
-						dialog.show();
+							dialog.show();
+						} catch (e) {
+							App.Error.report(e);
+						}
 					});
 
 	},
 	updateRandom: function() {
 		console.log("in update_random_feed");
 
-		xhrPost("backend.php", {op: "rpc", method: "updaterandomfeed"}, (transport) => {
-			App.handleRpcJson(transport, true);
+		xhr.json("backend.php", {op: "rpc", method: "updaterandomfeed"}, () => {
+			//
 		});
 	},
+	renderIcon: function(feed_id, exists) {
+		return feed_id && exists ?
+			`<img class="icon" src="${App.escapeHtml(App.getInitParam("icons_url"))}/${feed_id}.ico">` :
+				`<i class='icon-no-feed material-icons'>rss_feed</i>`;
+	}
 };

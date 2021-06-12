@@ -1,26 +1,23 @@
 <?php
 class Mailer {
-	// TODO: support HTML mail (i.e. MIME messages)
-
-	private $last_error = "Unable to send mail: check local configuration.";
+	private $last_error = "";
 
 	function mail($params) {
 
-		$to_name = $params["to_name"];
+		$to_name = $params["to_name"] ?? "";
 		$to_address = $params["to_address"];
 		$subject = $params["subject"];
 		$message = $params["message"];
-		$message_html = $params["message_html"];
-		$from_name = $params["from_name"] ? $params["from_name"] : SMTP_FROM_NAME;
-		$from_address = $params["from_address"] ? $params["from_address"] : SMTP_FROM_ADDRESS;
-
-		$additional_headers = $params["headers"] ? $params["headers"] : [];
+		$message_html = $params["message_html"] ?? "";
+		$from_name = $params["from_name"] ?? Config::get(Config::SMTP_FROM_NAME);
+		$from_address = $params["from_address"] ?? Config::get(Config::SMTP_FROM_ADDRESS);
+		$additional_headers = $params["headers"] ?? [];
 
 		$from_combined = $from_name ? "$from_name <$from_address>" : $from_address;
 		$to_combined = $to_name ? "$to_name <$to_address>" : $to_address;
 
-		if (defined('_LOG_SENT_MAIL') && _LOG_SENT_MAIL)
-			Logger::get()->log(E_USER_NOTICE, "Sending mail from $from_combined to $to_combined [$subject]: $message");
+		if (Config::get(Config::LOG_SENT_MAIL))
+			Logger::log(E_USER_NOTICE, "Sending mail from $from_combined to $to_combined [$subject]: $message");
 
 		// HOOK_SEND_MAIL plugin instructions:
 		// 1. return 1 or true if mail is handled
@@ -40,11 +37,18 @@ class Mailer {
 
 		$headers = [ "From: $from_combined", "Content-Type: text/plain; charset=UTF-8" ];
 
-		return mail($to_combined, $subject, $message, implode("\r\n", array_merge($headers, $additional_headers)));
+		$rc = mail($to_combined, $subject, $message, implode("\r\n", array_merge($headers, $additional_headers)));
+
+		if (!$rc) {
+			$this->set_error(error_get_last()['message']);
+		}
+
+		return $rc;
 	}
 
 	function set_error($message) {
 		$this->last_error = $message;
+		user_error("Error sending mail: $message", E_USER_WARNING);
 	}
 
 	function error() {

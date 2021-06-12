@@ -7,9 +7,9 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 		// save state in localStorage instead of cookies
 		// reference: https://stackoverflow.com/a/27968996
 		_saveExpandedNodes: function(){
-			if(this.persist && this.cookieName){
-				var ary = [];
-				for(var id in this._openedNodes){
+			if (this.persist && this.cookieName){
+				const ary = [];
+				for (const id in this._openedNodes){
 					ary.push(id);
 				}
 				// Was:
@@ -21,16 +21,16 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			// summary:
 			//    Load in which nodes should be opened automatically
 			this._openedNodes = {};
-			if(this.persist && this.cookieName){
+			if (this.persist && this.cookieName){
 				// Was:
 				// var oreo = cookie(this.cookieName);
-				var oreo = localStorage.getItem(this.cookieName);
+				let oreo = localStorage.getItem(this.cookieName);
 				// migrate old data if nothing in localStorage
-				if(oreo == null || oreo === '') {
+				if (oreo == null || oreo === '') {
 					oreo = cookie(this.cookieName);
 					cookie(this.cookieName, null, { expires: -1 });
 				}
-				if(oreo){
+				if (oreo){
 					array.forEach(oreo.split(','), function(item){
 						this._openedNodes[item] = true;
 					}, this);
@@ -82,6 +82,9 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			}
 
 			if (id.match("FEED:")) {
+				tnode.rowNode.setAttribute('data-feed-id', bare_id);
+				tnode.rowNode.setAttribute('data-is-cat', "false");
+
 				const menu = new dijit.Menu();
 				menu.row_id = bare_id;
 
@@ -102,7 +105,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 						label: __("Debug feed"),
 						onClick: function() {
 							/* global __csrf_token */
-							App.postOpenWindow("backend.php", {op: "feeds", method: "update_debugger",
+							App.postOpenWindow("backend.php", {op: "feeds", method: "updatedebugger",
 								feed_id: this.getParent().row_id, csrf_token: __csrf_token});
 						}}));
 				}
@@ -132,8 +135,16 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			}
 
 			if (id.match("CAT:")) {
-				tnode.loadingNode = dojo.create('img', { className: 'loadingNode', src: 'images/blank_icon.gif'});
+				tnode.rowNode.setAttribute('data-feed-id', bare_id);
+				tnode.rowNode.setAttribute('data-is-cat', "true");
+
+				tnode.loadingNode = dojo.create('img', { className: 'loadingNode', src: App.getInitParam('icon_blank')});
 				domConstruct.place(tnode.loadingNode, tnode.labelNode, 'after');
+			}
+
+			if (id.match("FEED:")) {
+				tnode.loadingNode = dojo.create('img', { className: 'loadingNode', src: App.getInitParam('icon_blank')});
+				domConstruct.place(tnode.loadingNode, tnode.expandoNode, 'only');
 			}
 
 			if (id.match("CAT:") && bare_id == -1) {
@@ -191,9 +202,14 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			return (item.unread <= 0) ? "dijitTreeLabel" : "dijitTreeLabel Unread";
 		},
 		getRowClass: function (item/*, opened */) {
-			let rc = "dijitTreeRow";
+			let rc = "dijitTreeRow dijitTreeRowFlex";
 
 			const is_cat = String(item.id).indexOf('CAT:') != -1;
+
+			if (is_cat)
+				rc += " Is_Cat";
+			else
+				rc += " Is_Feed";
 
 			if (!is_cat && item.error != '') rc += " Error";
 			if (item.unread > 0) rc += " Unread";
@@ -286,7 +302,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 
 				// focus headlines to route key events there
 				setTimeout(() => {
-					$("headlines-frame").focus();
+					App.byId("headlines-frame").focus();
 
 					if (treeNode) {
 						const node = treeNode.rowNode;
@@ -295,7 +311,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 						if (node && tree) {
 							// scroll tree to selection if needed
 							if (node.offsetTop < tree.scrollTop || node.offsetTop > tree.scrollTop + tree.clientHeight) {
-								$("feedTree").scrollTop = node.offsetTop;
+								App.byId("feedTree").scrollTop = node.offsetTop;
 							}
 						}
 					}
@@ -303,7 +319,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 				}, 0);
 			}
 		},
-		setFeedIcon: function(feed, is_cat, src) {
+		setIcon: function(feed, is_cat, src) {
 			let treeNode;
 
 			if (is_cat)
@@ -313,13 +329,19 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 
 			if (treeNode) {
 				treeNode = treeNode[0];
-				const icon = dojo.create('img', { src: src, className: 'icon' });
-				domConstruct.place(icon, treeNode.iconNode, 'only');
-				return true;
+
+				// could be <i material>
+				const icon = treeNode.iconNode.querySelector('img.icon');
+
+				if (icon) {
+					icon.src = src;
+
+					return true;
+				}
 			}
 			return false;
 		},
-		setFeedExpandoIcon: function(feed, is_cat, src) {
+		showLoading: function(feed, is_cat, show) {
 			let treeNode;
 
 			if (is_cat)
@@ -329,14 +351,17 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 
 			if (treeNode) {
 				treeNode = treeNode[0];
-				if (treeNode.loadingNode) {
-					treeNode.loadingNode.src = src;
-					return true;
+
+				if (show) {
+					treeNode.loadingNode.addClassName("visible");
+					treeNode.loadingNode.setAttribute("src",
+						is_cat ? App.getInitParam("icon_three_dots") : App.getInitParam("icon_oval"));
 				} else {
-					const icon = dojo.create('img', { src: src, className: 'loadingExpando' });
-					domConstruct.place(icon, treeNode.expandoNode, 'only');
-					return true;
+					treeNode.loadingNode.removeClassName("visible");
+					treeNode.loadingNode.setAttribute("src", App.getInitParam("icon_blank"))
 				}
+
+				return true
 			}
 
 			return false;
@@ -360,7 +385,28 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 
 			}
 		},
-		getNextFeed: function (feed, is_cat) {
+		getNextUnread: function(feed, is_cat) {
+			return this.getNextFeed(feed, is_cat, true);
+		},
+		_nextTreeItemFromIndex: function (start, unread_only) {
+			const items = this.model.store._arrayOfAllItems;
+
+			for (let i = start+1; i < items.length; i++) {
+				const id = String(items[i].id);
+				const box = this._itemNodesMap[id];
+				const unread = parseInt(items[i].unread);
+
+				if (box && (!unread_only || unread > 0)) {
+					const row = box[0].rowNode;
+					const cat = box[0].rowNode.parentNode.parentNode;
+
+					if (Element.visible(cat) && Element.visible(row)) {
+						return items[i];
+					}
+				}
+			}
+		},
+		getNextFeed: function (feed, is_cat, unread_only = false) {
 			let treeItem;
 
 			if (is_cat) {
@@ -370,34 +416,39 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			}
 
 			const items = this.model.store._arrayOfAllItems;
-			let item = items[0];
+			const start = items.indexOf(treeItem);
 
-			for (let i = 0; i < items.length; i++) {
-				if (items[i] == treeItem) {
+			if (start != -1) {
+				let item = this._nextTreeItemFromIndex(start, unread_only);
 
-					for (let j = i+1; j < items.length; j++) {
-						const id = String(items[j].id);
-						const box = this._itemNodesMap[id];
-
-						if (box) {
-							const row = box[0].rowNode;
-							const cat = box[0].rowNode.parentNode.parentNode;
-
-							if (Element.visible(cat) && Element.visible(row)) {
-								item = items[j];
-								break;
-							}
-						}
-					}
-					break;
+				// let's try again from the top
+				// 0 (instead of -1) to skip Special category
+				if (!item) {
+					item = this._nextTreeItemFromIndex(0, unread_only);
 				}
+
+				if (item)
+					return [this.model.store.getValue(item, 'bare_id'),
+						!this.model.store.getValue(item, 'id').match('FEED:')];
 			}
 
-			if (item) {
-				return [this.model.store.getValue(item, 'bare_id'),
-					!this.model.store.getValue(item, 'id').match('FEED:')];
-			} else {
-				return false;
+			return [false, false];
+		},
+		_prevTreeItemFromIndex: function (start) {
+			const items = this.model.store._arrayOfAllItems;
+
+			for (let i = start-1; i > 0; i--) {
+				const id = String(items[i].id);
+				const box = this._itemNodesMap[id];
+
+				if (box) {
+					const row = box[0].rowNode;
+					const cat = box[0].rowNode.parentNode.parentNode;
+
+					if (Element.visible(cat) && Element.visible(row)) {
+						return items[i];
+					}
+				}
 			}
 		},
 		getPreviousFeed: function (feed, is_cat) {
@@ -410,37 +461,22 @@ define(["dojo/_base/declare", "dojo/dom-construct", "dojo/_base/array", "dojo/co
 			}
 
 			const items = this.model.store._arrayOfAllItems;
-			let item = items[0] == treeItem ? items[items.length-1] : items[0];
+			const start = items.indexOf(treeItem);
 
-			for (let i = 0; i < items.length; i++) {
-				if (items[i] == treeItem) {
+			if (start != -1) {
+				let item = this._prevTreeItemFromIndex(start);
 
-					for (let j = i-1; j > 0; j--) {
-						const id = String(items[j].id);
-						const box = this._itemNodesMap[id];
-
-						if (box) {
-							const row = box[0].rowNode;
-							const cat = box[0].rowNode.parentNode.parentNode;
-
-							if (Element.visible(cat) && Element.visible(row)) {
-								item = items[j];
-								break;
-							}
-						}
-
-					}
-					break;
+				// wrap from the bottom
+				if (!item) {
+					item = this._prevTreeItemFromIndex(items.length);
 				}
+
+				if (item)
+					return [this.model.store.getValue(item, 'bare_id'),
+						!this.model.store.getValue(item, 'id').match('FEED:')];
 			}
 
-			if (item) {
-				return [this.model.store.getValue(item, 'bare_id'),
-					!this.model.store.getValue(item, 'id').match('FEED:')];
-			} else {
-				return false;
-			}
-
+			return [false, false];
 		},
 		getFeedCategory: function(feed) {
 			try {

@@ -1,22 +1,9 @@
 <?php
-	define('EXPECTED_CONFIG_VERSION', 26);
-	define('SCHEMA_VERSION', 140);
-
 	define('LABEL_BASE_INDEX', -1024);
 	define('PLUGIN_FEED_BASE_INDEX', -128);
 
-	define('COOKIE_LIFETIME_LONG', 86400*365);
-
-	// this CSS file is included for everyone (if it exists in themes.local)
-	// on login, registration, and main (index and prefs) pages
-	define('LOCAL_OVERRIDE_STYLESHEET', '.local-overrides.css');
-
-	$fetch_last_error = false;
-	$fetch_last_error_code = false;
-	$fetch_last_content_type = false;
-	$fetch_last_error_content = false; // curl only for the time being
-	$fetch_effective_url = false;
-	$fetch_curl_used = false;
+	/** constant is @deprecated, use Config::SCHEMA_VERSION instead */
+	define('SCHEMA_VERSION', Config::SCHEMA_VERSION);
 
 	if (version_compare(PHP_VERSION, '8.0.0', '<')) {
 		libxml_disable_entity_loader(true);
@@ -34,71 +21,31 @@
 		error_reporting(E_ALL & ~E_NOTICE);
 	}
 
-	ini_set('display_errors', 0);
-	ini_set('display_startup_errors', 0);
+	ini_set('display_errors', "false");
+	ini_set('display_startup_errors', "false");
 
-	require_once 'config.php';
+	// config.php is optional
+	if (stream_resolve_include_path("config.php"))
+		require_once "config.php";
 
-	/**
-	 * Define a constant if not already defined
-	 */
-	function define_default($name, $value) {
-		defined($name) or define($name, $value);
-	}
+	require_once "autoload.php";
 
-	/* Some tunables you can override in config.php using define():	*/
-
-	define_default('FEED_FETCH_TIMEOUT', 45);
-	// How may seconds to wait for response when requesting feed from a site
-	define_default('FEED_FETCH_NO_CACHE_TIMEOUT', 15);
-	// How may seconds to wait for response when requesting feed from a
-	// site when that feed wasn't cached before
-	define_default('FILE_FETCH_TIMEOUT', 45);
-	// Default timeout when fetching files from remote sites
-	define_default('FILE_FETCH_CONNECT_TIMEOUT', 15);
-	// How many seconds to wait for initial response from website when
-	// fetching files from remote sites
-	define_default('DAEMON_UPDATE_LOGIN_LIMIT', 30);
-	// stop updating feeds if users haven't logged in for X days
-	define_default('DAEMON_FEED_LIMIT', 500);
-	// feed limit for one update batch
-	define_default('DAEMON_SLEEP_INTERVAL', 120);
-	// default sleep interval between feed updates (sec)
-	define_default('MAX_CACHE_FILE_SIZE', 64*1024*1024);
-	// do not cache files larger than that (bytes)
-	define_default('MAX_DOWNLOAD_FILE_SIZE', 16*1024*1024);
-	// do not download general files larger than that (bytes)
-	define_default('CACHE_MAX_DAYS', 7);
-	// max age in days for various automatically cached (temporary) files
-	define_default('MAX_CONDITIONAL_INTERVAL', 3600*12);
-	// max interval between forced unconditional updates for servers
-	// not complying with http if-modified-since (seconds)
-	// define_default('MAX_FETCH_REQUESTS_PER_HOST', 25);
-	// a maximum amount of allowed HTTP requests per destination host
-	// during a single update (i.e. within PHP process lifetime)
-	// this is used to not cause excessive load on the origin server on
-	// e.g. feed subscription when all articles are being processes
-	// (not implemented)
-	define_default('DAEMON_UNSUCCESSFUL_DAYS_LIMIT', 30);
-	// automatically disable updates for feeds which failed to
-	// update for this amount of days; 0 disables
-
-	/* tunables end here */
-
-	if (DB_TYPE == "pgsql") {
+	if (Config::get(Config::DB_TYPE) == "pgsql") {
 		define('SUBSTRING_FOR_DATE', 'SUBSTRING_FOR_DATE');
 	} else {
 		define('SUBSTRING_FOR_DATE', 'SUBSTRING');
 	}
 
-	/**
-	 * Return available translations names.
-	 *
-	 * @access public
-	 * @return array A array of available translations.
-	 */
+	function get_pref(string $pref_name, int $owner_uid = null) {
+		return Prefs::get($pref_name, $owner_uid ? $owner_uid : $_SESSION["uid"], $_SESSION["profile"] ?? null);
+	}
+
+	function set_pref(string $pref_name, $value, int $owner_uid = null, bool $strip_tags = true) {
+		return Prefs::set($pref_name, $value, $owner_uid ? $owner_uid : $_SESSION["uid"], $_SESSION["profile"] ?? null, $strip_tags);
+	}
+
 	function get_translations() {
-		$tr = array(
+		$t = array(
 					"auto"  => __("Detect automatically"),
 					"ar_SA" => "العربيّة (Arabic)",
 					"bg_BG" => "Bulgarian",
@@ -129,34 +76,76 @@
 					"fi_FI" => "Suomi",
 					"tr_TR" => "Türkçe");
 
-		return $tr;
+		return $t;
 	}
 
-	require_once "lib/accept-to-gettext.php";
 	require_once "lib/gettext/gettext.inc.php";
 
 	function startup_gettext() {
 
-		# Get locale from Accept-Language header
-		$lang = al2gt(array_keys(get_translations()), "text/html");
+		$selected_locale = "";
 
-		if (defined('_TRANSLATION_OVERRIDE_DEFAULT')) {
-			$lang = _TRANSLATION_OVERRIDE_DEFAULT;
-		}
+		// https://www.codingwithjesse.com/blog/use-accept-language-header/
+		if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+			$valid_langs = [];
+			$translations = array_keys(get_translations());
 
-		if ($_SESSION["uid"] && get_schema_version() >= 120) {
-			$pref_lang = get_pref("USER_LANGUAGE", $_SESSION["uid"]);
+			array_shift($translations); // remove "auto"
 
-			if ($pref_lang && $pref_lang != 'auto') {
-				$lang = $pref_lang;
+			// full locale first
+			foreach ($translations as $t) {
+				$lang = strtolower(str_replace("_", "-", (string)$t));
+				$valid_langs[$lang] = $t;
+
+				$lang = substr($lang, 0, 2);
+				if (!isset($valid_langs[$lang]))
+					$valid_langs[$lang] = $t;
+			}
+
+			// break up string into pieces (languages and q factors)
+			preg_match_all('/([a-z]{1,8}(-[a-z]{1,8})?)\s*(;\s*q\s*=\s*(1|0\.[0-9]+))?/i',
+				$_SERVER['HTTP_ACCEPT_LANGUAGE'], $lang_parse);
+
+			if (count($lang_parse[1])) {
+				// create a list like "en" => 0.8
+				$langs = array_combine($lang_parse[1], $lang_parse[4]);
+
+				if (is_array($langs)) {
+					// set default to 1 for any without q factor
+					foreach ($langs as $lang => $val) {
+						if ($val === '') $langs[$lang] = 1;
+					}
+
+					// sort list based on value
+					arsort($langs, SORT_NUMERIC);
+
+					foreach (array_keys($langs) as $lang) {
+						$lang = strtolower($lang);
+
+						foreach ($valid_langs as $vlang => $vlocale) {
+							if ($vlang == $lang) {
+								$selected_locale = $vlocale;
+								break 2;
+							}
+						}
+					}
+				}
 			}
 		}
 
-		if ($lang) {
+		if (!empty($_SESSION["uid"]) && get_schema_version() >= 120) {
+			$pref_locale = get_pref(Prefs::USER_LANGUAGE, $_SESSION["uid"]);
+
+			if (!empty($pref_locale) && $pref_locale != 'auto') {
+				$selected_locale = $pref_locale;
+			}
+		}
+
+		if ($selected_locale) {
 			if (defined('LC_MESSAGES')) {
-				_setlocale(LC_MESSAGES, $lang);
+				_setlocale(LC_MESSAGES, $selected_locale);
 			} else if (defined('LC_ALL')) {
-				_setlocale(LC_ALL, $lang);
+				_setlocale(LC_ALL, $selected_locale);
 			}
 
 			_bindtextdomain("messages", "locale");
@@ -165,86 +154,93 @@
 		}
 	}
 
-	require_once 'db-prefs.php';
 	require_once 'controls.php';
+	require_once 'controls_compat.php';
 
-	define('SELF_USER_AGENT', 'Tiny Tiny RSS/' . get_version() . ' (http://tt-rss.org/)');
+	define('SELF_USER_AGENT', 'Tiny Tiny RSS/' . Config::get_version() . ' (http://tt-rss.org/)');
 	ini_set('user_agent', SELF_USER_AGENT);
-
-	$schema_version = false;
 
 	/* compat shims */
 
+	/** function is @deprecated */
+	function get_version() {
+		return Config::get_version();
+	}
+
+	/** function is @deprecated */
+	function get_schema_version() {
+		return Config::get_schema_version();
+	}
+
+	/** function is @deprecated */
 	function _debug($msg) {
 	    Debug::log($msg);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function getFeedUnread($feed, $is_cat = false) {
-		return Feeds::getFeedArticles($feed, $is_cat, true, $_SESSION["uid"]);
+		return Feeds::_get_counters($feed, $is_cat, true, $_SESSION["uid"]);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function sanitize($str, $force_remove_images = false, $owner = false, $site_url = false, $highlight_words = false, $article_id = false) {
 		return Sanitizer::sanitize($str, $force_remove_images, $owner, $site_url, $highlight_words, $article_id);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function fetch_file_contents($params) {
 		return UrlHelper::fetch($params);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function rewrite_relative_url($url, $rel_url) {
 		return UrlHelper::rewrite_relative($url, $rel_url);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function validate_url($url) {
 		return UrlHelper::validate($url);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function authenticate_user($login, $password, $check_only = false, $service = false) {
 		return UserHelper::authenticate($login, $password, $check_only, $service);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function smart_date_time($timestamp, $tz_offset = 0, $owner_uid = false, $eta_min = false) {
 		return TimeHelper::smart_date_time($timestamp, $tz_offset, $owner_uid, $eta_min);
 	}
 
-	// @deprecated
+	/** function is @deprecated */
 	function make_local_datetime($timestamp, $long, $owner_uid = false, $no_smart_dt = false, $eta_min = false) {
 		return TimeHelper::make_local_datetime($timestamp, $long, $owner_uid, $no_smart_dt, $eta_min);
 	}
 
-	/* end compat shims */
-
-	function get_ssl_certificate_id() {
-		if ($_SERVER["REDIRECT_SSL_CLIENT_M_SERIAL"]) {
-			return sha1($_SERVER["REDIRECT_SSL_CLIENT_M_SERIAL"] .
-				$_SERVER["REDIRECT_SSL_CLIENT_V_START"] .
-				$_SERVER["REDIRECT_SSL_CLIENT_V_END"] .
-				$_SERVER["REDIRECT_SSL_CLIENT_S_DN"]);
-		}
-		if ($_SERVER["SSL_CLIENT_M_SERIAL"]) {
-			return sha1($_SERVER["SSL_CLIENT_M_SERIAL"] .
-				$_SERVER["SSL_CLIENT_V_START"] .
-				$_SERVER["SSL_CLIENT_V_END"] .
-				$_SERVER["SSL_CLIENT_S_DN"]);
-		}
-		return "";
+	// this returns Config::SELF_URL_PATH sans ending slash
+	/** function is @deprecated by Config::get_self_url() */
+	function get_self_url_prefix() {
+		return Config::get_self_url();
 	}
+
+	/* end compat shims */
 
 	// this is used for user http parameters unless HTML code is actually needed
 	function clean($param) {
 		if (is_array($param)) {
-			return array_map("strip_tags", $param);
+			return array_map("trim", array_map("strip_tags", $param));
 		} else if (is_string($param)) {
-			return strip_tags($param);
+			return trim(strip_tags($param));
 		} else {
 			return $param;
+		}
+	}
+
+	function with_trailing_slash(string $str) : string {
+		if (substr($str, -1) === "/") {
+			return $str;
+		} else {
+			return "$str/";
 		}
 	}
 
@@ -274,7 +270,7 @@
 	}
 
 	function validate_csrf($csrf_token) {
-		return isset($csrf_token) && hash_equals($_SESSION['csrf_token'], $csrf_token);
+		return isset($csrf_token) && hash_equals($_SESSION['csrf_token'] ?? "", $csrf_token);
 	}
 
 	function truncate_string($str, $max_len, $suffix = '&hellip;') {
@@ -310,42 +306,10 @@
 		return $s ? 1 : 0;
 	}
 
-	// Session caching removed due to causing wrong redirects to upgrade
-	// script when get_schema_version() is called on an obsolete session
-	// created on a previous schema version.
-	function get_schema_version($nocache = false) {
-		global $schema_version;
-
-		$pdo = Db::pdo();
-
-		if (!$schema_version && !$nocache) {
-			$row = $pdo->query("SELECT schema_version FROM ttrss_version")->fetch();
-			$version = $row["schema_version"];
-			$schema_version = $version;
-			return $version;
-		} else {
-			return $schema_version;
-		}
-	}
-
-	function sanity_check() {
-		require_once 'errors.php';
-		$ERRORS = get_error_types();
-
-		$error_code = 0;
-		$schema_version = get_schema_version(true);
-
-		if ($schema_version != SCHEMA_VERSION) {
-			$error_code = 5;
-		}
-
-		return array("code" => $error_code, "message" => $ERRORS[$error_code]);
-	}
-
 	function file_is_locked($filename) {
-		if (file_exists(LOCK_DIRECTORY . "/$filename")) {
+		if (file_exists(Config::get(Config::LOCK_DIRECTORY) . "/$filename")) {
 			if (function_exists('flock')) {
-				$fp = @fopen(LOCK_DIRECTORY . "/$filename", "r");
+				$fp = @fopen(Config::get(Config::LOCK_DIRECTORY) . "/$filename", "r");
 				if ($fp) {
 					if (flock($fp, LOCK_EX | LOCK_NB)) {
 						flock($fp, LOCK_UN);
@@ -365,11 +329,11 @@
 	}
 
 	function make_lockfile($filename) {
-		$fp = fopen(LOCK_DIRECTORY . "/$filename", "w");
+		$fp = fopen(Config::get(Config::LOCK_DIRECTORY) . "/$filename", "w");
 
 		if ($fp && flock($fp, LOCK_EX | LOCK_NB)) {
 			$stat_h = fstat($fp);
-			$stat_f = stat(LOCK_DIRECTORY . "/$filename");
+			$stat_f = stat(Config::get(Config::LOCK_DIRECTORY) . "/$filename");
 
 			if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
 				if ($stat_h["ino"] != $stat_f["ino"] ||
@@ -393,7 +357,7 @@
 	}
 
 	function uniqid_short() {
-		return uniqid(base_convert(rand(), 10, 36));
+		return uniqid(base_convert((string)rand(), 10, 36));
 	}
 
 	function T_sprintf() {
@@ -406,35 +370,8 @@
 		return vsprintf(_ngettext(array_shift($args), array_shift($args), array_shift($args)), $args);
 	}
 
-	function is_server_https() {
-		return (!empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] != 'off')) || $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
-	}
-
-	function is_prefix_https() {
-		return parse_url(SELF_URL_PATH, PHP_URL_SCHEME) == 'https';
-	}
-
-	// this returns SELF_URL_PATH sans ending slash
-	function get_self_url_prefix() {
-		if (strrpos(SELF_URL_PATH, "/") === strlen(SELF_URL_PATH)-1) {
-			return substr(SELF_URL_PATH, 0, strlen(SELF_URL_PATH)-1);
-		} else {
-			return SELF_URL_PATH;
-		}
-	}
-
-	function encrypt_password($pass, $salt = '', $mode2 = false) {
-		if ($salt && $mode2) {
-			return "MODE2:" . hash('sha256', $salt . $pass);
-		} else if ($salt) {
-			return "SHA1X:" . sha1("$salt:$pass");
-		} else {
-			return "SHA1:" . sha1($pass);
-		}
-	} // function encrypt_password
-
 	function init_plugins() {
-		PluginHost::getInstance()->load(PLUGINS, PluginHost::KIND_ALL);
+		PluginHost::getInstance()->load(Config::get(Config::PLUGINS), PluginHost::KIND_ALL);
 
 		return true;
 	}
@@ -477,78 +414,18 @@
 		return in_array($interface, class_implements($class));
 	}
 
-	function T_js_decl($s1, $s2) {
-		if ($s1 && $s2) {
-			$s1 = preg_replace("/\n/", "", $s1);
-			$s2 = preg_replace("/\n/", "", $s2);
-
-			$s1 = preg_replace("/\"/", "\\\"", $s1);
-			$s2 = preg_replace("/\"/", "\\\"", $s2);
-
-			return "T_messages[\"$s1\"] = \"$s2\";\n";
-		}
-	}
-
-	function init_js_translations() {
-
-		print 'var T_messages = new Object();
-
-			function __(msg) {
-				if (T_messages[msg]) {
-					return T_messages[msg];
-				} else {
-					return msg;
-				}
-			}
-
-			function ngettext(msg1, msg2, n) {
-				return __((parseInt(n) > 1) ? msg2 : msg1);
-			}';
-
-		global $text_domains;
-
-		foreach (array_keys($text_domains) as $domain) {
-			$l10n = _get_reader($domain);
-
-			for ($i = 0; $i < $l10n->total; $i++) {
-				$orig = $l10n->get_original_string($i);
-				if(strpos($orig, "\000") !== false) { // Plural forms
-					$key = explode(chr(0), $orig);
-					print T_js_decl($key[0], _ngettext($key[0], $key[1], 1)); // Singular
-					print T_js_decl($key[1], _ngettext($key[0], $key[1], 2)); // Plural
-				} else {
-					$translation = _dgettext($domain,$orig);
-					print T_js_decl($orig, $translation);
-				}
-			}
-
-		}
-	}
-
 	function get_theme_path($theme) {
 		$check = "themes/$theme";
 		if (file_exists($check)) return $check;
 
 		$check = "themes.local/$theme";
 		if (file_exists($check)) return $check;
+
+		return "";
 	}
 
 	function theme_exists($theme) {
 		return file_exists("themes/$theme") || file_exists("themes.local/$theme");
-	}
-
-	/**
-	 * @SuppressWarnings(unused)
-	 */
-	function error_json($code) {
-		require_once "errors.php";
-		$ERRORS = get_error_types();
-
-		@$message = $ERRORS[$code];
-
-		return json_encode(array("error" =>
-			array("code" => $code, "message" => $message)));
-
 	}
 
 	function arr_qmarks($arr) {
@@ -567,63 +444,3 @@
 		return $ts;
 	}
 
-	/* for package maintainers who don't use git: if version_static.txt exists in tt-rss root
-		directory, its contents are displayed instead of git commit-based version, this could be generated
-		based on source git tree commit used when creating the package */
-
-	function get_version(&$git_commit = false, &$git_timestamp = false, &$last_error = false) {
-		global $ttrss_version;
-
-		if (is_array($ttrss_version) && isset($ttrss_version['version'])) {
-			$git_commit = $ttrss_version['commit'];
-			$git_timestamp = $ttrss_version['timestamp'];
-			$last_error = $ttrss_version['last_error'];
-
-			return $ttrss_version['version'];
-		} else {
-			$ttrss_version = [];
-		}
-
-		$ttrss_version['version'] = "UNKNOWN (Unsupported)";
-
-		date_default_timezone_set('UTC');
-		$root_dir = dirname(dirname(__FILE__));
-
-		if (PHP_OS === "Darwin") {
-			$ttrss_version['version'] = "UNKNOWN (Unsupported, Darwin)";
-		} else if (file_exists("$root_dir/version_static.txt")) {
-			$ttrss_version['version'] = trim(file_get_contents("$root_dir/version_static.txt")) . " (Unsupported)";
-		} else if (is_dir("$root_dir/.git")) {
-			$rc = 0;
-			$output = [];
-
-			$cwd = getcwd();
-
-			chdir($root_dir);
-			exec('git --no-pager log --pretty="version: %ct %h" -n1 HEAD 2>&1', $output, $rc);
-			chdir($cwd);
-
-			if (is_array($output) && count($output) > 0) {
-				list ($test, $timestamp, $commit) = explode(" ", $output[0], 3);
-
-				if ($test == "version:") {
-					$git_commit = $commit;
-					$git_timestamp = $timestamp;
-
-					$ttrss_version['version'] = strftime("%y.%m", $timestamp) . "-$commit";
-					$ttrss_version['commit'] = $commit;
-					$ttrss_version['timestamp'] = $timestamp;
-				}
-			}
-
-			if (!isset($ttrss_version['commit'])) {
-				$last_error = "Unable to determine version (using $root_dir): RC=$rc; OUTPUT=" . implode("\n", $output);
-
-				$ttrss_version["last_error"] = $last_error;
-
-				user_error($last_error, E_USER_WARNING);
-			}
-		}
-
-		return $ttrss_version['version'];
-	}

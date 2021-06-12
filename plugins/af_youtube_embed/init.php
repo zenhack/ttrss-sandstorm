@@ -3,7 +3,7 @@ class Af_Youtube_Embed extends Plugin {
 	private $host;
 
 	function about() {
-		return array(1.0,
+		return array(null,
 			"Embed videos in Youtube RSS feeds (and whitelist Youtube iframes)",
 			"fox");
 	}
@@ -16,26 +16,23 @@ class Af_Youtube_Embed extends Plugin {
 	}
 
 	function hook_iframe_whitelisted($src) {
-		return in_array($src, ["www.youtube.com", "youtube.com", "youtu.be"]);
+		return in_array($src, ["www.youtube.com", "youtube.com",
+			"www.youtube-nocookie.com", "youtube-nocookie.com",
+			"youtu.be"]);
 	}
 
-	/**
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
 	function hook_render_enclosure($entry, $hide_images) {
 
-		$matches = array();
+		$url = $entry["content_url"];
 
-		if (preg_match("/\/\/www\.youtube\.com\/v\/([\w-]+)/", $entry["url"], $matches) ||
-			preg_match("/\/\/www\.youtube\.com\/watch?v=([\w-]+)/", $entry["url"], $matches) ||
-			preg_match("/\/\/youtu.be\/([\w-]+)/", $entry["url"], $matches)) {
+		if ($vid_id = UrlHelper::url_to_youtube_vid($url)) {
 
-			$vid_id = $matches[1];
-
-			return "<iframe class=\"youtube-player\"
-				type=\"text/html\" width=\"640\" height=\"385\"
-				src=\"https://www.youtube.com/embed/$vid_id\"
-				allowfullscreen frameborder=\"0\"></iframe>";
+			return "<div class='embed-responsive'>
+				<iframe class='youtube-player'
+					type='text/html' width='640' height='385'
+					src=\"https://www.youtube.com/embed/$vid_id\"
+					allowfullscreen frameborder='0'></iframe>
+				</div>";
 
 		}
 	}

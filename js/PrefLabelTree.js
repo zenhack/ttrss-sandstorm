@@ -1,4 +1,5 @@
-/* global __, define, lib, dijit, dojo, xhrPost, Notify */
+/* eslint-disable prefer-rest-params */
+/* global __, define, lib, dijit, dojo, xhr, Notify, fox, App */
 
 define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/form/DropDownButton"], function (declare, domConstruct) {
 
@@ -13,10 +14,10 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/f
 		_createTreeNode: function(args) {
 			const tnode = this.inherited(arguments);
 
-			const fg_color = this.model.store.getValue(args.item, 'fg_color');
-			const bg_color = this.model.store.getValue(args.item, 'bg_color');
+			//const fg_color = this.model.store.getValue(args.item, 'fg_color');
+			//const bg_color = this.model.store.getValue(args.item, 'bg_color');
 			const type = this.model.store.getValue(args.item, 'type');
-			const bare_id = this.model.store.getValue(args.item, 'bare_id');
+			//const bare_id = this.model.store.getValue(args.item, 'bare_id');
 
 			if (type == 'label') {
 				const label = dojo.doc.createElement('i');
@@ -39,6 +40,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/f
 			return tnode;
 		},
 		getIconClass: function (item, opened) {
+			// eslint-disable-next-line no-nested-ternary
 			return (!item || this.model.mayHaveChildren(item)) ? (opened ? "dijitFolderOpened" : "dijitFolderClosed") : "invisible";
 		},
 		getSelectedLabels: function() {
@@ -46,79 +48,139 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/f
 			const items = tree.model.getCheckedItems();
 			const rv = [];
 
-			items.each(function(item) {
+			items.forEach(function(item) {
 				rv.push(tree.model.store.getValue(item, 'bare_id'));
 			});
 
 			return rv;
 		},
 		reload: function() {
-			xhrPost("backend.php", { op: "pref-labels" }, (transport) => {
-				dijit.byId('labelConfigTab').attr('content', transport.responseText);
+			xhr.post("backend.php", { op: "pref-labels" }, (reply) => {
+				dijit.byId('labelsTab').attr('content', reply);
 				Notify.close();
 			});
 		},
 		editLabel: function(id) {
-			const query = "backend.php?op=pref-labels&method=edit&id=" +
-				encodeURIComponent(id);
+			xhr.json("backend.php", {op: "pref-labels", method: "edit", id: id}, (reply) => {
 
-			if (dijit.byId("labelEditDlg"))
-				dijit.byId("labelEditDlg").destroyRecursive();
+				const fg_color = reply['fg_color'];
+				const bg_color = reply['bg_color'] ? reply['bg_color'] : '#fff7d5';
 
-			const dialog = new dijit.Dialog({
-				id: "labelEditDlg",
-				title: __("Label Editor"),
-				style: "width: 650px",
-				setLabelColor: function (id, fg, bg) {
+				const dialog = new fox.SingleUseDialog({
+					id: "labelEditDlg",
+					title: __("Edit label"),
+					setLabelColor: function (id, fg, bg) {
 
-					let kind = '';
-					let color = '';
+						let kind = '';
+						let color = '';
 
-					if (fg && bg) {
-						kind = 'both';
-					} else if (fg) {
-						kind = 'fg';
-						color = fg;
-					} else if (bg) {
-						kind = 'bg';
-						color = bg;
-					}
+						if (fg && bg) {
+							kind = 'both';
+						} else if (fg) {
+							kind = 'fg';
+							color = fg;
+						} else if (bg) {
+							kind = 'bg';
+							color = bg;
+						}
 
-					const e = $("icon-label-" + id);
+						const e = App.byId(`icon-label-${id}`);
 
-					if (e) {
-						if (bg) e.style.color = bg;
-					}
+						if (e) {
+							if (bg) e.style.color = bg;
+						}
 
-					const query = {
-						op: "pref-labels", method: "colorset", kind: kind,
-						ids: id, fg: fg, bg: bg, color: color
-					};
+						const query = {
+							op: "pref-labels", method: "colorset", kind: kind,
+							ids: id, fg: fg, bg: bg, color: color
+						};
 
-					xhrPost("backend.php", query, () => {
-						dijit.byId("filterTree").reload(); // maybe there's labels in there
-					});
-
-				},
-				execute: function () {
-					if (this.validate()) {
-						const caption = this.attr('value').caption;
-						const fg_color = this.attr('value').fg_color;
-						const bg_color = this.attr('value').bg_color;
-
-						dijit.byId('labelTree').setNameById(id, caption);
-						this.setLabelColor(id, fg_color, bg_color);
-						this.hide();
-
-						xhrPost("backend.php", this.attr('value'), () => {
-							dijit.byId("filterTree").reload(); // maybe there's labels in there
+						xhr.post("backend.php", query, () => {
+							const tree = dijit.byId("filterTree");
+							if (tree) tree.reload(); // maybe there's labels in there
 						});
-					}
-				},
-				href: query
-			});
 
-			dialog.show();
+					},
+					execute: function () {
+						if (this.validate()) {
+							const caption = this.attr('value').caption;
+							const fg_color = this.attr('value').fg_color;
+							const bg_color = this.attr('value').bg_color;
+
+							dijit.byId('labelTree').setNameById(id, caption);
+							this.setLabelColor(id, fg_color, bg_color);
+							this.hide();
+
+							xhr.post("backend.php", this.attr('value'), () => {
+								const tree = dijit.byId("filterTree");
+								if (tree) tree.reload(); // maybe there's labels in there
+							});
+						}
+					},
+					content: `
+						<form onsubmit='return false'>
+
+						<section>
+							<input style='font-size : 16px; width : 550px; color : ${fg_color}; background : ${bg_color}; transition : background 0.1s linear'
+								id='labelEdit_caption'
+								placeholder="${__("Caption")}"
+								name='caption'
+								dojoType='dijit.form.ValidationTextBox'
+								required='true'
+								value="${App.escapeHtml(reply.caption)}">
+						</section>
+
+						${App.FormFields.hidden_tag('id', id)}
+						${App.FormFields.hidden_tag('op', 'pref-labels')}
+						${App.FormFields.hidden_tag('method', 'save')}
+
+						${App.FormFields.hidden_tag('fg_color', fg_color, {}, 'labelEdit_fgColor')}
+						${App.FormFields.hidden_tag('bg_color', bg_color, {}, 'labelEdit_bgColor')}
+
+						<section>
+							<table width='100%'>
+								<tr>
+									<th>${__("Foreground:")}</th>
+									<th>${__("Background:")}</th>
+								</tr>
+								<tr>
+									<td class='text-center'>
+										<div dojoType='dijit.ColorPalette'>
+											<script type='dojo/method' event='onChange' args='fg_color'>
+												dijit.byId('labelEdit_fgColor').attr('value', fg_color);
+												dijit.byId('labelEdit_caption').domNode.setStyle({color: fg_color});
+											</script>
+										</div>
+									</td>
+									<td class='text-center'>
+										<div dojoType='dijit.ColorPalette'>
+											<script type='dojo/method' event='onChange' args='bg_color'>
+												dijit.byId('labelEdit_bgColor').attr('value', bg_color);
+												dijit.byId('labelEdit_caption').domNode.setStyle({backgroundColor: bg_color});
+											</script>
+										</div>
+									</td>
+								</tr>
+							</table>
+						</section>
+
+						<footer>
+							<button dojoType='dijit.form.Button' type='submit' class='alt-primary' onclick='App.dialogOf(this).execute()'>
+								${App.FormFields.icon("save")}
+								${__('Save')}
+							</button>
+							<button dojoType='dijit.form.Button' onclick='App.dialogOf(this).hide()'>
+								${__('Cancel')}
+							</button>
+						</footer>
+
+						</form>
+					`
+				});
+
+				dialog.show();
+
+			});
 		},
 		resetColors: function() {
 			const labels = this.getSelectedLabels();
@@ -131,7 +193,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/f
 						ids: labels.toString()
 					};
 
-					xhrPost("backend.php", query, () => {
+					xhr.post("backend.php", query, () => {
 						this.reload();
 					});
 				}
@@ -152,7 +214,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dijit/f
 						ids: sel_rows.toString()
 					};
 
-					xhrPost("backend.php", query, () => {
+					xhr.post("backend.php", query, () => {
 						this.reload();
 					});
 				}

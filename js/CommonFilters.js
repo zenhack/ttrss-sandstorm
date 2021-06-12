@@ -1,291 +1,340 @@
 'use strict'
 
-/* global __, App, Article, Lists, Effect */
-/* global xhrPost, dojo, dijit, Notify, $$, Feeds */
+/* eslint-disable no-new */
 
+/* global __, App, Article, Lists, fox */
+/* global xhr, dojo, dijit, Notify, Feeds */
+
+/* exported Filters */
 const	Filters = {
-	filterDlgCheckAction: function(sender) {
-		const action = sender.value;
+	edit: function(filter_id = null) { // if no id, new filter dialog
 
-		const action_param = $("filterDlg_paramBox");
+		const dialog = new fox.SingleUseDialog({
+			id: "filterEditDlg",
+			title: filter_id ? __("Edit filter") : __("Create new filter"),
+			ACTION_TAG: 4,
+			ACTION_SCORE: 6,
+			ACTION_LABEL: 7,
+			ACTION_PLUGIN: 9,
+			PARAM_ACTIONS: [4, 6, 7, 9],
+			filter_info: {},
+			test: function() {
+				const test_dialog = new fox.SingleUseDialog({
+					title: "Test Filter",
+					results: 0,
+					limit: 100,
+					max_offset: 10000,
+					getTestResults: function (params, offset) {
+						params.method = 'testFilterDo';
+						params.offset = offset;
+						params.limit = test_dialog.limit;
 
-		if (!action_param) {
-			console.log("filterDlgCheckAction: can't find action param box!");
-			return;
-		}
+						console.log("getTestResults:" + offset);
 
-		// if selected action supports parameters, enable params field
-		if (action == 4 || action == 6 || action == 7 || action == 9) {
-			new Effect.Appear(action_param, {duration: 0.5});
+						xhr.json("backend.php", params, (result) => {
+							try {
+								if (result && test_dialog && test_dialog.open) {
+									test_dialog.results += result.length;
 
-			Element.hide(dijit.byId("filterDlg_actionParam").domNode);
-			Element.hide(dijit.byId("filterDlg_actionParamLabel").domNode);
-			Element.hide(dijit.byId("filterDlg_actionParamPlugin").domNode);
+									console.log("got results:" + result.length);
 
-			if (action == 7) {
-				Element.show(dijit.byId("filterDlg_actionParamLabel").domNode);
-			} else if (action == 9) {
-				Element.show(dijit.byId("filterDlg_actionParamPlugin").domNode);
-			} else {
-				Element.show(dijit.byId("filterDlg_actionParam").domNode);
-			}
+									const loading_message = test_dialog.domNode.querySelector(".loading-message");
+									const results_list = test_dialog.domNode.querySelector(".filter-results-list");
 
-		} else {
-			Element.hide(action_param);
-		}
-	},
-	createNewRuleElement: function(parentNode, replaceNode) {
-		const form = document.forms["filter_new_rule_form"];
-		const query = {op: "pref-filters", method: "printrulename", rule: dojo.formToJson(form)};
+									loading_message.innerHTML = __("Looking for articles (%d processed, %f found)...")
+											.replace("%f", test_dialog.results)
+											.replace("%d", offset);
 
-		xhrPost("backend.php", query, (transport) => {
-			try {
-				const li = dojo.create("li");
+									console.log(offset + " " + test_dialog.max_offset);
 
-				const cb = dojo.create("input", {type: "checkbox"}, li);
+									for (let i = 0; i < result.length; i++) {
+										const tmp = dojo.create("div", { innerHTML: result[i]});
 
-				new dijit.form.CheckBox({
-					onChange: function () {
-						Lists.onRowChecked(this);
-					},
-				}, cb);
+										results_list.innerHTML += tmp.innerHTML;
+									}
 
-				dojo.create("input", {
-					type: "hidden",
-					name: "rule[]",
-					value: dojo.formToJson(form)
-				}, li);
+									if (test_dialog.results < 30 && offset < test_dialog.max_offset) {
 
-				dojo.create("span", {
-					onclick: function () {
-						dijit.byId('filterEditDlg').editRule(this);
-					},
-					innerHTML: transport.responseText
-				}, li);
+										// get the next batch
+										window.setTimeout(function () {
+											test_dialog.getTestResults(params, offset + test_dialog.limit);
+										}, 0);
 
-				if (replaceNode) {
-					parentNode.replaceChild(li, replaceNode);
-				} else {
-					parentNode.appendChild(li);
-				}
-			} catch (e) {
-				App.Error.report(e);
-			}
-		});
-	},
-	createNewActionElement: function(parentNode, replaceNode) {
-		const form = document.forms["filter_new_action_form"];
+									} else {
+										// all done
 
-		if (form.action_id.value == 7) {
-			form.action_param.value = form.action_param_label.value;
-		} else if (form.action_id.value == 9) {
-			form.action_param.value = form.action_param_plugin.value;
-		}
+										test_dialog.domNode.querySelector(".loading-indicator").hide();
 
-		const query = {
-			op: "pref-filters", method: "printactionname",
-			action: dojo.formToJson(form)
-		};
+										if (test_dialog.results == 0) {
+											results_list.innerHTML = `<li class="text-center text-muted">
+												${__('No recent articles matching this filter have been found.')}</li>`;
 
-		xhrPost("backend.php", query, (transport) => {
-			try {
-				const li = dojo.create("li");
+											loading_message.innerHTML = __("Articles matching this filter:");
+										} else {
+											loading_message.innerHTML = __("Found %d articles matching this filter:")
+												.replace("%d", test_dialog.results);
+										}
 
-				const cb = dojo.create("input", {type: "checkbox"}, li);
+									}
 
-				new dijit.form.CheckBox({
-					onChange: function () {
-						Lists.onRowChecked(this);
-					},
-				}, cb);
-
-				dojo.create("input", {
-					type: "hidden",
-					name: "action[]",
-					value: dojo.formToJson(form)
-				}, li);
-
-				dojo.create("span", {
-					onclick: function () {
-						dijit.byId('filterEditDlg').editAction(this);
-					},
-					innerHTML: transport.responseText
-				}, li);
-
-				if (replaceNode) {
-					parentNode.replaceChild(li, replaceNode);
-				} else {
-					parentNode.appendChild(li);
-				}
-
-			} catch (e) {
-				App.Error.report(e);
-			}
-		});
-	},
-	addFilterRule: function(replaceNode, ruleStr) {
-		if (dijit.byId("filterNewRuleDlg"))
-			dijit.byId("filterNewRuleDlg").destroyRecursive();
-
-		const rule_dlg = new dijit.Dialog({
-			id: "filterNewRuleDlg",
-			title: ruleStr ? __("Edit rule") : __("Add rule"),
-			style: "width: 600px",
-			execute: function () {
-				if (this.validate()) {
-					Filters.createNewRuleElement($("filterDlg_Matches"), replaceNode);
-					this.hide();
-				}
-			},
-			content: __('Loading, please wait...'),
-		});
-
-		const tmph = dojo.connect(rule_dlg, "onShow", null, function (/* e */) {
-			dojo.disconnect(tmph);
-
-			xhrPost("backend.php", {op: 'pref-filters', method: 'newrule', rule: ruleStr}, (transport) => {
-				rule_dlg.attr('content', transport.responseText);
-			});
-		});
-
-		rule_dlg.show();
-	},
-	addFilterAction: function(replaceNode, actionStr) {
-		if (dijit.byId("filterNewActionDlg"))
-			dijit.byId("filterNewActionDlg").destroyRecursive();
-
-		const query = "backend.php?op=pref-filters&method=newaction&action=" +
-			encodeURIComponent(actionStr);
-
-		const rule_dlg = new dijit.Dialog({
-			id: "filterNewActionDlg",
-			title: actionStr ? __("Edit action") : __("Add action"),
-			style: "width: 600px",
-			execute: function () {
-				if (this.validate()) {
-					Filters.createNewActionElement($("filterDlg_Actions"), replaceNode);
-					this.hide();
-				}
-			},
-			href: query
-		});
-
-		rule_dlg.show();
-	},
-	editFilterTest: function(params) {
-
-		if (dijit.byId("filterTestDlg"))
-			dijit.byId("filterTestDlg").destroyRecursive();
-
-		const test_dlg = new dijit.Dialog({
-			id: "filterTestDlg",
-			title: "Test Filter",
-			style: "width: 600px",
-			results: 0,
-			limit: 100,
-			max_offset: 10000,
-			getTestResults: function (params, offset) {
-				params.method = 'testFilterDo';
-				params.offset = offset;
-				params.limit = test_dlg.limit;
-
-				console.log("getTestResults:" + offset);
-
-				xhrPost("backend.php", params, (transport) => {
-					try {
-						const result = JSON.parse(transport.responseText);
-
-						if (result && dijit.byId("filterTestDlg") && dijit.byId("filterTestDlg").open) {
-							test_dlg.results += result.length;
-
-							console.log("got results:" + result.length);
-
-							$("prefFilterProgressMsg").innerHTML = __("Looking for articles (%d processed, %f found)...")
-								.replace("%f", test_dlg.results)
-								.replace("%d", offset);
-
-							console.log(offset + " " + test_dlg.max_offset);
-
-							for (let i = 0; i < result.length; i++) {
-								const tmp = dojo.create("table", { innerHTML: result[i]});
-
-								$("prefFilterTestResultList").innerHTML += tmp.innerHTML;
-							}
-
-							if (test_dlg.results < 30 && offset < test_dlg.max_offset) {
-
-								// get the next batch
-								window.setTimeout(function () {
-									test_dlg.getTestResults(params, offset + test_dlg.limit);
-								}, 0);
-
-							} else {
-								// all done
-
-								Element.hide("prefFilterLoadingIndicator");
-
-								if (test_dlg.results == 0) {
-									$("prefFilterTestResultList").innerHTML = `<tr><td align='center'>
-										${__('No recent articles matching this filter have been found.')}</td></tr>`;
-									$("prefFilterProgressMsg").innerHTML = "Articles matching this filter:";
+								} else if (!result) {
+									console.log("getTestResults: can't parse results object");
+									test_dialog.domNode.querySelector(".loading-indicator").hide();
+									Notify.error("Error while trying to get filter test results.");
 								} else {
-									$("prefFilterProgressMsg").innerHTML = __("Found %d articles matching this filter:")
-										.replace("%d", test_dlg.results);
+									console.log("getTestResults: dialog closed, bailing out.");
 								}
-
+							} catch (e) {
+								App.Error.report(e);
 							}
+						});
+					},
+					content: `
+						<div class="text-muted">
+							<img class="loading-indicator icon-three-dots" src="${App.getInitParam("icon_three_dots")}">
+							<span class="loading-message">${__("Looking for articles...")}</span>
+						</div>
 
-						} else if (!result) {
-							console.log("getTestResults: can't parse results object");
+						<ul class='panel panel-scrollable list list-unstyled filter-results-list'></ul>
 
-							Element.hide("prefFilterLoadingIndicator");
+						<footer class='text-center'>
+							<button dojoType='dijit.form.Button' type='submit' class='alt-primary'>${__('Close this window')}</button>
+						</footer>
+					`
+				});
 
-							Notify.error("Error while trying to get filter test results.");
+				const tmph = dojo.connect(test_dialog, "onShow", null, function (/* e */) {
+					dojo.disconnect(tmph);
 
+					test_dialog.getTestResults(dialog.attr('value'), 0);
+				});
+
+				test_dialog.show();
+			},
+			insertRule: function(parentNode, replaceNode) {
+				const rule = dojo.formToJson("filter_new_rule_form");
+
+				xhr.post("backend.php", {op: "pref-filters", method: "printrulename", rule: rule}, (reply) => {
+					try {
+						const li = document.createElement('li');
+						li.addClassName("rule");
+
+						li.innerHTML = `${App.FormFields.checkbox_tag("", false, "", {onclick: 'Lists.onRowChecked(this)'})}
+								<span class="name" onclick='App.dialogOf(this).onRuleClicked(this)'>${reply}</span>
+								<span class="payload" >${App.FormFields.hidden_tag("rule[]", rule)}</span>`;
+
+						dojo.parser.parse(li);
+
+						if (replaceNode) {
+							parentNode.replaceChild(li, replaceNode);
 						} else {
-							console.log("getTestResults: dialog closed, bailing out.");
+							parentNode.appendChild(li);
 						}
 					} catch (e) {
 						App.Error.report(e);
 					}
-
 				});
 			},
-			href: "backend.php?op=pref-filters&method=testFilterDlg"
-		});
+			insertAction: function(parentNode, replaceNode) {
+				const form = document.forms["filter_new_action_form"];
 
-		dojo.connect(test_dlg, "onLoad", null, function (/* e */) {
-			test_dlg.getTestResults(params, 0);
-		});
+				if (form.action_id.value == 7) {
+					form.action_param.value = form.action_param_label.value;
+				} else if (form.action_id.value == 9) {
+					form.action_param.value = form.action_param_plugin.value;
+				}
 
-		test_dlg.show();
-	},
-	quickAddFilter: function() {
-		let query;
+				const action = dojo.formToJson(form);
 
-		if (!App.isPrefs()) {
-			query = {
-				op: "pref-filters", method: "newfilter",
-				feed: Feeds.getActive(), is_cat: Feeds.activeIsCat()
-			};
-		} else {
-			query = {op: "pref-filters", method: "newfilter"};
-		}
+				xhr.post("backend.php", { op: "pref-filters", method: "printactionname", action: action }, (reply) => {
+					try {
+						const li = document.createElement('li');
+						li.addClassName("action");
 
-		console.log('quickAddFilter', query);
+						li.innerHTML = `${App.FormFields.checkbox_tag("", false, "", {onclick: 'Lists.onRowChecked(this)'})}
+								<span class="name" onclick='App.dialogOf(this).onActionClicked(this)'>${reply}</span>
+								<span class="payload">${App.FormFields.hidden_tag("action[]", action)}</span>`;
 
-		if (dijit.byId("feedEditDlg"))
-			dijit.byId("feedEditDlg").destroyRecursive();
+						dojo.parser.parse(li);
 
-		if (dijit.byId("filterEditDlg"))
-			dijit.byId("filterEditDlg").destroyRecursive();
+						if (replaceNode) {
+							parentNode.replaceChild(li, replaceNode);
+						} else {
+							parentNode.appendChild(li);
+						}
 
-		const dialog = new dijit.Dialog({
-			id: "filterEditDlg",
-			title: __("Create Filter"),
-			style: "width: 600px",
-			test: function () {
-				Filters.editFilterTest(dojo.formToObject("filter_new_form"));
+					} catch (e) {
+						App.Error.report(e);
+					}
+				});
+			},
+			editRule: function(replaceNode, ruleStr = null) {
+				const edit_rule_dialog = new fox.SingleUseDialog({
+					id: "filterNewRuleDlg",
+					title: ruleStr ? __("Edit rule") : __("Add rule"),
+					execute: function () {
+						if (this.validate()) {
+							dialog.insertRule(App.byId("filterDlg_Matches"), replaceNode);
+							this.hide();
+						}
+					},
+					content: __('Loading, please wait...'),
+				});
+
+				const tmph = dojo.connect(edit_rule_dialog, "onShow", null, function () {
+					dojo.disconnect(tmph);
+
+					let rule;
+
+					if (ruleStr) {
+						rule = JSON.parse(ruleStr);
+					} else {
+						rule = {
+							reg_exp: "",
+							filter_type: 1,
+							feed_id: ["0"],
+							inverse: false,
+						};
+					}
+
+					console.log(rule, dialog.filter_info);
+
+					xhr.json("backend.php", {op: "pref-filters", method: "editrule", ids: rule.feed_id.join(",")}, function (editrule) {
+						edit_rule_dialog.attr('content',
+							`
+							<form name="filter_new_rule_form" id="filter_new_rule_form" onsubmit="return false">
+
+								<section>
+									<textarea dojoType="fox.form.ValidationTextArea"
+										required="true" id="filterDlg_regExp" ValidRegExp="true"
+										rows="4" style="font-size : 14px; width : 530px; word-break: break-all"
+										name="reg_exp">${rule.reg_exp}</textarea>
+
+									<div dojoType="dijit.Tooltip" id="filterDlg_regExp_tip" connectId="filterDlg_regExp" position="below"></div>
+
+									<fieldset>
+										<label class="checkbox">
+											${App.FormFields.checkbox_tag("inverse", rule.inverse)}
+											${__("Inverse regular expression matching")}
+										</label>
+									</fieldset>
+									<fieldset>
+										<label style="display : inline">${__("on")}</label>
+										${App.FormFields.select_hash("filter_type", rule.filter_type, dialog.filter_info.filter_types)}
+										<label style="padding-left : 10px; display : inline">${__("in")}</label>
+									</fieldset>
+									<fieldset>
+										<span id="filterDlg_feeds">
+											${editrule.multiselect}
+										</span>
+									</fieldset>
+								</section>
+
+								<footer>
+									${App.FormFields.button_tag(App.FormFields.icon("help") + " " + __("More info"), "", {class: 'pull-left alt-info',
+										onclick: "window.open('https://tt-rss.org/wiki/ContentFilters')"})}
+									${App.FormFields.submit_tag(App.FormFields.icon("save") + " " + __("Save"), {onclick: "App.dialogOf(this).execute()"})}
+									${App.FormFields.cancel_dialog_tag(__("Cancel"))}
+								</footer>
+
+							</form>
+						`);
+					});
+
+				});
+
+				edit_rule_dialog.show();
+			},
+			editAction: function(replaceNode, actionStr) {
+				const edit_action_dialog = new fox.SingleUseDialog({
+					title: actionStr ? __("Edit action") : __("Add action"),
+					select_labels: function(name, value, labels, attributes = {}, id = "") {
+						const values = Object.values(labels).map((label) => label.caption);
+						return App.FormFields.select_tag(name, value, values, attributes, id);
+					},
+					toggleParam: function(sender) {
+						const action = parseInt(sender.value);
+
+						dijit.byId("filterDlg_actionParam").domNode.hide();
+						dijit.byId("filterDlg_actionParamLabel").domNode.hide();
+						dijit.byId("filterDlg_actionParamPlugin").domNode.hide();
+
+						// if selected action supports parameters, enable params field
+						if (action == dialog.ACTION_LABEL) {
+							dijit.byId("filterDlg_actionParamLabel").domNode.show();
+						} else if (action == dialog.ACTION_PLUGIN) {
+							dijit.byId("filterDlg_actionParamPlugin").domNode.show();
+						} else if (dialog.PARAM_ACTIONS.indexOf(action) != -1) {
+							dijit.byId("filterDlg_actionParam").domNode.show();
+						}
+					},
+					execute: function () {
+						if (this.validate()) {
+							dialog.insertAction(App.byId("filterDlg_Actions"), replaceNode);
+							this.hide();
+						}
+					},
+					content: __("Loading, please wait...")
+				});
+
+				const tmph = dojo.connect(edit_action_dialog, "onShow", null, function () {
+					dojo.disconnect(tmph);
+
+					let action;
+
+					if (actionStr) {
+						action = JSON.parse(actionStr);
+					} else {
+						action = {
+							action_id: 2,
+							action_param: ""
+						};
+					}
+
+					console.log(action);
+
+					edit_action_dialog.attr('content',
+					`
+						<form name="filter_new_action_form" id="filter_new_action_form" onsubmit="return false;">
+							<section>
+								${App.FormFields.select_hash("action_id", -1,
+									dialog.filter_info.action_types,
+									{onchange: "App.dialogOf(this).toggleParam(this)"},
+									"filterDlg_actionSelect")}
+
+								<input dojoType="dijit.form.TextBox"
+									id="filterDlg_actionParam" style="$param_hidden"
+									name="action_param" value="${App.escapeHtml(action.action_param)}">
+
+								${edit_action_dialog.select_labels("action_param_label", action.action_param,
+									dialog.filter_info.labels,
+									{},
+									"filterDlg_actionParamLabel")}
+
+								${App.FormFields.select_hash("action_param_plugin", action.action_param,
+									dialog.filter_info.plugin_actions,
+									{},
+									"filterDlg_actionParamPlugin")}
+							</section>
+							<footer>
+								${App.FormFields.submit_tag(App.FormFields.icon("save") + " " + __("Save"), {onclick: "App.dialogOf(this).execute()"})}
+								${App.FormFields.cancel_dialog_tag(__("Cancel"))}
+							</footer>
+						</form>
+					`);
+
+					dijit.byId("filterDlg_actionSelect").attr('value', action.action_id);
+
+					/*xhr.post("backend.php", {op: 'pref-filters', method: 'newaction', action: actionStr}, (reply) => {
+						edit_action_dialog.attr('content', reply);
+
+						setTimeout(() => {
+							edit_action_dialog.hideOrShowActionParam(dijit.byId("filterDlg_actionSelect").attr('value'));
+						}, 250);
+					});*/
+				});
+
+				edit_action_dialog.show();
 			},
 			selectRules: function (select) {
 				Lists.select("filterDlg_Matches", select);
@@ -293,91 +342,224 @@ const	Filters = {
 			selectActions: function (select) {
 				Lists.select("filterDlg_Actions", select);
 			},
-			editRule: function (e) {
-				const li = e.parentNode;
-				const rule = li.getElementsByTagName("INPUT")[1].value;
-				Filters.addFilterRule(li, rule);
+			onRuleClicked: function (elem) {
+
+				const li = elem.closest('li');
+				const rule = li.querySelector('input[name="rule[]"]').value;
+
+				this.editRule(li, rule);
 			},
-			editAction: function (e) {
-				const li = e.parentNode;
-				const action = li.getElementsByTagName("INPUT")[1].value;
-				Filters.addFilterAction(li, action);
+			onActionClicked: function (elem) {
+
+				const li = elem.closest('li');
+				const action = li.querySelector('input[name="action[]"]').value;
+
+				this.editAction(li, action);
+			},
+			removeFilter: function () {
+				const msg = __("Remove filter?");
+
+				if (confirm(msg)) {
+					this.hide();
+
+					Notify.progress("Removing filter...");
+
+					const query = {op: "pref-filters", method: "remove", ids: this.attr('value').id};
+
+					xhr.post("backend.php", query, () => {
+						const tree = dijit.byId("filterTree");
+
+						if (tree) tree.reload();
+					});
+				}
 			},
 			addAction: function () {
-				Filters.addFilterAction();
+				this.editAction();
 			},
 			addRule: function () {
-				Filters.addFilterRule();
+				this.editRule();
 			},
 			deleteAction: function () {
-				$$("#filterDlg_Actions li[class*=Selected]").each(function (e) {
+				App.findAll("#filterDlg_Actions li[class*=Selected]").forEach(function (e) {
 					e.parentNode.removeChild(e)
 				});
 			},
 			deleteRule: function () {
-				$$("#filterDlg_Matches li[class*=Selected]").each(function (e) {
+				App.findAll("#filterDlg_Matches li[class*=Selected]").forEach(function (e) {
 					e.parentNode.removeChild(e)
 				});
 			},
 			execute: function () {
 				if (this.validate()) {
 
-					const query = dojo.formToQuery("filter_new_form");
+					Notify.progress("Saving data...", true);
 
-					xhrPost("backend.php", query, () => {
-						if (App.isPrefs()) {
-							dijit.byId("filterTree").reload();
-						}
-
+					xhr.post("backend.php", this.attr('value'), () => {
 						dialog.hide();
+
+						const tree = dijit.byId("filterTree");
+						if (tree) tree.reload();
 					});
 				}
 			},
-			href: "backend.php?" + dojo.objectToQuery(query)
+			content: __("Loading, please wait...")
 		});
 
-		if (!App.isPrefs()) {
-			/* global getSelectionText */
-			const selectedText = getSelectionText();
+		const tmph = dojo.connect(dialog, 'onShow', function () {
+			dojo.disconnect(tmph);
 
-			const lh = dojo.connect(dialog, "onLoad", function () {
-				dojo.disconnect(lh);
+			xhr.json("backend.php", {op: "pref-filters", method: "edit", id: filter_id}, function (filter) {
 
-				if (selectedText != "") {
+				dialog.filter_info = filter;
 
-					const feed_id = Feeds.activeIsCat() ? 'CAT:' + parseInt(Feeds.getActive()) :
-						Feeds.getActive();
+				const options = {
+					enabled: [ filter.enabled, __('Enabled') ],
+					match_any_rule: [ filter.match_any_rule, __('Match any rule') ],
+					inverse: [ filter.inverse, __('Inverse matching') ],
+				};
 
-					const rule = {reg_exp: selectedText, feed_id: [feed_id], filter_type: 1};
+				dialog.attr('content',
+				`
+					<form onsubmit='return false'>
 
-					Filters.addFilterRule(null, dojo.toJson(rule));
+						${App.FormFields.hidden_tag("op", "pref-filters")}
+						${App.FormFields.hidden_tag("id", filter_id)}
+						${App.FormFields.hidden_tag("method", filter_id ? "editSave" : "add")}
+						${App.FormFields.hidden_tag("csrf_token", App.getInitParam('csrf_token'))}
 
-				} else {
+						<section class="horizontal">
+							<input required="true" dojoType="dijit.form.ValidationTextBox" style="width : 100%"
+								placeholder="${__("Title")}" name="title" value="${App.escapeHtml(filter.title)}">
+						</section>
 
-					const query = {op: "rpc", method: "getlinktitlebyid", id: Article.getActive()};
+						<div dojoType="dijit.layout.TabContainer" style="height : 300px">
+							<div dojoType="dijit.layout.ContentPane" title="${__('Match')}">
+								<div style="padding : 0" dojoType="dijit.layout.BorderContainer" gutters="false">
+									<div dojoType="fox.Toolbar" region="top">
+										<div dojoType="fox.form.DropDownButton">
+											<span>${__("Select")}</span>
+											<div dojoType="dijit.Menu" style="display: none;">
+												<!-- can"t use App.dialogOf() here because DropDownButton is not a child of the Dialog -->
+												<div onclick="dijit.byId('filterEditDlg').selectRules(true)"
+													dojoType="dijit.MenuItem">${__("All")}</div>
+												<div onclick="dijit.byId('filterEditDlg').selectRules(false)"
+													dojoType="dijit.MenuItem">${__("None")}</div>
+											</div>
+										</div>
+										<button dojoType="dijit.form.Button" onclick="App.dialogOf(this).addRule()">
+											${__("Add")}
+										</button>
+										<button dojoType="dijit.form.Button" onclick="App.dialogOf(this).deleteRule()">
+											${__("Delete")}
+										</button>
+									</div>
+									<div dojoType="dijit.layout.ContentPane" region="center">
+										<ul id="filterDlg_Matches">
+											${filter.rules.map((rule) => `
+												<li class='rule'>
+													${App.FormFields.checkbox_tag("", false, "", {onclick: 'Lists.onRowChecked(this)'})}
+													<span class='name' onclick='App.dialogOf(this).onRuleClicked(this)'>${rule.name}</span>
+													<span class='payload'>${App.FormFields.hidden_tag("rule[]", JSON.stringify(rule))}</span>
+												</li>
+											`).join("")}
+										</ul>
+									</div>
+								</div>
+							</div>
+							<div dojoType="dijit.layout.ContentPane" title="${__('Apply actions')}">
+								<div style="padding : 0" dojoType="dijit.layout.BorderContainer" gutters="false">
+									<div dojoType="fox.Toolbar" region="top">
+										<div dojoType="fox.form.DropDownButton">
+											<span>${__("Select")}</span>
+											<div dojoType="dijit.Menu" style="display: none">
+												<div onclick="dijit.byId('filterEditDlg').selectActions(true)"
+													dojoType="dijit.MenuItem">${__("All")}</div>
+												<div onclick="dijit.byId('filterEditDlg').selectActions(false)"
+													dojoType="dijit.MenuItem">${__("None")}</div>
+												</div>
+											</div>
+										<button dojoType="dijit.form.Button" onclick="App.dialogOf(this).addAction()">
+											${__("Add")}
+										</button>
+										<button dojoType="dijit.form.Button" onclick="App.dialogOf(this).deleteAction()">
+											${__("Delete")}
+										</button>
+									</div>
+									<div dojoType="dijit.layout.ContentPane" region="center">
+										<ul id="filterDlg_Actions">
+											${filter.actions.map((action) => `
+											<li class='rule'>
+												${App.FormFields.checkbox_tag("", false, "", {onclick: 'Lists.onRowChecked(this)'})}
+												<span class='name' onclick='App.dialogOf(this).onActionClicked(this)'>${App.escapeHtml(action.name)}</span>
+												<span class='payload'>${App.FormFields.hidden_tag("action[]", JSON.stringify(action))}</span>
+											</li>
+											`).join("")}
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
 
-					xhrPost("backend.php", query, (transport) => {
-						const reply = JSON.parse(transport.responseText);
+						<section class="horizontal">
+							${Object.keys(options).map((name) =>
+								`
+								<fieldset class='narrow'>
+									<label class="checkbox">
+										${App.FormFields.checkbox_tag(name, options[name][0])}
+										${options[name][1]}
+									</label>
+								</fieldset>
+								`).join("")}
+						</section>
 
-						let title = false;
+						<footer>
+							${filter_id ?
+							`
+								${App.FormFields.button_tag(App.FormFields.icon("delete") + " " + __("Remove"), "", {class: "pull-left alt-danger", onclick: "App.dialogOf(this).removeFilter()"})}
+								${App.FormFields.button_tag(App.FormFields.icon("check_circle") + " " + __("Test"), "", {class: "alt-info", onclick: "App.dialogOf(this).test()"})}
+								${App.FormFields.submit_tag(App.FormFields.icon("save") + " " + __("Save"), {onclick: "App.dialogOf(this).execute()"})}
+								${App.FormFields.cancel_dialog_tag(__("Cancel"))}
+							` : `
+								${App.FormFields.button_tag(App.FormFields.icon("check_circle") + " " + __("Test"), "", {class: "alt-info", onclick: "App.dialogOf(this).test()"})}
+								${App.FormFields.submit_tag(App.FormFields.icon("add") + " " + __("Create"), {onclick: "App.dialogOf(this).execute()"})}
+								${App.FormFields.cancel_dialog_tag(__("Cancel"))}
+							`}
+						</footer>
+					</form>
+				`);
 
-						if (reply && reply.title) title = reply.title;
+				if (!App.isPrefs()) {
+					const selectedText = App.getSelectedText();
 
-						if (title || Feeds.getActive() || Feeds.activeIsCat()) {
+					if (selectedText != "") {
+						const feed_id = Feeds.activeIsCat() ? 'CAT:' + parseInt(Feeds.getActive()) :
+							Feeds.getActive();
+						const rule = {reg_exp: selectedText, feed_id: [feed_id], filter_type: 1};
 
-							console.log(title + " " + Feeds.getActive());
+						dialog.editRule(null, dojo.toJson(rule));
+					} else {
+						const query = {op: "article", method: "getmetadatabyid", id: Article.getActive()};
 
-							const feed_id = Feeds.activeIsCat() ? 'CAT:' + parseInt(Feeds.getActive()) :
-								Feeds.getActive();
+						xhr.json("backend.php", query, (reply) => {
+							let title;
 
-							const rule = {reg_exp: title, feed_id: [feed_id], filter_type: 1};
+							if (reply && reply.title) title = reply.title;
 
-							Filters.addFilterRule(null, dojo.toJson(rule));
-						}
-					});
+							if (title || Feeds.getActive() || Feeds.activeIsCat()) {
+								console.log(title + " " + Feeds.getActive());
+
+								const feed_id = Feeds.activeIsCat() ? 'CAT:' + parseInt(Feeds.getActive()) :
+									Feeds.getActive();
+								const rule = {reg_exp: title, feed_id: [feed_id], filter_type: 1};
+
+								dialog.editRule(null, dojo.toJson(rule));
+							}
+						});
+					}
 				}
 			});
-		}
+		});
+
 		dialog.show();
 	},
 };

@@ -1,8 +1,44 @@
-/* global __, lib, dijit, define, dojo, CommonDialogs, Notify, Tables, xhrPost */
+/* eslint-disable prefer-rest-params */
+/* global __, lib, dijit, define, dojo, CommonDialogs, Notify, Tables, xhrPost, xhr, fox, App */
 
-define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], function (declare, domConstruct) {
+define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree", "dojo/_base/array", "dojo/cookie"],
+	function (declare, domConstruct, checkBoxTree, array, cookie) {
 
 	return declare("fox.PrefFeedTree", lib.CheckBoxTree, {
+		// save state in localStorage instead of cookies
+		// reference: https://stackoverflow.com/a/27968996
+		_saveExpandedNodes: function(){
+			if (this.persist && this.cookieName){
+				const ary = [];
+				for (const id in this._openedNodes){
+					ary.push(id);
+				}
+				// Was:
+				// cookie(this.cookieName, ary.join(","), {expires: 365});
+				localStorage.setItem(this.cookieName, ary.join(","));
+			}
+		},
+		_initState: function(){
+			this.cookieName = 'prefs:' + this.cookieName;
+			// summary:
+			//    Load in which nodes should be opened automatically
+			this._openedNodes = {};
+			if (this.persist && this.cookieName){
+				// Was:
+				// var oreo = cookie(this.cookieName);
+				let oreo = localStorage.getItem(this.cookieName);
+				// migrate old data if nothing in localStorage
+				if (oreo == null || oreo === '') {
+					oreo = cookie(this.cookieName);
+					cookie(this.cookieName, null, { expires: -1 });
+				}
+				if (oreo){
+					array.forEach(oreo.split(','), function(item){
+						this._openedNodes[item] = true;
+					}, this);
+				}
+			}
+		},
 		_createTreeNode: function(args) {
 			const tnode = this.inherited(arguments);
 
@@ -29,7 +65,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			const bare_id = parseInt(id.substr(id.indexOf(':')+1));
 
 			if (id.match("CAT:") && bare_id > 0) {
-				var menu = new dijit.Menu();
+				const menu = new dijit.Menu();
 				menu.row_id = bare_id;
 				menu.item = args.item;
 
@@ -49,7 +85,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 				menu.bindDomNode(tnode.domNode);
 				tnode._menu = menu;
 			} else if (id.match("FEED:")) {
-				var menu = new dijit.Menu();
+				const menu = new dijit.Menu();
 				menu.row_id = bare_id;
 				menu.item = args.item;
 
@@ -76,6 +112,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			this.inherited(arguments);
 			this.tree.model.store.save();
 		},
+		// eslint-disable-next-line no-unused-vars
 		getRowClass: function (item, opened) {
 			let rc = (!item.error || item.error == '') ? "dijitTreeRow" :
 				"dijitTreeRow Error";
@@ -85,14 +122,15 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			return rc;
 		},
 		getIconClass: function (item, opened) {
+			// eslint-disable-next-line no-nested-ternary
 			return (!item || this.model.store.getValue(item, 'type') == 'category') ? (opened ? "dijitFolderOpened" : "dijitFolderClosed") : "feed-icon";
 		},
 		reload: function() {
-			const searchElem = $("feed_search");
-			let search = (searchElem) ? searchElem.value : "";
+			const searchElem = App.byId("feed_search");
+			const search = (searchElem) ? searchElem.value : "";
 
-			xhrPost("backend.php", { op: "pref-feeds", search: search }, (transport) => {
-				dijit.byId('feedConfigTab').attr('content', transport.responseText);
+			xhr.post("backend.php", { op: "pref-feeds", search: search }, (reply) => {
+				dijit.byId('feedsTab').attr('content', reply);
 				Notify.close();
 			});
 		},
@@ -126,14 +164,14 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 		resetFeedOrder: function() {
 			Notify.progress("Loading, please wait...");
 
-			xhrPost("backend.php", {op: "pref-feeds", method: "feedsortreset"}, () => {
+			xhr.post("backend.php", {op: "pref-feeds", method: "feedsortreset"}, () => {
 				this.reload();
 			});
 		},
 		resetCatOrder: function() {
 			Notify.progress("Loading, please wait...");
 
-			xhrPost("backend.php", {op: "pref-feeds", method: "catsortreset"}, () => {
+			xhr.post("backend.php", {op: "pref-feeds", method: "catsortreset"}, () => {
 				this.reload();
 			});
 		},
@@ -141,7 +179,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			if (confirm(__("Remove category %s? Any nested feeds would be placed into Uncategorized.").replace("%s", item.name))) {
 				Notify.progress("Removing category...");
 
-				xhrPost("backend.php", {op: "pref-feeds", method: "removeCat", ids: id}, () => {
+				xhr.post("backend.php", {op: "pref-feeds", method: "removeCat", ids: id}, () => {
 					Notify.close();
 					this.reload();
 				});
@@ -160,7 +198,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 						ids: sel_rows.toString()
 					};
 
-					xhrPost("backend.php", query, () => {
+					xhr.post("backend.php", query, () => {
 						this.reload();
 					});
 				}
@@ -171,9 +209,16 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 
 			return false;
 		},
+		checkErrorFeeds: function() {
+			xhr.json("backend.php", {op: "pref-feeds", method: "feedsWithErrors"}, (reply) => {
+				if (reply.length > 0) {
+					Element.show(dijit.byId("pref_feeds_errors_btn").domNode);
+				}
+			});
+		},
 		checkInactiveFeeds: function() {
-			xhrPost("backend.php", {op: "pref-feeds", method: "getinactivefeeds"}, (transport) => {
-				if (parseInt(transport.responseText) > 0) {
+			xhr.json("backend.php", {op: "pref-feeds", method: "inactivefeeds"}, (reply) => {
+				if (reply.length > 0) {
 					Element.show(dijit.byId("pref_feeds_inactive_btn").domNode);
 				}
 			});
@@ -183,7 +228,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			const items = tree.model.getCheckedItems();
 			const rv = [];
 
-			items.each(function (item) {
+			items.forEach(function (item) {
 				if (item.id[0].match("CAT:"))
 					rv.push(tree.model.store.getValue(item, 'bare_id'));
 			});
@@ -202,7 +247,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 						ids: sel_rows.toString()
 					};
 
-					xhrPost("backend.php", query, () => {
+					xhr.post("backend.php", query, () => {
 						this.reload();
 					});
 				}
@@ -217,7 +262,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			const items = tree.model.getCheckedItems();
 			const rv = [];
 
-			items.each(function (item) {
+			items.forEach(function (item) {
 				if (item.id[0].match("FEED:"))
 					rv.push(tree.model.store.getValue(item, 'bare_id'));
 			});
@@ -250,62 +295,70 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 
 			Notify.progress("Loading, please wait...");
 
-			if (dijit.byId("feedEditDlg"))
-				dijit.byId("feedEditDlg").destroyRecursive();
-
-			xhrPost("backend.php", {op: "pref-feeds", method: "editfeeds", ids: rows.toString()}, (transport) => {
+			xhr.post("backend.php", {op: "pref-feeds", method: "editfeeds", ids: rows.toString()}, (reply) => {
 				Notify.close();
 
-				const dialog = new dijit.Dialog({
-					id: "feedEditDlg",
-					title: __("Edit Multiple Feeds"),
-					style: "width: 600px",
-					getChildByName: function (name) {
-						let rv = null;
-						this.getChildren().each(
-							function (child) {
-								if (child.name == name) {
-									rv = child;
-									return;
-								}
-							});
-						return rv;
-					},
-					toggleField: function (checkbox, elem, label) {
-						this.getChildByName(elem).attr('disabled', !checkbox.checked);
+				try {
+					const dialog = new fox.SingleUseDialog({
+						title: __("Edit multiple feeds"),
+						/*getChildByName: function (name) {
+							let rv = null;
+							this.getChildren().forEach(
+								function (child) {
+									if (child.name == name) {
+										rv = child;
+										return;
+									}
+								});
+							return rv;
+						},*/
+						toggleField: function (checkbox) {
+							const name = checkbox.attr("data-control-for");
+							const target = dijit.getEnclosingWidget(dialog.domNode.querySelector(`input[name="${name}"]`));
 
-						if ($(label))
-							if (checkbox.checked)
-								$(label).removeClassName('text-muted');
-							else
-								$(label).addClassName('text-muted');
+							target.attr('disabled', !checkbox.attr('checked'));
+							console.log(target, target.attr('type'));
 
-					},
-					execute: function () {
-						if (this.validate() && confirm(__("Save changes to selected feeds?"))) {
-							const query = this.attr('value');
+							if (target.attr('type') == "checkbox") {
+								const label = checkbox.domNode.closest("label");
 
-							/* normalize unchecked checkboxes because [] is not serialized */
+								if (checkbox.attr('checked'))
+									label.removeClassName('text-muted');
+								else
+									label.addClassName('text-muted');
+							}
+						},
+						execute: function () {
+							if (this.validate() && confirm(__("Save changes to selected feeds?"))) {
+								const query = this.attr('value');
 
-							Object.keys(query).each((key) => {
-								let val = query[key];
+								/* normalize unchecked checkboxes because [] is not serialized */
 
-								if (typeof val == "object" && val.length == 0)
-									query[key] = ["off"];
-							});
+								Object.keys(query).forEach((key) => {
+									const val = query[key];
 
-							Notify.progress("Saving data...", true);
+									if (typeof val == "object" && val.length == 0)
+										query[key] = ["off"];
+								});
 
-							xhrPost("backend.php", query, () => {
-								dialog.hide();
-								dijit.byId("feedTree").reload();
-							});
-						}
-					},
-					content: transport.responseText
-				});
+								Notify.progress("Saving data...", true);
 
-				dialog.show();
+								xhr.post("backend.php", query, () => {
+									dialog.hide();
+
+									const tree = dijit.byId("feedTree");
+
+									if (tree) tree.reload();
+								});
+							}
+						},
+						content: reply
+					});
+
+					dialog.show();
+				} catch (e) {
+					App.Error.report(e);
+				}
 			});
 		},
 		editCategory: function(id, item) {
@@ -319,7 +372,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 
 				Notify.progress("Loading, please wait...");
 
-				xhrPost("backend.php", { op: 'pref-feeds', method: 'renamecat', id: id, title: new_name }, () => {
+				xhr.post("backend.php", { op: 'pref-feeds', method: 'renamecat', id: id, title: new_name }, () => {
 					this.reload();
 				});
 			}
@@ -330,83 +383,167 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			if (title) {
 				Notify.progress("Creating category...");
 
-				xhrPost("backend.php", {op: "pref-feeds", method: "addCat", cat: title}, () => {
+				xhr.post("backend.php", {op: "pref-feeds", method: "addCat", cat: title}, () => {
 					Notify.close();
 					this.reload();
 				});
 			}
 		},
 		batchSubscribe: function() {
-			const query = "backend.php?op=pref-feeds&method=batchSubscribe";
+			xhr.json("backend.php", {op: 'pref-feeds', method: 'batchSubscribe'}, (reply) => {
+				const dialog = new fox.SingleUseDialog({
+					id: "batchSubDlg",
+					title: __("Batch subscribe"),
+					execute: function () {
+						if (this.validate()) {
+							Notify.progress(__("Subscribing to feeds..."), true);
 
-			// overlapping widgets
-			if (dijit.byId("batchSubDlg")) dijit.byId("batchSubDlg").destroyRecursive();
-			if (dijit.byId("feedAddDlg")) dijit.byId("feedAddDlg").destroyRecursive();
-
-			const dialog = new dijit.Dialog({
-				id: "batchSubDlg",
-				title: __("Batch subscribe"),
-				style: "width: 600px",
-				execute: function () {
-					if (this.validate()) {
-						Notify.progress(__("Subscribing to feeds..."), true);
-
-						xhrPost("backend.php", this.attr('value'), () => {
-							Notify.close();
-							dijit.byId("feedTree").reload();
-							dialog.hide();
-						});
-					}
-				},
-				href: query
-			});
-
-			dialog.show();
-		},
-		showInactiveFeeds: function() {
-			const query = "backend.php?op=pref-feeds&method=inactiveFeeds";
-
-			if (dijit.byId("inactiveFeedsDlg"))
-				dijit.byId("inactiveFeedsDlg").destroyRecursive();
-
-			const dialog = new dijit.Dialog({
-				id: "inactiveFeedsDlg",
-				title: __("Feeds without recent updates"),
-				style: "width: 600px",
-				getSelectedFeeds: function () {
-					return Tables.getSelected("inactive-feeds-list");
-				},
-				removeSelected: function () {
-					const sel_rows = this.getSelectedFeeds();
-
-					if (sel_rows.length > 0) {
-						if (confirm(__("Remove selected feeds?"))) {
-							Notify.progress("Removing selected feeds...", true);
-
-							const query = {
-								op: "pref-feeds", method: "remove",
-								ids: sel_rows.toString()
-							};
-
-							xhrPost("backend.php", query, () => {
+							xhr.post("backend.php", this.attr('value'), () => {
 								Notify.close();
-								dijit.byId("feedTree").reload();
+
+								const tree = dijit.byId("feedTree");
+								if (tree) tree.reload();
+
 								dialog.hide();
 							});
 						}
+					},
+					content: `
+						<form onsubmit='return false'>
+							${App.FormFields.hidden_tag("op", "pref-feeds")}
+							${App.FormFields.hidden_tag("method", "batchaddfeeds")}
 
-					} else {
-						alert(__("No feeds selected."));
-					}
-				},
-				execute: function () {
-					if (this.validate()) {
-					}
-				},
-				href: query
+							<header class='horizontal'>
+								${__("One valid feed per line (no detection is done)")}
+							</header>
+
+							<section>
+								<textarea style='font-size : 12px; width : 98%; height: 200px;'
+									dojoType='fox.form.ValidationTextArea' required='1' name='feeds'></textarea>
+
+								${reply.enable_cats ?
+									`<fieldset>
+											<label>${__('Place in category:')}</label>
+											${reply.cat_select}
+									</fieldset>
+									` : ''
+								}
+							</section>
+
+							<div id='feedDlg_loginContainer' style='display : none'>
+								<header>${__("Authentication")}</header>
+								<section>
+									<input dojoType='dijit.form.TextBox' name='login' placeHolder="${__("Login")}">
+									<input placeHolder="${__("Password")}" dojoType="dijit.form.TextBox" type='password'
+										autocomplete='new-password' name='pass'></div>
+								</section>
+							</div>
+
+							<fieldset class='narrow'>
+								<label class='checkbox'><input type='checkbox' name='need_auth' dojoType='dijit.form.CheckBox'
+										onclick='App.displayIfChecked(this, "feedDlg_loginContainer")'>
+									${__('Feeds require authentication.')}
+								</label>
+							</fieldset>
+
+							<footer>
+								<button dojoType='dijit.form.Button' onclick='App.dialogOf(this).execute()' type='submit' class='alt-primary'>
+									${__('Subscribe')}
+								</button>
+								<button dojoType='dijit.form.Button' onclick='App.dialogOf(this).hide()'>
+									${__('Cancel')}
+								</button>
+							</footer>
+						</form>
+					`
+				});
+
+				dialog.show();
+
+			});
+		},
+		showInactiveFeeds: function() {
+			xhr.json("backend.php", {op: 'pref-feeds', method: 'inactivefeeds'}, function (reply) {
+
+				const dialog = new fox.SingleUseDialog({
+					id: "inactiveFeedsDlg",
+					title: __("Feeds without recent updates"),
+					getSelectedFeeds: function () {
+						return Tables.getSelected("inactive-feeds-list");
+					},
+					removeSelected: function () {
+						const sel_rows = this.getSelectedFeeds();
+
+						if (sel_rows.length > 0) {
+							if (confirm(__("Remove selected feeds?"))) {
+								Notify.progress("Removing selected feeds...", true);
+
+								const query = {
+									op: "pref-feeds", method: "remove",
+									ids: sel_rows.toString()
+								};
+
+								xhr.post("backend.php", query, () => {
+									Notify.close();
+
+									const tree = dijit.byId("feedTree");
+									if (tree) tree.reload();
+
+									dialog.hide();
+								});
+							}
+
+						} else {
+							alert(__("No feeds selected."));
+						}
+					},
+					content: `
+						<div dojoType='fox.Toolbar'>
+							<div dojoType='fox.form.DropDownButton'>
+								<span>${__('Select')}</span>
+								<div dojoType='dijit.Menu' style='display: none'>
+								<div onclick="Tables.select('inactive-feeds-list', true)"
+									dojoType='dijit.MenuItem'>${__('All')}</div>
+								<div onclick="Tables.select('inactive-feeds-list', false)"
+									dojoType='dijit.MenuItem'>${__('None')}</div>
+								</div>
+							</div>
+						</div>
+
+						<div class='panel panel-scrollable'>
+							<table width='100%' id='inactive-feeds-list'>
+								${reply.map((row) => `<tr data-row-id='${row.id}'>
+									<td class='checkbox'>
+										<input onclick='Tables.onRowChecked(this)' dojoType='dijit.form.CheckBox' type='checkbox'>
+									</td>
+									<td>
+										<a href='#' "title="${__("Click to edit feed")}" onclick="CommonDialogs.editFeed(${row.id})">
+											${App.escapeHtml(row.title)}
+										</a>
+									</td>
+									<td class='text-muted' align='right'>
+										${row.last_article}
+									</td>
+								</tr>
+								`).join("")}
+							</table>
+						</div>
+
+						<footer>
+							<button style='float : left' class='alt-danger' dojoType='dijit.form.Button' onclick='App.dialogOf(this).removeSelected()'>
+								${__('Unsubscribe from selected feeds')}
+							</button>
+							<button dojoType='dijit.form.Button' class='alt-primary' type='submit'>
+								${__('Close this window')}
+							</button>
+						</footer>
+					`
+				});
+
+				dialog.show();
+
 			});
 
-			dialog.show();
 		}
 	});
 });

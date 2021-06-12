@@ -1,16 +1,20 @@
 <?php
-class Logger_SQL {
+class Logger_SQL implements Logger_Adapter {
 
 	private $pdo;
 
-	function log_error($errno, $errstr, $file, $line, $context) {
+	function __construct() {
+		$conn = get_class($this);
 
-		// separate PDO connection object is used for logging
-		if (!$this->pdo) $this->pdo = Db::instance()->pdo_connect();
+		ORM::configure(Db::get_dsn(), null, $conn);
+		ORM::configure('username', Config::get(Config::DB_USER), $conn);
+		ORM::configure('password', Config::get(Config::DB_PASS), $conn);
+		ORM::configure('return_result_sets', true, $conn);
+	}
 
-		if ($this->pdo && get_schema_version() > 117) {
+	function log_error(int $errno, string $errstr, string $file, int $line, $context) {
 
-			$owner_uid = $_SESSION["uid"] ? $_SESSION["uid"] : null;
+		if (Config::get_schema_version() > 117) {
 
 			// limit context length, DOMDocument dumps entire XML in here sometimes, which may be huge
 			$context = mb_substr($context, 0, 8192);
@@ -34,12 +38,23 @@ class Logger_SQL {
 			$errstr = UConverter::transcode($errstr, 'UTF-8', 'UTF-8');
 			$context = UConverter::transcode($context, 'UTF-8', 'UTF-8');
 
-			$sth = $this->pdo->prepare("INSERT INTO ttrss_error_log
-				(errno, errstr, filename, lineno, context, owner_uid, created_at) VALUES
-				(?, ?, ?, ?, ?, ?, NOW())");
-			$sth->execute([$errno, $errstr, $file, $line, $context, $owner_uid]);
+			// can't use $_SESSION["uid"] ?? null because what if its, for example, false? or zero?
+			// this would cause a PDOException on insert below
+			$owner_uid = !empty($_SESSION["uid"]) ? $_SESSION["uid"] : null;
 
-			return $sth->rowCount();
+			$entry = ORM::for_table('ttrss_error_log', get_class($this))->create();
+
+			$entry->set([
+				'errno' => $errno,
+				'errstr' => $errstr,
+				'filename' => $file,
+				'lineno' => (int)$line,
+				'context' => $context,
+				'owner_uid' => $owner_uid,
+				'created_at' => Db::NOW(),
+			]);
+
+			return $entry->save();
 		}
 
 		return false;

@@ -1,37 +1,26 @@
 <?php
-	if (file_exists("install") && !file_exists("config.php")) {
-		header("Location: install/");
-	}
-
-	if (!file_exists("config.php")) {
-		print "<b>Fatal Error</b>: You forgot to copy
-		<b>config.php-dist</b> to <b>config.php</b> and edit it.\n";
-		exit;
-	}
 
 	// we need a separate check here because functions.php might get parsed
 	// incorrectly before 5.3 because of :: syntax.
-	if (version_compare(PHP_VERSION, '5.6.0', '<')) {
-		print "<b>Fatal Error</b>: PHP version 5.6.0 or newer required. You're using " . PHP_VERSION . ".\n";
+	if (version_compare(PHP_VERSION, '7.0.0', '<')) {
+		print "<b>Fatal Error</b>: PHP version 7.0.0 or newer required. You're using " . PHP_VERSION . ".\n";
 		exit;
 	}
 
-	set_include_path(dirname(__FILE__) ."/include" . PATH_SEPARATOR .
+	set_include_path(__DIR__ ."/include" . PATH_SEPARATOR .
 		get_include_path());
 
 	require_once "autoload.php";
 	require_once "sessions.php";
 	require_once "functions.php";
-	require_once "sanity_check.php";
-	require_once "config.php";
-	require_once "db-prefs.php";
+
+	Config::sanity_check();
 
 	if (!init_plugins()) return;
 
 	UserHelper::login_sequence();
 
 	header('Content-Type: text/html; charset=utf-8');
-
 ?>
 <!DOCTYPE html>
 <html>
@@ -39,19 +28,17 @@
 	<title>Tiny Tiny RSS</title>
     <meta name="viewport" content="initial-scale=1,width=device-width" />
 
-	<?php if ($_SESSION["uid"] && !isset($_REQUEST["ignore-theme"])) {
-		$theme = get_pref("USER_CSS_THEME", false, false);
+	<?php if ($_SESSION["uid"] && empty($_SESSION["safe_mode"])) {
+		$theme = get_pref(Prefs::USER_CSS_THEME);
 		if ($theme && theme_exists("$theme")) {
-			echo stylesheet_tag(get_theme_path($theme), 'theme_css');
+			echo stylesheet_tag(get_theme_path($theme), ['id' => 'theme_css']);
 		}
 	} ?>
 
-	<?php if (theme_exists(LOCAL_OVERRIDE_STYLESHEET)) {
-		echo stylesheet_tag(get_theme_path(LOCAL_OVERRIDE_STYLESHEET));
-	} ?>
+	<?= Config::get_override_links() ?>
 
 	<script type="text/javascript">
-		const __csrf_token = "<?php echo $_SESSION["csrf_token"]; ?>";
+		const __csrf_token = "<?= $_SESSION["csrf_token"]; ?>";
 	</script>
 
 	<?php UserHelper::print_user_stylesheet() ?>
@@ -72,7 +59,7 @@
 	<script>
 		dojoConfig = {
 			async: true,
-			cacheBust: "<?php echo get_scripts_timestamp(); ?>",
+			cacheBust: "<?= get_scripts_timestamp(); ?>",
 			packages: [
 				{ name: "fox", location: "../../js" },
 			]
@@ -81,13 +68,10 @@
 	<script src="/js/sandstorm/index.js" defer></script>
 
 	<?php
-	foreach (array("lib/prototype.js",
-				"lib/scriptaculous/scriptaculous.js?load=effects,controls",
-				"lib/dojo/dojo.js",
+	foreach (["lib/dojo/dojo.js",
 				"lib/dojo/tt-rss-layer.js",
 				"js/tt-rss.js",
-				"js/common.js",
-				"errors.php?mode=js") as $jsfile) {
+				"js/common.js"] as $jsfile) {
 
 		echo javascript_tag($jsfile);
 
@@ -112,8 +96,6 @@
 				}
 			}
 		}
-
-		init_js_translations();
 	?>
 	</script>
 
@@ -129,19 +111,31 @@
 		}
 	</style>
 
+	<noscript>
+		<?= stylesheet_tag("themes/light.css") ?>
+
+		<style type="text/css">
+			body.css_loading noscript {
+				display : block;
+				margin : 16px;
+			}
+		</style>
+	</noscript>
+
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<meta name="referrer" content="no-referrer"/>
 </head>
 
 <body class="flat ttrss_main ttrss_index css_loading">
 
-<div id="overlay" style="display : block">
+<noscript class="alert alert-error"><?= ('Javascript is disabled. Please enable it.') ?></noscript>
+
+<div id="overlay">
 	<div id="overlay_inner">
-		<?php echo __("Loading, please wait...") ?>
+		<?= __("Loading, please wait...") ?>
 		<div dojoType="dijit.ProgressBar" places="0" style="width : 300px" id="loading_bar"
 	     progress="0" maximum="100">
 		</div>
-		<noscript><br/><?php print_error('Javascript is disabled. Please enable it.') ?></noscript>
 	</div>
 </div>
 
@@ -150,13 +144,14 @@
 
 <div id="main" dojoType="dijit.layout.BorderContainer">
     <div id="feeds-holder" dojoType="dijit.layout.ContentPane" region="leading" style="width : 20%" splitter="true">
-        <div id="feedlistLoading">
-            <img src='images/indicator_tiny.gif'/>
-            <?php echo  __("Loading, please wait..."); ?></div>
+        <div id="feedlistLoading" class="text-center text-muted text-small">
+			  	<img class="icon-three-dots" src="images/three-dots.svg?2">
+				<?= __("Loading, please wait..."); ?>
+			</div>
         <?php
-          foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_FEED_TREE) as $p) {
-            echo $p->hook_feed_tree();
-          }
+			 PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_FEED_TREE, function ($result) {
+				 echo $result;
+			 });
         ?>
         <div id="feedTree"></div>
     </div>
@@ -166,67 +161,67 @@
             <div id="toolbar" dojoType="fox.Toolbar">
 
             <i class="material-icons net-alert" style="display : none"
-                title="<?php echo __("Communication problem with server.") ?>">error_outline</i>
+                title="<?= __("Communication problem with server.") ?>">error_outline</i>
 
-            <i class="material-icons log-alert" style="display : none"
-                 title="<?php echo __("Recent entries found in event log.") ?>">warning</i>
+            <i class="material-icons log-alert" style="display : none" onclick="App.openPreferences('system')"
+                 title="<?= __("Recent entries found in event log.") ?>">warning</i>
 
             <i id="updates-available" class="material-icons icon-new-version" style="display : none"
-               title="<?php echo __('Updates are available from Git.') ?>">new_releases</i>
+               title="<?= __('Updates are available from Git.') ?>">new_releases</i>
 
             <?php
-            foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_MAIN_TOOLBAR_BUTTON) as $p) {
-                echo $p->hook_main_toolbar_button();
-            }
+
+            PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_MAIN_TOOLBAR_BUTTON, function ($result) {
+                echo $result;
+				});
             ?>
 
-            <form id="toolbar-headlines" action="" style="order : 10" onsubmit='return false'>
+            <div id="toolbar-headlines" dojoType="fox.Toolbar" style="order : 10">
 
-            </form>
+            </div>
 
-            <form id="toolbar-main" action="" style="order : 20" onsubmit='return false'>
+            <form id="toolbar-main" dojoType="dijit.form.Form" action="" style="order : 20" onsubmit="return false">
 
-            <select name="view_mode" title="<?php echo __('Show articles') ?>"
-                onchange="App.onViewModeChanged()"
+            <select name="view_mode" title="<?= __('Show articles') ?>"
+                onchange="Feeds.onViewModeChanged()"
                 dojoType="fox.form.Select">
-                <option selected="selected" value="adaptive"><?php echo __('Adaptive') ?></option>
-                <option value="all_articles"><?php echo __('All Articles') ?></option>
-                <option value="marked"><?php echo __('Starred') ?></option>
-                <option value="published"><?php echo __('Published') ?></option>
-                <option value="unread"><?php echo __('Unread') ?></option>
-                <option value="has_note"><?php echo __('With Note') ?></option>
-                <!-- <option value="noscores"><?php echo __('Ignore Scoring') ?></option> -->
+                <option selected="selected" value="adaptive"><?= __('Adaptive') ?></option>
+                <option value="all_articles"><?= __('All Articles') ?></option>
+                <option value="marked"><?= __('Starred') ?></option>
+                <option value="published"><?= __('Published') ?></option>
+                <option value="unread"><?= __('Unread') ?></option>
+                <option value="has_note"><?= __('With Note') ?></option>
             </select>
 
-			<select title="<?php echo __('Sort articles') ?>"
-                onchange="App.onViewModeChanged()"
+			<select title="<?= __('Sort articles') ?>"
+                onchange="Feeds.onViewModeChanged()"
                 dojoType="fox.form.Select" name="order_by">
 
-				<option selected="selected" value="default"><?php echo __('Default') ?></option>
-                <option value="feed_dates"><?php echo __('Newest first') ?></option>
-                <option value="date_reverse"><?php echo __('Oldest first') ?></option>
-                <option value="title"><?php echo __('Title') ?></option>
+				<option selected="selected" value="default"><?= __('Default') ?></option>
+                <option value="feed_dates"><?= __('Newest first') ?></option>
+                <option value="date_reverse"><?= __('Oldest first') ?></option>
+                <option value="title"><?= __('Title') ?></option>
 
-				<?php foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINES_CUSTOM_SORT_MAP) as $p) {
-					$sort_map = $p->hook_headlines_custom_sort_map();
-
-					foreach ($sort_map as $sort_value => $sort_title) {
-						print "<option value=\"" . htmlspecialchars($sort_value) . "\">$sort_title</option>";
-					}
-				} ?>
+				<?php
+					PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_HEADLINES_CUSTOM_SORT_MAP, function ($result) {
+						foreach ($result as $sort_value => $sort_title) {
+							print "<option value=\"" . htmlspecialchars($sort_value) . "\">$sort_title</option>";
+						}
+					});
+				?>
             </select>
 
-            <div dojoType="fox.form.ComboButton" onclick="Feeds.catchupCurrent()">
-                <span><?php echo __('Mark as read') ?></span>
+            <div class="catchup-button" dojoType="fox.form.ComboButton" onclick="Feeds.catchupCurrent()">
+                <span><?= __('Mark as read') ?></span>
                 <div dojoType="dijit.DropDownMenu">
                     <div dojoType="dijit.MenuItem" onclick="Feeds.catchupCurrent('1day')">
-                        <?php echo __('Older than one day') ?>
+                        <?= __('Older than one day') ?>
                     </div>
                     <div dojoType="dijit.MenuItem" onclick="Feeds.catchupCurrent('1week')">
-                        <?php echo __('Older than one week') ?>
+                        <?= __('Older than one week') ?>
                     </div>
                     <div dojoType="dijit.MenuItem" onclick="Feeds.catchupCurrent('2week')">
-                        <?php echo __('Older than two weeks') ?>
+                        <?= __('Older than two weeks') ?>
                     </div>
                 </div>
             </div>
@@ -236,35 +231,35 @@
             <div class="action-chooser" style="order : 30">
 
                 <?php
-                    foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_TOOLBAR_BUTTON) as $p) {
-                         echo $p->hook_toolbar_button();
-                    }
+						  PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_TOOLBAR_BUTTON, function ($result) {
+							echo $result;
+						});
                 ?>
 
-                <div dojoType="fox.form.DropDownButton" class="action-button" title="<?php echo __('Actions...') ?>">
+                <div dojoType="fox.form.DropDownButton" class="action-button" title="<?= __('Actions...') ?>">
 					<span><i class="material-icons">menu</i></span>
                     <div dojoType="dijit.Menu" style="display: none">
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcPrefs')"><?php echo __('Preferences...') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcSearch')"><?php echo __('Search...') ?></div>
-                        <div dojoType="dijit.MenuItem" disabled="1"><?php echo __('Feed actions:') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcAddFeed')"><?php echo __('Subscribe to feed...') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcEditFeed')"><?php echo __('Edit this feed...') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcRemoveFeed')"><?php echo __('Unsubscribe') ?></div>
-                        <div dojoType="dijit.MenuItem" disabled="1"><?php echo __('All feeds:') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcCatchupAll')"><?php echo __('Mark as read') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcShowOnlyUnread')"><?php echo __('(Un)hide read feeds') ?></div>
-                        <div dojoType="dijit.MenuItem" disabled="1"><?php echo __('Other actions:') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcToggleWidescreen')"><?php echo __('Toggle widescreen mode') ?></div>
-                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcHKhelp')"><?php echo __('Keyboard shortcuts help') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcPrefs')"><?= __('Preferences...') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcSearch')"><?= __('Search...') ?></div>
+                        <div dojoType="dijit.MenuItem" disabled="1"><?= __('Feed actions:') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcAddFeed')"><?= __('Subscribe to feed...') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcEditFeed')"><?= __('Edit this feed...') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcRemoveFeed')"><?= __('Unsubscribe') ?></div>
+                        <div dojoType="dijit.MenuItem" disabled="1"><?= __('All feeds:') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcCatchupAll')"><?= __('Mark as read') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcShowOnlyUnread')"><?= __('(Un)hide read feeds') ?></div>
+                        <div dojoType="dijit.MenuItem" disabled="1"><?= __('Other actions:') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcToggleWidescreen')"><?= __('Toggle widescreen mode') ?></div>
+                        <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcHKhelp')"><?= __('Keyboard shortcuts help') ?></div>
 
                         <?php
-                            foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ACTION_ITEM) as $p) {
-                             echo $p->hook_action_item();
-                            }
+									PluginHost::getInstance()->run_hooks_callback(PluginHost::HOOK_ACTION_ITEM, function ($result) {
+										echo $result;
+									});
                         ?>
 
-                        <?php if (!$_SESSION["hide_logout"]) { ?>
-                            <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcLogout')"><?php echo __('Logout') ?></div>
+                        <?php if (empty($_SESSION["hide_logout"])) { ?>
+                            <div dojoType="dijit.MenuItem" onclick="App.onActionSelected('qmcLogout')"><?= __('Logout') ?></div>
                         <?php } ?>
                     </div>
                 </div>
@@ -275,7 +270,7 @@
             <div id="headlines-frame" dojoType="dijit.layout.ContentPane" tabindex="0"
                     region="center">
                 <div id="headlinesInnerContainer">
-                    <div class="whiteBox"><?php echo __('Loading, please wait...') ?></div>
+                    <div class="whiteBox"><?= __('Loading, please wait...') ?></div>
                 </div>
             </div>
             <div id="content-insert" dojoType="dijit.layout.ContentPane" region="bottom"

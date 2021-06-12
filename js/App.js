@@ -1,8 +1,9 @@
 'use strict';
 
-/* global __, Article, Ajax, Headlines, Filters */
-/* global xhrPost, xhrJson, dojo, dijit, PluginHost, Notify, $$, Feeds, Cookie */
-/* global CommonDialogs, Plugins, Effect */
+/* eslint-disable new-cap */
+/* global __, Article, Headlines, Filters, fox */
+/* global xhr, dojo, dijit, PluginHost, Notify, Feeds, Cookie */
+/* global CommonDialogs, Plugins */
 
 const App = {
    _initParams: [],
@@ -16,6 +17,75 @@ const App = {
    hotkey_actions: {},
    is_prefs: false,
    LABEL_BASE_INDEX: -1024,
+   _translations: {},
+   Hash: {
+      get: function() {
+         return dojo.queryToObject(window.location.hash.substring(1));
+      },
+      set: function(params) {
+         const obj = dojo.queryToObject(window.location.hash.substring(1));
+         window.location.hash = dojo.objectToQuery({...obj, ...params});
+      }
+   },
+   l10n: {
+      ngettext: function(msg1, msg2, n) {
+         return self.__((parseInt(n) > 1) ? msg2 : msg1);
+      },
+      __: function(msg) {
+         return App._translations[msg] ? App._translations[msg] : msg;
+      }
+   },
+   FormFields: {
+      attributes_to_string: function(attributes) {
+         return Object.keys(attributes).map((k) =>
+            `${App.escapeHtml(k)}="${App.escapeHtml(attributes[k])}"`)
+            .join(" ");
+      },
+      hidden_tag: function(name, value, attributes = {}, id = "") {
+         return `<input id="${App.escapeHtml(id)}" dojoType="dijit.form.TextBox" ${this.attributes_to_string(attributes)}
+            style="display : none" name="${name}" value="${App.escapeHtml(value)}"></input>`
+      },
+      // allow html inside because of icons
+      button_tag: function(value, type, attributes = {}) {
+         return `<button dojoType="dijit.form.Button" ${this.attributes_to_string(attributes)}
+            type="${type}">${value}</button>`
+
+      },
+      icon: function(icon, attributes = {}) {
+         return `<i class="material-icons" ${this.attributes_to_string(attributes)}>${icon}</i>`;
+      },
+      submit_tag: function(value, attributes = {}) {
+         return this.button_tag(value, "submit", {...{class: "alt-primary"}, ...attributes});
+      },
+      cancel_dialog_tag: function(value, attributes = {}) {
+         return this.button_tag(value, "", {...{onclick: "App.dialogOf(this).hide()"}, ...attributes});
+      },
+      checkbox_tag: function(name, checked = false, value = "", attributes = {}, id = "") {
+         // checked !== '0' prevents mysql "boolean" false to be implicitly cast as true
+         return `<input dojoType="dijit.form.CheckBox" type="checkbox" name="${App.escapeHtml(name)}"
+                     ${checked !== '0' && checked ? "checked" : ""}
+                     ${value ? `value="${App.escapeHtml(value)}"` : ""}
+                     ${this.attributes_to_string(attributes)} id="${App.escapeHtml(id)}">`
+      },
+      select_tag: function(name, value, values = [], attributes = {}, id = "") {
+         return `
+            <select name="${name}" dojoType="fox.form.Select" id="${App.escapeHtml(id)}" ${this.attributes_to_string(attributes)}>
+               ${values.map((v) =>
+                  `<option ${v == value ? 'selected="selected"' : ''} value="${App.escapeHtml(v)}">${App.escapeHtml(v)}</option>`
+               ).join("")}
+            </select>
+         `
+      },
+      select_hash: function(name, value, values = {}, attributes = {}, id = "") {
+         return `
+            <select name="${name}" dojoType="fox.form.Select" id="${App.escapeHtml(id)}" ${this.attributes_to_string(attributes)}>
+               ${Object.keys(values).map((vk) =>
+                     `<option ${vk == value ? 'selected="selected"' : ''} value="${App.escapeHtml(vk)}">${App.escapeHtml(values[vk])}</option>`
+               ).join("")}
+            </select>
+         `
+      }
+   },
    Scrollable: {
 		scrollByPages: function (elem, page_offset) {
 			if (!elem) return;
@@ -47,7 +117,35 @@ const App = {
 
 			return elem.offsetTop + elem.offsetHeight <= ctr.scrollTop + ctr.offsetHeight &&
 				elem.offsetTop >= ctr.scrollTop;
-		}
+		},
+      scrollTo: function (elem, ctr, params = {}) {
+         const force_to_top = params.force_to_top || false;
+
+         if (!elem || !ctr) return;
+
+         if (force_to_top || !App.Scrollable.fitsInContainer(elem, ctr)) {
+            ctr.scrollTop = elem.offsetTop;
+         }
+      }
+   },
+   byId: function(id) {
+      return document.getElementById(id);
+   },
+   find: function(query) {
+      return document.querySelector(query)
+   },
+   findAll: function(query) {
+      return document.querySelectorAll(query);
+   },
+   dialogOf: function (elem) {
+
+      // elem could be a Dijit widget
+      elem = elem.domNode ? elem.domNode : elem;
+
+      return dijit.getEnclosingWidget(elem.closest('.dijitDialog'));
+   },
+   getPhArgs(plugin, method, args = {}) {
+      return {...{op: "pluginhandler", plugin: plugin, method: method}, ...args};
    },
    label_to_feed_id: function(label) {
       return this.LABEL_BASE_INDEX - 1 - Math.abs(label);
@@ -70,29 +168,28 @@ const App = {
 		}
 	},
 	setupNightModeDetection: function(callback) {
-		if (!$("theme_css")) {
+		if (!App.byId("theme_css")) {
 			const mql = window.matchMedia('(prefers-color-scheme: dark)');
 
 			try {
 				mql.addEventListener("change", () => {
-					this.nightModeChanged(mql.matches, $("theme_auto_css"));
+					this.nightModeChanged(mql.matches, App.byId("theme_auto_css"));
 				});
 			} catch (e) {
 				console.warn("exception while trying to set MQL event listener");
 			}
 
-			const link = new Element("link", {
-				rel: "stylesheet",
-				id: "theme_auto_css"
-			});
+			const link = document.createElement("link");
+         link.rel = "stylesheet";
+         link.id = "theme_auto_css";
 
 			if (callback) {
-						link.onload = function () {
+						link.onload = function() {
 							document.querySelector("body").removeClassName("css_loading");
 							callback();
 						};
 
-						link.onerror = function(event) {
+						link.onerror = function() {
 							alert("Fatal error while loading application stylesheet: " + link.getAttribute("href"));
 						}
 					}
@@ -106,27 +203,6 @@ const App = {
 			if (callback) callback();
 		}
 	},
-	enableCsrfSupport: function() {
-		const _this = this;
-
-		Ajax.Base.prototype.initialize = Ajax.Base.prototype.initialize.wrap(
-			function (callOriginal, options) {
-
-				if (_this.getInitParam("csrf_token") != undefined) {
-					Object.extend(options, options || { });
-
-					if (Object.isString(options.parameters))
-						options.parameters = options.parameters.toQueryParams();
-					else if (Object.isHash(options.parameters))
-						options.parameters = options.parameters.toObject();
-
-					options.parameters["csrf_token"] = _this.getInitParam("csrf_token");
-				}
-
-				return callOriginal(options);
-			}
-		);
-   },
    postCurrentWindow: function(target, params) {
       const form = document.createElement("form");
 
@@ -175,8 +251,13 @@ const App = {
 		}
 
    },
-	urlParam: function(param) {
-		return String(window.location.href).parseQuery()[param];
+	urlParam: function(name) {
+		try {
+         const results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
+         return decodeURIComponent(results[1].replace(/\+/g, " ")) || 0;
+      } catch (e) {
+         return 0;
+      }
 	},
 	next_seq: function() {
 		this._rpc_seq += 1;
@@ -192,7 +273,7 @@ const App = {
 			dijit.byId("loading_bar").update({progress: this._loading_progress});
 
 		if (this._loading_progress >= 90) {
-			$("overlay").hide();
+			App.byId("overlay").hide();
 		}
 
 	},
@@ -223,7 +304,7 @@ const App = {
 		if (!this.hotkey_prefix && hotkeys_map[0].indexOf(keychar) != -1) {
 
 			this.hotkey_prefix = keychar;
-			$("cmdline").innerHTML = keychar;
+			App.byId("cmdline").innerHTML = keychar;
 			Element.show("cmdline");
 
 			window.clearTimeout(this.hotkey_prefix_timeout);
@@ -272,216 +353,154 @@ const App = {
 	cleanupMemory: function(root) {
 		const dijits = dojo.query("[widgetid]", dijit.byId(root).domNode).map(dijit.byNode);
 
-		dijits.each(function (d) {
+		dijits.forEach(function (d) {
 			dojo.destroy(d.domNode);
 		});
 
-		$$("#" + root + " *").each(function (i) {
+		App.findAll("#" + root + " *").forEach(function (i) {
 			i.parentNode ? i.parentNode.removeChild(i) : true;
 		});
    },
    // htmlspecialchars()-alike for headlines data-content attribute
-   escapeHtml: function(text) {
-      const map = {
-         '&': '&amp;',
-         '<': '&lt;',
-         '>': '&gt;',
-         '"': '&quot;',
-         "'": '&#039;'
-      };
+   escapeHtml: function(p) {
+      if (typeof p == "string") {
+         const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+         };
 
-      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+         return p.replace(/[&<>"']/g, function(m) { return map[m]; });
+      } else {
+         return p;
+      }
+   },
+   // http://stackoverflow.com/questions/6251937/how-to-get-selecteduser-highlighted-text-in-contenteditable-element-and-replac
+   getSelectedText: function() {
+      let text = "";
+
+      if (typeof window.getSelection != "undefined") {
+         const sel = window.getSelection();
+         if (sel.rangeCount) {
+            const container = document.createElement("div");
+            for (let i = 0, len = sel.rangeCount; i < len; ++i) {
+               container.appendChild(sel.getRangeAt(i).cloneContents());
+            }
+            text = container.innerHTML;
+         }
+      } else if (typeof document.selection != "undefined") {
+         if (document.selection.type == "Text") {
+            text = document.selection.createRange().textText;
+         }
+      }
+
+      return text.stripTags();
    },
    displayIfChecked: function(checkbox, elemId) {
       if (checkbox.checked) {
-         Effect.Appear(elemId, {duration : 0.5});
+         Element.show(elemId);
       } else {
-         Effect.Fade(elemId, {duration : 0.5});
+         Element.hide(elemId);
       }
    },
-   helpDialog: function(topic) {
-		if (dijit.byId("helpDlg"))
-			dijit.byId("helpDlg").destroyRecursive();
+   hotkeyHelp: function() {
+      xhr.post("backend.php", {op: "rpc", method: "hotkeyHelp"}, (reply) => {
+         const dialog = new fox.SingleUseDialog({
+            title: __("Keyboard shortcuts"),
+            content: reply,
+         });
 
-	   xhrPost("backend.php", {op: "backend", method: "help", topic: topic}, (transport) => {
-		   const dialog = new dijit.Dialog({
-			   id: "helpDlg",
-			   title: __("Help"),
-			   style: "width: 600px",
-			   content: transport.responseText,
-		   });
+         dialog.show();
+      });
+   },
+	handleRpcJson: function(reply) {
 
-		   dialog.show();
-	   });
-	},
-	displayDlg: function(title, id, param, callback) {
-		Notify.progress("Loading, please wait...", true);
+		const netalert = App.find(".net-alert");
 
-		const query = {op: "dlg", method: id, param: param};
+      if (reply) {
+         const error = reply['error'];
+         const seq = reply['seq'];
+         const message = reply['message'];
+         const counters = reply['counters'];
+         const runtime_info = reply['runtime-info'];
 
-		xhrPost("backend.php", query, (transport) => {
-			try {
-				const content = transport.responseText;
+         if (error && error.code && error.code != App.Error.E_SUCCESS) {
+            console.warn("handleRpcJson: fatal error", error);
+            this.Error.fatal(error.code, error.params);
+            return false;
+         }
 
-				let dialog = dijit.byId("infoBox");
+         if (seq && this.get_seq() != seq) {
+            console.warn("handleRpcJson: sequence mismatch: ", seq, '!=', this.get_seq());
+            return false;
+         }
 
-				if (!dialog) {
-					dialog = new dijit.Dialog({
-						title: title,
-						id: 'infoBox',
-						style: "width: 600px",
-						onCancel: function () {
-							return true;
-						},
-						onExecute: function () {
-							return true;
-						},
-						onClose: function () {
-							return true;
-						},
-						content: content
-					});
-				} else {
-					dialog.attr('title', title);
-					dialog.attr('content', content);
-				}
+         // not in preferences
+         if (typeof Feeds != "undefined") {
+            if (message == "UPDATE_COUNTERS") {
+               console.log("need to refresh counters for", reply.feeds);
+               Feeds.requestCounters(reply.feeds);
+            }
 
-				dialog.show();
+            if (counters)
+               Feeds.parseCounters(counters);
+         }
 
-				Notify.close();
+         if (runtime_info)
+            this.parseRuntimeInfo(runtime_info);
 
-				if (callback) callback(transport);
-			} catch (e) {
-				this.Error.report(e);
-			}
-		});
+         if (netalert) netalert.hide();
 
-		return false;
-	},
-	handleRpcJson: function(transport) {
+         return true;
+      } else {
+         if (netalert) netalert.show();
 
-		const netalert = $$("#toolbar .net-alert")[0];
+         Notify.error("Communication problem with server.");
 
-		try {
-			const reply = JSON.parse(transport.responseText);
-
-			if (reply) {
-				const error = reply['error'];
-
-				if (error) {
-					const code = error['code'];
-					const msg = error['message'];
-
-					console.warn("[handleRpcJson] received fatal error ", code, msg);
-
-					if (code != 0) {
-						/* global ERRORS */
-						this.Error.fatal(ERRORS[code], {info: msg, code: code});
-						return false;
-					}
-				}
-
-				const seq = reply['seq'];
-
-				if (seq && this.get_seq() != seq) {
-					console.log("[handleRpcJson] sequence mismatch: ", seq, '!=', this.get_seq());
-					return true;
-				}
-
-				const message = reply['message'];
-
-				if (message == "UPDATE_COUNTERS") {
-					console.log("need to refresh counters...");
-					Feeds.requestCounters(true);
-				}
-
-				const counters = reply['counters'];
-
-				if (counters)
-					Feeds.parseCounters(counters);
-
-				const runtime_info = reply['runtime-info'];
-
-				if (runtime_info)
-					this.parseRuntimeInfo(runtime_info);
-
-				if (netalert) netalert.hide();
-
-				return reply;
-
-			} else {
-				if (netalert) netalert.show();
-
-				Notify.error("Communication problem with server.");
-			}
-
-		} catch (e) {
-			if (netalert) netalert.show();
-
-			Notify.error("Communication problem with server.");
-
-			console.error(e);
+         return false;
 		}
-
-		return false;
 	},
 	parseRuntimeInfo: function(data) {
-		for (const k in data) {
-			if (data.hasOwnProperty(k)) {
-				const v = data[k];
+		Object.keys(data).forEach((k) => {
+         const v = data[k];
 
-				console.log("RI:", k, "=>", v);
+         console.log("RI:", k, "=>", v);
 
-				if (k == "daemon_is_running" && v != 1) {
-					Notify.error("<span onclick=\"App.explainError(1)\">Update daemon is not running.</span>", true);
-					return;
-				}
+         if (k == "daemon_is_running" && v != 1) {
+            Notify.error("Update daemon is not running.", true);
+            return;
+         }
 
-				if (k == "recent_log_events") {
-					const alert = $$(".log-alert")[0];
+         if (k == "recent_log_events") {
+            const alert = App.find(".log-alert");
 
-					if (alert) {
-						v > 0 ? alert.show() : alert.hide();
-					}
-				}
+            if (alert) {
+               v > 0 ? alert.show() : alert.hide();
+            }
+         }
 
-				if (k == "daemon_stamp_ok" && v != 1) {
-					Notify.error("<span onclick=\"App.explainError(3)\">Update daemon is not updating feeds.</span>", true);
-					return;
-				}
+         if (k == "daemon_stamp_ok" && v != 1) {
+            Notify.error("Update daemon is not updating feeds.", true);
+            return;
+         }
 
-				if (k == "max_feed_id" || k == "num_feeds") {
-					if (this.getInitParam(k) != v) {
-						console.log("feed count changed, need to reload feedlist.");
-						Feeds.reload();
-					}
-				}
+         if (typeof Feeds != "undefined") {
+            if (k == "max_feed_id" || k == "num_feeds") {
+               if (this.getInitParam(k) && this.getInitParam(k) != v) {
+                  console.log("feed count changed, need to reload feedlist:", this.getInitParam(k), v);
+                  Feeds.reload();
+               }
+            }
+         }
 
-				this.setInitParam(k, v);
-			}
-		}
+         this.setInitParam(k, v);
+		});
 
 		PluginHost.run(PluginHost.HOOK_RUNTIME_INFO_LOADED, data);
 	},
-	backendSanityCallback: function(transport) {
-		const reply = JSON.parse(transport.responseText);
-
-		/* global ERRORS */
-
-		if (!reply) {
-			this.Error.fatal(ERRORS[3], {info: transport.responseText});
-			return;
-		}
-
-		if (reply['error']) {
-			const code = reply['error']['code'];
-
-			if (code && code != 0) {
-				return this.Error.fatal(ERRORS[code],
-					{code: code, info: reply['error']['message']});
-			}
-		}
-
+	backendSanityCallback: function(reply) {
 		console.log("sanity check ok");
 
 		const params = reply['init-params'];
@@ -489,118 +508,126 @@ const App = {
 		if (params) {
 			console.log('reading init-params...');
 
-			for (const k in params) {
-				if (params.hasOwnProperty(k)) {
-					switch (k) {
-						case "label_base_index":
-							this.LABEL_BASE_INDEX = parseInt(params[k]);
-							break;
-						case "cdm_auto_catchup":
-							if (params[k] == 1) {
-								const hl = $("headlines-frame");
-								if (hl) hl.addClassName("auto_catchup");
-							}
-							break;
-						case "hotkeys":
-							// filter mnemonic definitions (used for help panel) from hotkeys map
-							// i.e. *(191)|Ctrl-/ -> *(191)
-                     {
-                        const tmp = [];
-                        for (const sequence in params[k][1]) {
-                           if (params[k][1].hasOwnProperty(sequence)) {
-                              const filtered = sequence.replace(/\|.*$/, "");
-                              tmp[filtered] = params[k][1][sequence];
-                           }
-                        }
+			Object.keys(params).forEach((k) => {
+            switch (k) {
+               case "label_base_index":
+                  this.LABEL_BASE_INDEX = parseInt(params[k]);
+                  break;
+               case "cdm_auto_catchup":
+                  {
+                     const headlines = App.byId("headlines-frame");
 
-                        params[k][1] = tmp;
-                     }
-							break;
-					}
+                  // we could be in preferences
+                     if (headlines)
+                        headlines.setAttribute("data-auto-catchup", params[k] ? "true" : "false");
+                  }
+                  break;
+               case "hotkeys":
+                  // filter mnemonic definitions (used for help panel) from hotkeys map
+                  // i.e. *(191)|Ctrl-/ -> *(191)
+                  {
+                     const tmp = [];
 
-					console.log("IP:", k, "=>", params[k]);
-					this.setInitParam(k, params[k]);
-				}
-			}
+                     Object.keys(params[k][1]).forEach((sequence) => {
+                        const filtered = sequence.replace(/\|.*$/, "");
+                        tmp[filtered] = params[k][1][sequence];
+                     });
+
+                     params[k][1] = tmp;
+                  }
+                  break;
+            }
+
+            console.log("IP:", k, "=>", params[k]);
+            this.setInitParam(k, params[k]);
+			});
 
 			// PluginHost might not be available on non-index pages
 			if (typeof PluginHost !== 'undefined')
 				PluginHost.run(PluginHost.HOOK_PARAMS_LOADED, this._initParams);
 		}
 
+      const translations = reply['translations'];
+
+      if (translations) {
+         console.log('reading translations...');
+         App._translations = translations;
+      }
+
 		this.initSecondStage();
 	},
-	explainError: function(code) {
-		return this.displayDlg(__("Error explained"), "explainError", code);
-	},
 	Error: {
-		fatal: function (error, params) {
-			params = params || {};
-
-			if (params.code) {
-				if (params.code == 6) {
-					window.location.href = "index.php";
-					return;
-				} else if (params.code == 5) {
-					window.location.href = "public.php?op=dbupdate";
-					return;
-				}
-			}
+      E_SUCCESS: "E_SUCCESS",
+      E_UNAUTHORIZED: "E_UNAUTHORIZED",
+      E_SCHEMA_MISMATCH: "E_SCHEMA_MISMATCH",
+      E_URL_SCHEME_MISMATCH: "E_URL_SCHEME_MISMATCH",
+		fatal: function (error, params = {}) {
+         if (error == App.Error.E_UNAUTHORIZED) {
+            window.location.href = "index.php";
+            return;
+         } else if (error == App.Error.E_SCHEMA_MISMATCH) {
+            window.location.href = "public.php?op=dbupdate";
+            return;
+         } else if (error == App.Error.E_URL_SCHEME_MISMATCH) {
+            params.description = __("URL scheme reported by your browser (%a) doesn't match server-configured SELF_URL_PATH (%b), check X-Forwarded-Proto.")
+               .replace("%a", params.client_scheme)
+               .replace("%b", params.server_scheme);
+            params.info = `SELF_URL_PATH: ${params.self_url_path}\nCLIENT_LOCATION: ${document.location.href}`
+         }
 
 			return this.report(error,
-				Object.extend({title: __("Fatal error")}, params));
+				{...{title: __("Fatal error")}, ...params});
 		},
-		report: function(error, params) {
-			params = params || {};
-
+		report: function(error, params = {}) {
 			if (!error) return;
 
-			console.error("[Error.report]", error, params);
+			console.error("error.report:", error, params);
 
 			const message = params.message ? params.message : error.toString();
 
 			try {
-				xhrPost("backend.php",
+				xhr.post("backend.php",
 					{op: "rpc", method: "log",
 						file: params.filename ? params.filename : error.fileName,
 						line: params.lineno ? params.lineno : error.lineNumber,
 						msg: message,
 						context: error.stack},
-					(transport) => {
-						console.warn("[Error.report] log response", transport.responseText);
+					(reply) => {
+						console.warn("[Error.report] log response", reply);
 					});
 			} catch (re) {
 				console.error("[Error.report] exception while saving logging error on server", re);
 			}
 
 			try {
-				if (dijit.byId("exceptionDlg"))
-					dijit.byId("exceptionDlg").destroyRecursive();
-
-				let stack_msg = "";
-
-				if (error.stack)
-					stack_msg += `<div><b>Stack trace:</b></div>
-						<textarea name="stack" readonly="1">${error.stack}</textarea>`;
-
-				if (params.info)
-					stack_msg += `<div><b>Additional information:</b></div>
-						<textarea name="stack" readonly="1">${params.info}</textarea>`;
-
-				const content = `<div class="error-contents">
-						<p class="message">${message}</p>
-						${stack_msg}
-						<div class="dlgButtons">
-							<button dojoType="dijit.form.Button"
-								onclick="dijit.byId('exceptionDlg').hide()">${__('Close this window')}</button>
-						</div>
-					</div>`;
-
-				const dialog = new dijit.Dialog({
-					id: "exceptionDlg",
+				const dialog = new fox.SingleUseDialog({
 					title: params.title || __("Unhandled exception"),
-					style: "width: 600px",
-					content: content
+					content: `
+               <div class='exception-contents'>
+                  <h3>${message}</h3>
+
+                  ${params.description ? `<p>${params.description}</p>` : ''}
+
+                  ${error.stack ?
+                  `<header>${__('Stack trace')}</header>
+                  <section>
+                     <textarea readonly='readonly'>${error.stack}</textarea>
+                  </section>` : ''}
+
+                  ${params && params.info ?
+                     `
+                     <header>${__('Additional information')}</header>
+                     <section>
+                        <textarea readonly='readonly'>${params.info}</textarea>
+                     </section>
+                     ` : ''}
+               </div>
+               <footer class='text-center'>
+                  <button dojoType="dijit.form.Button" class='alt-primary' type='submit'>
+                     ${__('Close this window')}
+                  </button>
+               </footer>
+            </div>`
 				});
 
 				dialog.show();
@@ -620,6 +647,10 @@ const App = {
 	isPrefs() {
 		return this.is_prefs;
    },
+   audioCanPlay: function(ctype) {
+      const a = document.createElement('audio');
+      return a.canPlayType(ctype);
+   },
    init: function(parser, is_prefs) {
       this.is_prefs = is_prefs;
       window.onerror = this.Error.onWindowError;
@@ -636,24 +667,18 @@ const App = {
 
          this.setLoadingProgress(30);
          this.initHotkeyActions();
-         this.enableCsrfSupport();
-
-         const a = document.createElement('audio');
-         const hasAudio = !!a.canPlayType;
-         const hasSandbox = "sandbox" in document.createElement("iframe");
-         const hasMp3 = !!(a.canPlayType && a.canPlayType('audio/mpeg;').replace(/no/, ''));
-         const clientTzOffset = new Date().getTimezoneOffset() * 60;
 
          const params = {
-            op: "rpc", method: "sanityCheck", hasAudio: hasAudio,
-            hasMp3: hasMp3,
-            clientTzOffset: clientTzOffset,
-            hasSandbox: hasSandbox
+            op: "rpc",
+            method: "sanityCheck",
+            clientTzOffset: new Date().getTimezoneOffset() * 60,
+            hasSandbox: "sandbox" in document.createElement("iframe"),
+            clientLocation: window.location.href
          };
 
-         xhrPost("backend.php", params, (transport) => {
+         xhr.json("backend.php", params, (reply) => {
             try {
-               this.backendSanityCallback(transport);
+               this.backendSanityCallback(reply);
             } catch (e) {
                this.Error.report(e);
             }
@@ -663,23 +688,29 @@ const App = {
    checkBrowserFeatures: function() {
       let errorMsg = "";
 
-      ['MutationObserver'].each(function(wf) {
-         if (!(wf in window)) {
-            errorMsg = `Browser feature check failed: <code>window.${wf}</code> not found.`;
+      ['MutationObserver', 'requestIdleCallback'].forEach((t) => {
+         if (!(t in window)) {
+            errorMsg = `Browser check failed: <code>window.${t}</code> not found.`;
             throw new Error(errorMsg);
          }
       });
 
-      if (errorMsg) {
-         this.Error.fatal(errorMsg, {info: navigator.userAgent});
+      if (typeof Promise.allSettled == "undefined") {
+         errorMsg = `Browser check failed: <code>Promise.allSettled</code> is not defined.`;
+         throw new Error(errorMsg);
       }
 
       return errorMsg == "";
    },
+   updateRuntimeInfo: function() {
+      xhr.json("backend.php", {op: "rpc", method: "getruntimeinfo"}, () => {
+         // handled by xhr.json()
+      });
+   },
    initSecondStage: function() {
 
-      document.onkeydown = (event) => { return this.hotkeyHandler(event) };
-      document.onkeypress = (event) => { return this.hotkeyHandler(event) };
+      document.onkeydown = (event) => this.hotkeyHandler(event);
+      document.onkeypress = (event) => this.hotkeyHandler(event);
 
       if (this.is_prefs) {
 
@@ -693,14 +724,18 @@ const App = {
             if (tab) {
                dijit.byId("pref-tabs").selectChild(tab);
 
-               switch (this.urlParam('method')) {
-                  case "editfeed":
-                     window.setTimeout(() => {
-                        CommonDialogs.editFeed(this.urlParam('methodparam'))
-                     }, 100);
-                     break;
-                  default:
-                     console.warn("initSecondStage, unknown method:", this.urlParam("method"));
+               const method = this.urlParam("method");
+
+               if (method) {
+                  switch (method) {
+                     case "editfeed":
+                        window.setTimeout(() => {
+                           CommonDialogs.editFeed(this.urlParam('methodparam'))
+                        }, 100);
+                        break;
+                     default:
+                        console.warn("initSecondStage, unknown method:", method);
+                  }
                }
             }
          } else {
@@ -716,6 +751,7 @@ const App = {
 
          dojo.connect(dijit.byId("pref-tabs"), "selectChild", function (elem) {
             localStorage.setItem("ttrss:prefs-tab", elem.id);
+            App.updateRuntimeInfo();
          });
 
       } else {
@@ -745,18 +781,15 @@ const App = {
                }
             });
 
-         const toolbar = document.forms["toolbar-main"];
-
-         dijit.getEnclosingWidget(toolbar.view_mode).attr('value',
-            this.getInitParam("default_view_mode"));
-
-         dijit.getEnclosingWidget(toolbar.order_by).attr('value',
-            this.getInitParam("default_view_order_by"));
+         dijit.byId('toolbar-main').setValues({
+            view_mode: this.getInitParam("default_view_mode"),
+            order_by: this.getInitParam("default_view_order_by")
+         });
 
          this.setLoadingProgress(50);
 
          this._widescreen_mode = this.getInitParam("widescreen");
-         this.switchPanelMode(this._widescreen_mode);
+         this.setWidescreen(this._widescreen_mode);
 
          Headlines.initScrollHandler();
 
@@ -771,24 +804,41 @@ const App = {
             }, 3600 * 1000);
          }
 
-         console.log("second stage ok");
-
          PluginHost.run(PluginHost.HOOK_INIT_COMPLETE, null);
-
       }
+
+      if (!this.getInitParam("bw_limit"))
+         window.setInterval(() => {
+            App.updateRuntimeInfo();
+         }, 60 * 1000)
+
+      console.log("second stage ok");
 
    },
    checkForUpdates: function() {
       console.log('checking for updates...');
 
-      xhrJson("backend.php", {op: 'rpc', method: 'checkforupdates'})
+      xhr.json("backend.php", {op: 'rpc', method: 'checkforupdates'})
          .then((reply) => {
             console.log('update reply', reply);
 
-            if (reply.id) {
-               $("updates-available").show();
+            const icon = App.byId("updates-available");
+
+            if (reply.changeset.id || reply.plugins.length > 0) {
+               icon.show();
+
+               const tips = [];
+
+               if (reply.changeset.id)
+                  tips.push(__("Updates for Tiny Tiny RSS are available."));
+
+               if (reply.plugins.length > 0)
+                  tips.push(__("Updates for some local plugins are available."));
+
+               icon.setAttribute("title", tips.join("\n"));
+
             } else {
-               $("updates-available").hide();
+               icon.hide();
             }
          });
    },
@@ -800,13 +850,6 @@ const App = {
       }
 
       document.title = tmp;
-   },
-   onViewModeChanged: function() {
-      const view_mode = document.forms["toolbar-main"].view_mode.value;
-
-      $$("body")[0].setAttribute("view-mode", view_mode);
-
-      return Feeds.reloadCurrent('');
    },
    hotkeyHandler: function(event) {
       if (event.target.nodeName == "INPUT" || event.target.nodeName == "TEXTAREA") return;
@@ -827,54 +870,57 @@ const App = {
          }
       }
    },
-   switchPanelMode: function(wide) {
+   setWidescreen: function(wide) {
       const article_id = Article.getActive();
+      const headlines_frame = App.byId("headlines-frame");
+      const content_insert = dijit.byId("content-insert");
+
+      // TODO: setStyle stuff should probably be handled by CSS
 
       if (wide) {
          dijit.byId("headlines-wrap-inner").attr("design", 'sidebar');
-         dijit.byId("content-insert").attr("region", "trailing");
+         content_insert.attr("region", "trailing");
 
-         dijit.byId("content-insert").domNode.setStyle({width: '50%',
+         content_insert.domNode.setStyle({width: '50%',
             height: 'auto',
             borderTopWidth: '0px' });
 
          if (parseInt(Cookie.get("ttrss_ci_width")) > 0) {
-            dijit.byId("content-insert").domNode.setStyle(
+            content_insert.domNode.setStyle(
                {width: Cookie.get("ttrss_ci_width") + "px" });
          }
 
-         $("headlines-frame").setStyle({ borderBottomWidth: '0px' });
-         $("headlines-frame").addClassName("wide");
+         headlines_frame.setStyle({ borderBottomWidth: '0px' });
 
       } else {
 
-         dijit.byId("content-insert").attr("region", "bottom");
+         content_insert.attr("region", "bottom");
 
-         dijit.byId("content-insert").domNode.setStyle({width: 'auto',
+         content_insert.domNode.setStyle({width: 'auto',
             height: '50%',
             borderTopWidth: '0px'});
 
          if (parseInt(Cookie.get("ttrss_ci_height")) > 0) {
-            dijit.byId("content-insert").domNode.setStyle(
+            content_insert.domNode.setStyle(
                {height: Cookie.get("ttrss_ci_height") + "px" });
          }
 
-         $("headlines-frame").setStyle({ borderBottomWidth: '1px' });
-         $("headlines-frame").removeClassName("wide");
-
+         headlines_frame.setStyle({ borderBottomWidth: '1px' });
       }
+
+      headlines_frame.setAttribute("data-is-wide-screen", wide ? "true" : "false");
 
       Article.close();
 
       if (article_id) Article.view(article_id);
 
-      xhrPost("backend.php", {op: "rpc", method: "setpanelmode", wide: wide ? 1 : 0});
+      xhr.post("backend.php", {op: "rpc", method: "setWidescreen", wide: wide ? 1 : 0});
    },
    initHotkeyActions: function() {
       if (this.is_prefs) {
 
          this.hotkey_actions["feed_subscribe"] = () => {
-            CommonDialogs.quickAddFeed();
+            CommonDialogs.subscribeToFeed();
          };
 
          this.hotkey_actions["create_label"] = () => {
@@ -882,26 +928,28 @@ const App = {
          };
 
          this.hotkey_actions["create_filter"] = () => {
-            Filters.quickAddFilter();
+            Filters.edit();
          };
 
          this.hotkey_actions["help_dialog"] = () => {
-            this.helpDialog("main");
+            this.hotkeyHelp();
          };
 
       } else {
 
          this.hotkey_actions["next_feed"] = () => {
-            const rv = dijit.byId("feedTree").getNextFeed(
+            const [feed, is_cat] = Feeds.getNextFeed(
                Feeds.getActive(), Feeds.activeIsCat());
 
-            if (rv) Feeds.open({feed: rv[0], is_cat: rv[1], delayed: true})
+				if (feed !== false)
+					Feeds.open({feed: feed, is_cat: is_cat, delayed: true})
          };
          this.hotkey_actions["prev_feed"] = () => {
-            const rv = dijit.byId("feedTree").getPreviousFeed(
+            const [feed, is_cat] = Feeds.getPreviousFeed(
                Feeds.getActive(), Feeds.activeIsCat());
 
-            if (rv) Feeds.open({feed: rv[0], is_cat: rv[1], delayed: true})
+				if (feed !== false)
+					Feeds.open({feed: feed, is_cat: is_cat, delayed: true})
          };
          this.hotkey_actions["next_article_or_scroll"] = (event) => {
             if (this.isCombinedMode())
@@ -1030,14 +1078,13 @@ const App = {
             Feeds.toggleUnread();
          };
          this.hotkey_actions["feed_subscribe"] = () => {
-            CommonDialogs.quickAddFeed();
+            CommonDialogs.subscribeToFeed();
          };
          this.hotkey_actions["feed_debug_update"] = () => {
             if (!Feeds.activeIsCat() && parseInt(Feeds.getActive()) > 0) {
-               //window.open("backend.php?op=feeds&method=update_debugger&feed_id=" + Feeds.getActive());
 
                /* global __csrf_token */
-               App.postOpenWindow("backend.php", {op: "feeds", method: "update_debugger",
+               App.postOpenWindow("backend.php", {op: "feeds", method: "updatedebugger",
                   feed_id: Feeds.getActive(), csrf_token: __csrf_token});
 
             } else {
@@ -1046,8 +1093,6 @@ const App = {
          };
 
          this.hotkey_actions["feed_debug_viewfeed"] = () => {
-            //Feeds.open({feed: Feeds.getActive(), is_cat: Feeds.activeIsCat(), viewfeed_debug: true});
-
             App.postOpenWindow("backend.php", {op: "feeds", method: "view",
                feed: Feeds.getActive(), timestamps: 1, debug: 1, cat: Feeds.activeIsCat(), csrf_token: __csrf_token});
          };
@@ -1066,8 +1111,14 @@ const App = {
          this.hotkey_actions["feed_reverse"] = () => {
             Headlines.reverse();
          };
+         this.hotkey_actions["feed_toggle_grid"] = () => {
+            xhr.json("backend.php", {op: "rpc", method: "togglepref", key: "CDM_ENABLE_GRID"}, (reply) => {
+               App.setInitParam("cdm_enable_grid", reply.value);
+               Headlines.renderAgain();
+            })
+         };
          this.hotkey_actions["feed_toggle_vgroup"] = () => {
-            xhrPost("backend.php", {op: "rpc", method: "togglepref", key: "VFEED_GROUP_BY_FEED"}, () => {
+            xhr.post("backend.php", {op: "rpc", method: "togglepref", key: "VFEED_GROUP_BY_FEED"}, () => {
                Feeds.reloadCurrent();
             })
          };
@@ -1094,16 +1145,13 @@ const App = {
          this.hotkey_actions["goto_published"] = () => {
             Feeds.open({feed: -2});
          };
-         this.hotkey_actions["goto_tagcloud"] = () => {
-            this.displayDlg(__("Tag cloud"), "printTagCloud");
-         };
          this.hotkey_actions["goto_prefs"] = () => {
-            document.location.href = "prefs.php";
+            App.openPreferences();
          };
          this.hotkey_actions["select_article_cursor"] = () => {
             const id = Article.getUnderPointer();
             if (id) {
-               const row = $("RROW-" + id);
+               const row = App.byId(`RROW-${id}`);
 
                if (row)
                   row.toggleClassName("Selected");
@@ -1113,7 +1161,7 @@ const App = {
             CommonDialogs.addLabel();
          };
          this.hotkey_actions["create_filter"] = () => {
-            Filters.quickAddFilter();
+            Filters.edit();
          };
          this.hotkey_actions["collapse_sidebar"] = () => {
             Feeds.toggle();
@@ -1134,18 +1182,18 @@ const App = {
                Cookie.set("ttrss_ci_width", 0);
                Cookie.set("ttrss_ci_height", 0);
 
-               this.switchPanelMode(this._widescreen_mode);
+               this.setWidescreen(this._widescreen_mode);
             } else {
                alert(__("Widescreen is not available in combined mode."));
             }
          };
          this.hotkey_actions["help_dialog"] = () => {
-            this.helpDialog("main");
+            this.hotkeyHelp();
          };
          this.hotkey_actions["toggle_combined_mode"] = () => {
             const value = this.isCombinedMode() ? "false" : "true";
 
-            xhrPost("backend.php", {op: "rpc", method: "setpref", key: "COMBINED_DISPLAY_MODE", value: value}, () => {
+            xhr.post("backend.php", {op: "rpc", method: "setpref", key: "COMBINED_DISPLAY_MODE", value: value}, () => {
                this.setInitParam("combined_display_mode",
                   !this.getInitParam("combined_display_mode"));
 
@@ -1156,29 +1204,32 @@ const App = {
          this.hotkey_actions["toggle_cdm_expanded"] = () => {
             const value = this.getInitParam("cdm_expanded") ? "false" : "true";
 
-            xhrPost("backend.php", {op: "rpc", method: "setpref", key: "CDM_EXPANDED", value: value}, () => {
+            xhr.post("backend.php", {op: "rpc", method: "setpref", key: "CDM_EXPANDED", value: value}, () => {
                this.setInitParam("cdm_expanded", !this.getInitParam("cdm_expanded"));
                Headlines.renderAgain();
             });
          };
+         this.hotkey_actions["article_span_grid"] = () => {
+            Article.cdmToggleGridSpan(Article.getActive());
+         };
       }
+   },
+   openPreferences: function(tab) {
+      document.location.href = "prefs.php" + (tab ? "?tab=" + tab : "");
    },
    onActionSelected: function(opid) {
       switch (opid) {
          case "qmcPrefs":
-            document.location.href = "prefs.php";
+            App.openPreferences();
             break;
          case "qmcLogout":
             App.postCurrentWindow("public.php", {op: "logout", csrf_token: __csrf_token});
-            break;
-         case "qmcTagCloud":
-            this.displayDlg(__("Tag cloud"), "printTagCloud");
             break;
          case "qmcSearch":
             Feeds.search();
             break;
          case "qmcAddFeed":
-            CommonDialogs.quickAddFeed();
+            CommonDialogs.subscribeToFeed();
             break;
          case "qmcDigest":
             window.location.href = "backend.php?op=digest";
@@ -1224,17 +1275,17 @@ const App = {
                Cookie.set("ttrss_ci_width", 0);
                Cookie.set("ttrss_ci_height", 0);
 
-               this.switchPanelMode(this._widescreen_mode);
+               this.setWidescreen(this._widescreen_mode);
             } else {
                alert(__("Widescreen is not available in combined mode."));
             }
             break;
          case "qmcHKhelp":
-            this.helpDialog("main");
+            this.hotkeyHelp()
             break;
          default:
             console.log("quickMenuGo: unknown action: " + opid);
       }
-   }
+   },
 }
 

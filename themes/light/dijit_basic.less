@@ -4,11 +4,11 @@
 		padding: 2px;
 	}
 
-	#feedTree {
+	/*#feedTree {
 		.dijitTreeContent .dijitInline {
 			vertical-align : baseline;
 		}
-	}
+	}*/
 
 	.dijitButton i.material-icons {
 		position: relative;
@@ -38,8 +38,25 @@
 	}
 
 	.dijitToolbar {
-		font-size: 13px;
-		padding: 0px;
+		font-size: @font-size-toolbar;
+		font-family: @fonts-ui;
+		padding: 0;
+
+		.dijitTextBox .dijitInputContainer {
+			.dijitInputInner {
+				line-height : 10px;
+			}
+
+			.dijitPlaceHolder {
+				line-height : 15px;
+				margin-left : 0;
+			}
+		}
+
+		label {
+			position : relative;
+			top : 2px;
+		}
 	}
 
 	.dijitAccordionContainer {
@@ -51,27 +68,35 @@
 		border-color : darken(@color-checked, 10%);
 	}
 
-	.dijitMenu .dijitMenuItem .dijitMenuItemLabel {
-		padding: 4px 8px;
-		font-size: 13px;
-	}
+	.dijitMenu {
+		.dijitMenuItem .dijitMenuItemLabel {
+			padding: 4px 8px;
+			font-size: @font-size-toolbar;
+			font-family: @fonts-ui;
+		}
 
-	.dijitMenu .dijitMenuItem.dijitDisabled:not(.dijitMenuItemSelected) .dijitMenuItemLabel {
-		color : lighten(@color-accent, 10%);
-	}
+		.dijitMenuItem.dijitDisabled:not(.dijitMenuItemSelected) .dijitMenuItemLabel {
+			color : lighten(@color-accent, 10%);
+		}
 
-	.dijitMenu .dijitMenuItem td {
-		padding: 0px;
+		.dijitMenuItem td {
+			padding: 0;
+		}
 	}
 
 	.dijitCheckBox {
 		margin : 1px;
+
+		&:before {
+			font-family: "flat-icon";
+			content: "\f00c";
+			color: white;
+		}
 	}
 
-	.dijitCheckBox:before {
-		font-family: "flat-icon";
-		content: "\f00c";
-		color: white;
+	.dijitTab,
+	.dijitAccordionTitle {
+		font-family: @fonts-ui;
 	}
 
 	.dijitTab,
@@ -82,6 +107,23 @@
 	}
 
 	.dijitTree {
+		.dijitTreeRowFlex {
+			display : flex;
+			flex-direction : row;
+			align-items : center;
+
+			// AAAAAA (pushes element down)
+			.dijitTreeIcon {
+				font-size : inherit;
+				height : auto;
+			}
+
+			.dijitTreeExpando {
+				height : auto;
+				line-height : 0;
+			}
+		}
+
 		.dijitFolderClosed,
 		.dijitFolderOpened {
 			display : none;
@@ -101,10 +143,10 @@
 			color : white;
 		}
 
-		.dijitTreeRow .dijitTreeExpando {
+		/*.dijitTreeRow .dijitTreeExpando {
 			position : relative;
 			top : -2px;
-		}
+		}*/
 
 		.labelParam {
 			float: right;
@@ -141,6 +183,7 @@
 		.dijitTreeRow {
 			overflow: hidden;
 			-moz-user-select: none;
+			user-select: none;
 			text-overflow: ellipsis;
 		}
 
@@ -153,10 +196,10 @@
 		cursor : pointer;
 		position: relative;
 		top : 1px;
-	}
 
-	label.dijitButton:hover {
-		background-color : @color-panel-bg;
+		&:hover {
+			background-color : @color-panel-bg;
+		}
 	}
 
 	.dijitTree {
@@ -165,6 +208,10 @@
 			border-width : 1px;
 			color : @default-text;
 		}
+	}
+
+	.dijitDialog {
+		width : 600px;
 	}
 
 }

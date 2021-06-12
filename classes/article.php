@@ -1,27 +1,30 @@
 <?php
 class Article extends Handler_Protected {
+	const ARTICLE_KIND_ALBUM = 1;
+	const ARTICLE_KIND_VIDEO = 2;
+	const ARTICLE_KIND_YOUTUBE = 3;
 
 	function redirect() {
-		$id = clean($_REQUEST['id']);
+		$article = ORM::for_table('ttrss_entries')
+			->table_alias('e')
+			->join('ttrss_user_entries', [ 'ref_id', '=', 'e.id'], 'ue')
+				->where('ue.owner_uid', $_SESSION['uid'])
+				->find_one((int)$_REQUEST['id']);
 
-		$sth = $this->pdo->prepare("SELECT link FROM ttrss_entries, ttrss_user_entries
-						WHERE id = ? AND id = ref_id AND owner_uid = ?
-						LIMIT 1");
-        $sth->execute([$id, $_SESSION['uid']]);
+		if ($article) {
+			$article_url = UrlHelper::validate($article->link);
 
-		if ($row = $sth->fetch()) {
-			$article_url = $row['link'];
-			$article_url = str_replace("\n", "", $article_url);
-
-			header("Location: $article_url");
-			return;
-
-		} else {
-			print_error(__("Article not found."));
+			if ($article_url) {
+				header("Location: $article_url");
+				return;
+			}
 		}
+
+		header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
+		print "Article not found or has an empty URL.";
 	}
 
-	static function create_published_article($title, $url, $content, $labels_str,
+	static function _create_published_article($title, $url, $content, $labels_str,
 			$owner_uid) {
 
 		$guid = 'SHA1:' . sha1("ttshared:" . $url . $owner_uid); // include owner_uid to prevent global GUID clash
@@ -29,16 +32,16 @@ class Article extends Handler_Protected {
 		if (!$content) {
 			$pluginhost = new PluginHost();
 			$pluginhost->load_all(PluginHost::KIND_ALL, $owner_uid);
-			$pluginhost->load_data();
+			//$pluginhost->load_data();
 
-			foreach ($pluginhost->get_hooks(PluginHost::HOOK_GET_FULL_TEXT) as $p) {
-				$extracted_content = $p->hook_get_full_text($url);
-
-				if ($extracted_content) {
-					$content = $extracted_content;
-					break;
-				}
-			}
+			$pluginhost->run_hooks_callback(PluginHost::HOOK_GET_FULL_TEXT,
+				function ($result) use (&$content) {
+					if ($result) {
+						$content = $result;
+						return true;
+					}
+				},
+				$url);
 		}
 
 		$content_hash = sha1($content);
@@ -79,7 +82,7 @@ class Article extends Handler_Protected {
 					content = ?, content_hash = ? WHERE id = ?");
 				$sth->execute([$content, $content_hash, $ref_id]);
 
-				if (DB_TYPE == "pgsql"){
+				if (Config::get(Config::DB_TYPE) == "pgsql") {
 					$sth = $pdo->prepare("UPDATE ttrss_entries
 					SET tsvector_combined = to_tsvector( :ts_content)
 					WHERE id = :id");
@@ -124,7 +127,7 @@ class Article extends Handler_Protected {
 
 			if ($row = $sth->fetch()) {
 				$ref_id = $row["id"];
-				if (DB_TYPE == "pgsql"){
+				if (Config::get(Config::DB_TYPE) == "pgsql"){
 					$sth = $pdo->prepare("UPDATE ttrss_entries
 					SET tsvector_combined = to_tsvector( :ts_content)
 					WHERE id = :id");
@@ -155,39 +158,15 @@ class Article extends Handler_Protected {
 		return $rc;
 	}
 
-	function editArticleTags() {
+	function printArticleTags() {
+		$id = (int) clean($_REQUEST['id'] ?? 0);
 
-		$param = clean($_REQUEST['param']);
-
-		$tags = self::get_article_tags($param);
-
-		$tags_str = join(", ", $tags);
-
-		print_hidden("id", "$param");
-		print_hidden("op", "article");
-		print_hidden("method", "setArticleTags");
-
-		print "<header class='horizontal'>" . __("Tags for this article (separated by commas):")."</header>";
-
-		print "<section>";
-		print "<textarea dojoType='dijit.form.SimpleTextarea' rows='4'
-			style='height : 100px; font-size : 12px; width : 98%' id='tags_str'
-			name='tags_str'>$tags_str</textarea>
-		<div class='autocomplete' id='tags_choices'
-				style='display:none'></div>";
-		print "</section>";
-
-		print "<footer>";
-		print "<button dojoType='dijit.form.Button'
-			type='submit' class='alt-primary'>".__('Save')."</button> ";
-		print "<button dojoType='dijit.form.Button'
-			onclick=\"dijit.byId('editTagsDlg').hide()\">".__('Cancel')."</button>";
-		print "</footer>";
-
+		print json_encode(["id" => $id,
+			"tags" => self::_get_tags($id)]);
 	}
 
 	function setScore() {
-		$ids = explode(",", clean($_REQUEST['id']));
+		$ids = array_map("intval", clean($_REQUEST['ids'] ?? []));
 		$score = (int)clean($_REQUEST['score']);
 
 		$ids_qmarks = arr_qmarks($ids);
@@ -197,28 +176,17 @@ class Article extends Handler_Protected {
 
 		$sth->execute(array_merge([$score], $ids, [$_SESSION['uid']]));
 
-		print json_encode(["id" => $ids, "score" => (int)$score]);
+		print json_encode(["id" => $ids, "score" => $score]);
 	}
-
-	function getScore() {
-		$id = clean($_REQUEST['id']);
-
-		$sth = $this->pdo->prepare("SELECT score FROM ttrss_user_entries WHERE ref_id = ? AND owner_uid = ?");
-		$sth->execute([$id, $_SESSION['uid']]);
-		$row = $sth->fetch();
-
-		$score = $row['score'];
-
-		print json_encode(["id" => $id, "score" => (int)$score]);
-	}
-
 
 	function setArticleTags() {
 
 		$id = clean($_REQUEST["id"]);
 
-		$tags_str = clean($_REQUEST["tags_str"]);
-		$tags = array_unique(array_map('trim', explode(",", $tags_str)));
+		//$tags_str = clean($_REQUEST["tags_str"]);
+		//$tags = array_unique(array_map('trim', explode(",", $tags_str)));
+
+		$tags = FeedItem_Common::normalize_categories(explode(",", clean($_REQUEST["tags_str"])));
 
 		$this->pdo->beginTransaction();
 
@@ -243,8 +211,6 @@ class Article extends Handler_Protected {
 				(post_int_id, owner_uid, tag_name)
 				VALUES (?, ?, ?)");
 
-			$tags = FeedItem_Common::normalize_categories($tags);
-
 			foreach ($tags as $tag) {
 				$csth->execute([$int_id, $_SESSION['uid'], $tag]);
 
@@ -266,18 +232,12 @@ class Article extends Handler_Protected {
 
 		$this->pdo->commit();
 
-		$tags = self::get_article_tags($id);
-		$tags_str = $this->format_tags_string($tags, $id);
-		$tags_str_full = join(", ", $tags);
-
-		if (!$tags_str_full) $tags_str_full = __("no tags");
-
-		print json_encode(array("id" => (int)$id,
-				"content" => $tags_str, "content_full" => $tags_str_full));
+		// get latest tags from the database, original $tags is sometimes JSON-encoded as a hash ({}) - ???
+		print json_encode(["id" => (int)$id, "tags" => $this->_get_tags($id)]);
 	}
 
 
-	function completeTags() {
+	/*function completeTags() {
 		$search = clean($_REQUEST["search"]);
 
 		$sth = $this->pdo->prepare("SELECT DISTINCT tag_name FROM ttrss_tags
@@ -292,17 +252,17 @@ class Article extends Handler_Protected {
 			print "<li>" . $line["tag_name"] . "</li>";
 		}
 		print "</ul>";
-	}
+	}*/
 
 	function assigntolabel() {
-		return $this->labelops(true);
+		return $this->_label_ops(true);
 	}
 
 	function removefromlabel() {
-		return $this->labelops(false);
+		return $this->_label_ops(false);
 	}
 
-	private function labelops($assign) {
+	private function _label_ops($assign) {
 		$reply = array();
 
 		$ids = explode(",", clean($_REQUEST["ids"]));
@@ -310,22 +270,17 @@ class Article extends Handler_Protected {
 
 		$label = Labels::find_caption($label_id, $_SESSION["uid"]);
 
-		$reply["info-for-headlines"] = array();
+		$reply["labels-for"] = [];
 
 		if ($label) {
-
 			foreach ($ids as $id) {
-
 				if ($assign)
 					Labels::add_article($id, $label, $_SESSION["uid"]);
 				else
 					Labels::remove_article($id, $label, $_SESSION["uid"]);
 
-				$labels = $this->get_article_labels($id, $_SESSION["uid"]);
-
-				array_push($reply["info-for-headlines"],
-				array("id" => $id, "labels" => $this->format_article_labels($labels)));
-
+				array_push($reply["labels-for"],
+					["id" => (int)$id, "labels" => $this->_get_labels($id)]);
 			}
 		}
 
@@ -334,157 +289,84 @@ class Article extends Handler_Protected {
 		print json_encode($reply);
 	}
 
-	function getArticleFeed($id) {
-		$sth = $this->pdo->prepare("SELECT feed_id FROM ttrss_user_entries
-			WHERE ref_id = ? AND owner_uid = ?");
-		$sth->execute([$id, $_SESSION['uid']]);
+	static function _format_enclosures($id,
+										$always_display_enclosures,
+									   $article_content,
+										$hide_images = false) {
 
-		if ($row = $sth->fetch()) {
-			return $row["feed_id"];
-		} else {
-			return 0;
+		$enclosures = self::_get_enclosures($id);
+		$enclosures_formatted = "";
+
+		/*foreach ($enclosures as &$enc) {
+			array_push($enclosures, [
+				"type" => $enc["content_type"],
+				"filename" => basename($enc["content_url"]),
+				"url" => $enc["content_url"],
+				"title" => $enc["title"],
+				"width" => (int) $enc["width"],
+				"height" => (int) $enc["height"]
+			]);
+		}*/
+
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_FORMAT_ENCLOSURES,
+			function ($result) use (&$enclosures_formatted, &$enclosures) {
+				if (is_array($result)) {
+					$enclosures_formatted = $result[0];
+					$enclosures = $result[1];
+				} else {
+					$enclosures_formatted = $result;
+				}
+			},
+			$enclosures_formatted, $enclosures, $id, $always_display_enclosures, $article_content, $hide_images);
+
+		if (!empty($enclosures_formatted)) {
+			return [
+					'formatted' => $enclosures_formatted,
+					'entries' => []
+			];
 		}
-	}
 
-	static function format_article_enclosures($id, $always_display_enclosures,
-									   $article_content, $hide_images = false) {
+		$rv = [
+			'formatted' => '',
+			'entries' => []
+		];
 
-		$result = self::get_article_enclosures($id);
-		$rv = '';
+		$rv['can_inline'] = isset($_SESSION["uid"]) &&
+									empty($_SESSION["bw_limit"]) &&
+									!get_pref(Prefs::STRIP_IMAGES) &&
+									($always_display_enclosures || !preg_match("/<img/i", $article_content));
 
-		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_FORMAT_ENCLOSURES) as $plugin) {
-			$retval = $plugin->hook_format_enclosures($rv, $result, $id, $always_display_enclosures, $article_content, $hide_images);
-			if (is_array($retval)) {
-				$rv = $retval[0];
-				$result = $retval[1];
+		$rv['inline_text_only'] = $hide_images && $rv['can_inline'];
+
+		foreach ($enclosures as $enc) {
+
+			// this is highly approximate
+			$enc["filename"] = basename($enc["content_url"]);
+
+			$rendered_enc = "";
+			PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_RENDER_ENCLOSURE,
+				function ($result) use (&$rendered_enc) {
+					$rendered_enc = $result;
+				},
+				$enc, $id, $rv);
+
+			if ($rendered_enc) {
+				$rv['formatted'] .= $rendered_enc;
 			} else {
-				$rv = $retval;
+				PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_ENCLOSURE_ENTRY,
+					function ($result) use (&$enc) {
+						$enc = $result;
+					},
+					$enc, $id, $rv);
+
+				array_push($rv['entries'], $enc);
 			}
-		}
-		unset($retval); // Unset to prevent breaking render if there are no HOOK_RENDER_ENCLOSURE hooks below.
-
-		if ($rv === '' && !empty($result)) {
-			$entries_html = array();
-			$entries = array();
-			$entries_inline = array();
-
-			foreach ($result as $line) {
-
-				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ENCLOSURE_ENTRY) as $plugin) {
-					$line = $plugin->hook_enclosure_entry($line, $id);
-				}
-
-				$url = $line["content_url"];
-				$ctype = $line["content_type"];
-				$title = $line["title"];
-				$width = $line["width"];
-				$height = $line["height"];
-
-				if (!$ctype) $ctype = __("unknown type");
-
-				//$filename = substr($url, strrpos($url, "/")+1);
-				$filename = basename($url);
-
-				$player = format_inline_player($url, $ctype);
-
-				if ($player) array_push($entries_inline, $player);
-
-#				$entry .= " <a target=\"_blank\" href=\"" . htmlspecialchars($url) . "\" rel=\"noopener noreferrer\">" .
-#					$filename . " (" . $ctype . ")" . "</a>";
-
-				$entry = "<div onclick=\"Article.popupOpenUrl('".htmlspecialchars($url)."')\"
-					dojoType=\"dijit.MenuItem\">$filename ($ctype)</div>";
-
-				array_push($entries_html, $entry);
-
-				$entry = array();
-
-				$entry["type"] = $ctype;
-				$entry["filename"] = $filename;
-				$entry["url"] = $url;
-				$entry["title"] = $title;
-				$entry["width"] = $width;
-				$entry["height"] = $height;
-
-				array_push($entries, $entry);
-			}
-
-			if ($_SESSION['uid'] && !get_pref("STRIP_IMAGES") && !$_SESSION["bw_limit"]) {
-				if ($always_display_enclosures ||
-					!preg_match("/<img/i", $article_content)) {
-
-					foreach ($entries as $entry) {
-
-						foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_RENDER_ENCLOSURE) as $plugin)
-							$retval = $plugin->hook_render_enclosure($entry, $hide_images);
-
-
-						if ($retval) {
-							$rv .= $retval;
-						} else {
-
-							if (preg_match("/image/", $entry["type"])) {
-
-								if (!$hide_images) {
-									$encsize = '';
-									if ($entry['height'] > 0)
-										$encsize .= ' height="' . intval($entry['height']) . '"';
-									if ($entry['width'] > 0)
-										$encsize .= ' width="' . intval($entry['width']) . '"';
-									$rv .= "<p><img
-										alt=\"".htmlspecialchars($entry["filename"])."\"
-										src=\"" .htmlspecialchars($entry["url"]) . "\"
-										" . $encsize . " /></p>";
-								} else {
-									$rv .= "<p><a target=\"_blank\" rel=\"noopener noreferrer\"
-										href=\"".htmlspecialchars($entry["url"])."\"
-										>" .htmlspecialchars($entry["url"]) . "</a></p>";
-								}
-
-								if ($entry['title']) {
-									$rv.= "<div class=\"enclosure_title\">${entry['title']}</div>";
-								}
-							}
-						}
-					}
-				}
-			}
-
-			if (count($entries_inline) > 0) {
-				//$rv .= "<hr clear='both'/>";
-				foreach ($entries_inline as $entry) { $rv .= $entry; };
-				$rv .= "<br clear='both'/>";
-			}
-
-			$rv .= "<div class=\"attachments\" dojoType=\"fox.form.DropDownButton\">".
-				"<span>" . __('Attachments')."</span>";
-
-			$rv .= "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
-
-			foreach ($entries as $entry) {
-				if ($entry["title"])
-					$title = " &mdash; " . truncate_string($entry["title"], 30);
-				else
-					$title = "";
-
-				if ($entry["filename"])
-					$filename = truncate_middle(htmlspecialchars($entry["filename"]), 60);
-				else
-					$filename = "";
-
-				$rv .= "<div onclick='Article.popupOpenUrl(\"".htmlspecialchars($entry["url"])."\")'
-					dojoType=\"dijit.MenuItem\">".$filename . $title."</div>";
-
-			};
-
-			$rv .= "</div>";
-			$rv .= "</div>";
 		}
 
 		return $rv;
 	}
 
-	static function get_article_tags($id, $owner_uid = 0, $tag_cache = false) {
+	static function _get_tags($id, $owner_uid = 0, $tag_cache = false) {
 
 		$a_id = $id;
 
@@ -534,89 +416,47 @@ class Article extends Handler_Protected {
 		return $tags;
 	}
 
-	static function format_tags_string($tags) {
-		if (!is_array($tags) || count($tags) == 0) {
-			return __("no tags");
+	function getmetadatabyid() {
+		$article = ORM::for_table('ttrss_entries')
+			->join('ttrss_user_entries', ['ref_id', '=', 'id'], 'ue')
+			->where('ue.owner_uid', $_SESSION['uid'])
+			->find_one((int)$_REQUEST['id']);
+
+		if ($article) {
+			echo json_encode(["link" => $article->link, "title" => $article->title]);
 		} else {
-			$maxtags = min(5, count($tags));
-			$tags_str = "";
-
-			for ($i = 0; $i < $maxtags; $i++) {
-				$tags_str .= "<a class=\"tag\" href=\"#\" onclick=\"Feeds.open({feed:'".$tags[$i]."'})\">" . $tags[$i] . "</a>, ";
-			}
-
-			$tags_str = mb_substr($tags_str, 0, mb_strlen($tags_str)-2);
-
-			if (count($tags) > $maxtags)
-				$tags_str .= ", &hellip;";
-
-			return $tags_str;
+			echo json_encode([]);
 		}
 	}
 
-	static function format_article_labels($labels) {
+	static function _get_enclosures($id) {
+		$encs = ORM::for_table('ttrss_enclosures')
+			->where('post_id', $id)
+			->find_many();
 
-		if (!is_array($labels)) return '';
-
-		$labels_str = "";
-
-		foreach ($labels as $l) {
-			$labels_str .= sprintf("<div class='label'
-				style='color : %s; background-color : %s'>%s</div>",
-				$l[2], $l[3], $l[1]);
-		}
-
-		return $labels_str;
-
-	}
-
-	static function format_article_note($id, $note, $allow_edit = true) {
-
-		if ($allow_edit) {
-			$onclick = "onclick='Plugins.Note.edit($id)'";
-			$note_class = 'editable';
-		} else {
-			$onclick = '';
-			$note_class = '';
-		}
-
-		return "<div class='article-note $note_class'>
-			<i class='material-icons'>note</i>
-			<div $onclick class='body'>$note</div>
-			</div>";
-
-		return $str;
-	}
-
-	static function get_article_enclosures($id) {
-
-		$pdo = Db::pdo();
-
-		$sth = $pdo->prepare("SELECT * FROM ttrss_enclosures
-			WHERE post_id = ? AND content_url != ''");
-		$sth->execute([$id]);
-
-		$rv = array();
+		$rv = [];
 
 		$cache = new DiskCache("images");
 
-		while ($line = $sth->fetch()) {
+		foreach ($encs as $enc) {
+			$cache_key = sha1($enc->content_url);
 
-			if ($cache->exists(sha1($line["content_url"]))) {
-				$line["content_url"] = $cache->getUrl(sha1($line["content_url"]));
+			if ($cache->exists($cache_key)) {
+				$enc->content_url = $cache->get_url($cache_key);
 			}
 
-			array_push($rv, $line);
+			array_push($rv, $enc->as_array());
 		}
 
 		return $rv;
+
 	}
 
-	static function purge_orphans() {
+	static function _purge_orphans() {
 
         // purge orphaned posts in main content table
 
-        if (DB_TYPE == "mysql")
+        if (Config::get(Config::DB_TYPE) == "mysql")
             $limit_qpart = "LIMIT 5000";
         else
             $limit_qpart = "";
@@ -631,7 +471,7 @@ class Article extends Handler_Protected {
         }
     }
 
-	static function catchupArticlesById($ids, $cmode, $owner_uid = false) {
+	static function _catchup_by_id($ids, $cmode, $owner_uid = false) {
 
 		if (!$owner_uid) $owner_uid = $_SESSION["uid"];
 
@@ -656,21 +496,7 @@ class Article extends Handler_Protected {
 		$sth->execute(array_merge($ids, [$owner_uid]));
 	}
 
-	static function getLastArticleId() {
-		$pdo = Db::pdo();
-
-		$sth = $pdo->prepare("SELECT ref_id AS id FROM ttrss_user_entries
-			WHERE owner_uid = ? ORDER BY ref_id DESC LIMIT 1");
-		$sth->execute([$_SESSION['uid']]);
-
-		if ($row = $sth->fetch()) {
-			return $row['id'];
-		} else {
-			return -1;
-		}
-	}
-
-	static function get_article_labels($id, $owner_uid = false) {
+	static function _get_labels($id, $owner_uid = false) {
 		$rv = array();
 
 		if (!$owner_uid) $owner_uid = $_SESSION["uid"];
@@ -687,7 +513,7 @@ class Article extends Handler_Protected {
 			if ($label_cache) {
 				$tmp = json_decode($label_cache, true);
 
-				if (!$tmp || $tmp["no-labels"] == 1)
+				if (empty($tmp) || ($tmp["no-labels"] ?? 0) == 1)
 					return $rv;
 				else
 					return $tmp;
@@ -717,19 +543,20 @@ class Article extends Handler_Protected {
 		return $rv;
 	}
 
-	static function get_article_image($enclosures, $content, $site_url) {
+	static function _get_image(array $enclosures, string $content, string $site_url, array $headline) {
 
 		$article_image = "";
 		$article_stream = "";
 		$article_kind = 0;
 
-		define('ARTICLE_KIND_ALBUM', 1); /* TODO */
-		define('ARTICLE_KIND_VIDEO', 2);
-		define('ARTICLE_KIND_YOUTUBE', 3);
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_ARTICLE_IMAGE,
+			function ($result, $plugin) use (&$article_image, &$article_stream, &$content) {
+				list ($article_image, $article_stream, $content) = $result;
 
-		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ARTICLE_IMAGE) as $p) {
-			list ($article_image, $article_stream, $content) = $p->hook_article_image($enclosures, $content, $site_url);
-		}
+				// run until first hard match
+				return !empty($article_image);
+			},
+			$enclosures, $content, $site_url, $headline);
 
 		if (!$article_image && !$article_stream) {
 			$tmpdoc = new DOMDocument();
@@ -744,7 +571,7 @@ class Article extends Handler_Protected {
 						if ($rrr = preg_match("/\/embed\/([\w-]+)/", $e->getAttribute("src"), $matches)) {
 							$article_image = "https://img.youtube.com/vi/" . $matches[1] . "/hqdefault.jpg";
 							$article_stream = "https://youtu.be/" . $matches[1];
-							$article_kind = ARTICLE_KIND_YOUTUBE;
+							$article_kind = Article::ARTICLE_KIND_YOUTUBE;
 							break;
 						}
 					} else if ($e->nodeName == "video") {
@@ -754,7 +581,7 @@ class Article extends Handler_Protected {
 
 						if ($src) {
 							$article_stream = $src->getAttribute("src");
-							$article_kind = ARTICLE_KIND_VIDEO;
+							$article_kind = Article::ARTICLE_KIND_VIDEO;
 						}
 
 						break;
@@ -778,8 +605,8 @@ class Article extends Handler_Protected {
 			if ($article_image) {
 				$article_image = rewrite_relative_url($site_url, $article_image);
 
-				if (!$article_kind && (count($enclosures) > 1 || $elems->length > 1))
-					$article_kind = ARTICLE_KIND_ALBUM;
+				if (!$article_kind && (count($enclosures) > 1 || (isset($elems) && $elems->length > 1)))
+					$article_kind = Article::ARTICLE_KIND_ALBUM;
 			}
 
 			if ($article_stream)
@@ -789,12 +616,57 @@ class Article extends Handler_Protected {
 		$cache = new DiskCache("images");
 
 		if ($article_image && $cache->exists(sha1($article_image)))
-			$article_image = $cache->getUrl(sha1($article_image));
+			$article_image = $cache->get_url(sha1($article_image));
 
 		if ($article_stream && $cache->exists(sha1($article_stream)))
-			$article_stream = $cache->getUrl(sha1($article_stream));
+			$article_stream = $cache->get_url(sha1($article_stream));
 
 		return [$article_image, $article_stream, $article_kind];
 	}
 
+	// only cached, returns label ids (not label feed ids)
+	static function _labels_of(array $article_ids) {
+		if (count($article_ids) == 0)
+			return [];
+
+		$entries = ORM::for_table('ttrss_entries')
+			->table_alias('e')
+			->join('ttrss_user_entries', ['ref_id', '=', 'id'], 'ue')
+			->where_in('id', $article_ids)
+			->find_many();
+
+		$rv = [];
+
+		foreach ($entries as $entry) {
+			$labels = json_decode($entry->label_cache);
+
+			if (isset($labels) && is_array($labels)) {
+				foreach ($labels as $label) {
+					if (empty($label["no-labels"]))
+						array_push($rv, Labels::feed_to_label_id($label[0]));
+				}
+			}
+		}
+
+		return array_unique($rv);
+	}
+
+	static function _feeds_of(array $article_ids) {
+		if (count($article_ids) == 0)
+			return [];
+
+		$entries = ORM::for_table('ttrss_entries')
+			->table_alias('e')
+			->join('ttrss_user_entries', ['ref_id', '=', 'id'], 'ue')
+			->where_in('id', $article_ids)
+			->find_many();
+
+		$rv = [];
+
+		foreach ($entries as $entry) {
+			array_push($rv, $entry->feed_id);
+		}
+
+		return array_unique($rv);
+	}
 }

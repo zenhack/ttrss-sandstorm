@@ -1,4 +1,5 @@
-/* global __, $$, define, lib, dijit, dojo, xhrPost, Notify, Filters, Lists */
+/* eslint-disable prefer-rest-params */
+/* global __, define, lib, dijit, dojo, xhr, App, Notify */
 
 define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], function (declare, domConstruct) {
 
@@ -54,6 +55,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			return label;
 		},
 		getIconClass: function (item, opened) {
+			// eslint-disable-next-line no-nested-ternary
 			return (!item || this.model.mayHaveChildren(item)) ? (opened ? "dijitFolderOpened" : "dijitFolderClosed") : "invisible";
 		},
 		getRowClass: function (item, opened) {
@@ -62,7 +64,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			return enabled ? "dijitTreeRow" : "dijitTreeRow filterDisabled";
 		},
 		checkItemAcceptance: function(target, source, position) {
-			const item = dijit.getEnclosingWidget(target).item;
+			//const item = dijit.getEnclosingWidget(target).item;
 
 			// disable copying items
 			source.copyState = function() { return false; };
@@ -78,26 +80,26 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			const items = tree.model.getCheckedItems();
 			const rv = [];
 
-			items.each(function (item) {
+			items.forEach(function (item) {
 				rv.push(tree.model.store.getValue(item, 'bare_id'));
 			});
 
 			return rv;
 		},
 		reload: function() {
-			const user_search = $("filter_search");
+			const user_search = App.byId("filter_search");
 			let search = "";
 			if (user_search) { search = user_search.value; }
 
-			xhrPost("backend.php", { op: "pref-filters", search: search }, (transport) => {
-				dijit.byId('filterConfigTab').attr('content', transport.responseText);
+			xhr.post("backend.php", { op: "pref-filters", search: search }, (reply) => {
+				dijit.byId('filtersTab').attr('content', reply);
 				Notify.close();
 			});
 		},
 		resetFilterOrder: function() {
 			Notify.progress("Loading, please wait...");
 
-			xhrPost("backend.php", {op: "pref-filters", method: "filtersortreset"}, () => {
+			xhr.post("backend.php", {op: "pref-filters", method: "filtersortreset"}, () => {
 				this.reload();
 			});
 		},
@@ -112,108 +114,10 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 			if (confirm(__("Combine selected filters?"))) {
 				Notify.progress("Joining filters...");
 
-				xhrPost("backend.php", {op: "pref-filters", method: "join", ids: rows.toString()}, () => {
+				xhr.post("backend.php", {op: "pref-filters", method: "join", ids: rows.toString()}, () => {
 					this.reload();
 				});
 			}
-		},
-		editSelectedFilter: function() {
-			const rows = this.getSelectedFilters();
-
-			if (rows.length == 0) {
-				alert(__("No filters selected."));
-				return;
-			}
-
-			if (rows.length > 1) {
-				alert(__("Please select only one filter."));
-				return;
-			}
-
-			Notify.close();
-
-			this.editFilter(rows[0]);
-		},
-		editFilter: function(id) {
-
-			const query = "backend.php?op=pref-filters&method=edit&id=" + encodeURIComponent(id);
-
-			if (dijit.byId("feedEditDlg"))
-				dijit.byId("feedEditDlg").destroyRecursive();
-
-			if (dijit.byId("filterEditDlg"))
-				dijit.byId("filterEditDlg").destroyRecursive();
-
-			const dialog = new dijit.Dialog({
-				id: "filterEditDlg",
-				title: __("Edit Filter"),
-				style: "width: 600px",
-
-				test: function () {
-					Filters.editFilterTest(dojo.formToObject("filter_edit_form"));
-				},
-				selectRules: function (select) {
-					Lists.select("filterDlg_Matches", select);
-				},
-				selectActions: function (select) {
-					Lists.select("filterDlg_Actions", select);
-				},
-				editRule: function (e) {
-					const li = e.parentNode;
-					const rule = li.getElementsByTagName("INPUT")[1].value;
-					Filters.addFilterRule(li, rule);
-				},
-				editAction: function (e) {
-					const li = e.parentNode;
-					const action = li.getElementsByTagName("INPUT")[1].value;
-					Filters.addFilterAction(li, action);
-				},
-				removeFilter: function () {
-					const msg = __("Remove filter?");
-
-					if (confirm(msg)) {
-						this.hide();
-
-						Notify.progress("Removing filter...");
-
-						const query = {op: "pref-filters", method: "remove", ids: this.attr('value').id};
-
-						xhrPost("backend.php", query, () => {
-							dijit.byId("filterTree").reload();
-						});
-					}
-				},
-				addAction: function () {
-					Filters.addFilterAction();
-				},
-				addRule: function () {
-					Filters.addFilterRule();
-				},
-				deleteAction: function () {
-					$$("#filterDlg_Actions li[class*=Selected]").each(function (e) {
-						e.parentNode.removeChild(e)
-					});
-				},
-				deleteRule: function () {
-					$$("#filterDlg_Matches li[class*=Selected]").each(function (e) {
-						e.parentNode.removeChild(e)
-					});
-				},
-				execute: function () {
-					if (this.validate()) {
-
-						Notify.progress("Saving data...", true);
-
-						xhrPost("backend.php", dojo.formToObject("filter_edit_form"), () => {
-							dialog.hide();
-							dijit.byId("filterTree").reload();
-						});
-					}
-				},
-				href: query
-			});
-
-			dialog.show();
 		},
 		removeSelectedFilters: function() {
 			const sel_rows = this.getSelectedFilters();
@@ -227,7 +131,7 @@ define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], functio
 						ids: sel_rows.toString()
 					};
 
-					xhrPost("backend.php", query, () => {
+					xhr.post("backend.php", query, () => {
 						this.reload();
 					});
 				}

@@ -1,5 +1,14 @@
 <?php
 class UrlHelper {
+	static $fetch_last_error;
+	static $fetch_last_error_code;
+	static $fetch_last_error_content;
+	static $fetch_last_content_type;
+	static $fetch_last_modified;
+	static $fetch_effective_url;
+	static $fetch_effective_ip_addr;
+	static $fetch_curl_used;
+
 	static function build_url($parts) {
 		$tmp = $parts['scheme'] . "://" . $parts['host'];
 
@@ -22,7 +31,7 @@ class UrlHelper {
 
 		$rel_parts = parse_url($rel_url);
 
-		if ($rel_parts['host'] && $rel_parts['scheme']) {
+		if (!empty($rel_parts['host']) && !empty($rel_parts['scheme'])) {
 			return self::validate($rel_url);
 		} else if (strpos($rel_url, "//") === 0) {
 			# protocol-relative URL (rare but they exist)
@@ -61,7 +70,7 @@ class UrlHelper {
 
 		// this isn't really necessary because filter_var(... FILTER_VALIDATE_URL) requires host and scheme
 		// as per https://php.watch/versions/7.3/filter-var-flag-deprecation but it might save time
-		if (!$tokens['host'])
+		if (empty($tokens['host']))
 			return false;
 
 		if (!in_array(strtolower($tokens['scheme']), ['http', 'https']))
@@ -82,7 +91,7 @@ class UrlHelper {
 		// (used for validation only, we actually request the original URL, in case of urlencode breaking it)
 		$tokens_filter_var = $tokens;
 
-		if ($tokens['path']) {
+		if ($tokens['path'] ?? false) {
 			$tokens_filter_var['path'] = implode("/",
 										array_map("rawurlencode",
 											array_map("rawurldecode",
@@ -96,7 +105,7 @@ class UrlHelper {
 			return false;
 
 		if ($extended_filtering) {
-			if (!in_array($tokens['port'], [80, 443, '']))
+			if (!in_array($tokens['port'] ?? '', [80, 443, '']))
 				return false;
 
 			if (strtolower($tokens['host']) == 'localhost' || $tokens['host'] == '::1' || strpos($tokens['host'], '127.') === 0)
@@ -123,9 +132,9 @@ class UrlHelper {
 					 'protocol_version'=> 1.1)
 				);
 
-			if (defined('_HTTP_PROXY')) {
+			if (Config::get(Config::HTTP_PROXY)) {
 				$context_options['http']['request_fulluri'] = true;
-				$context_options['http']['proxy'] = _HTTP_PROXY;
+				$context_options['http']['proxy'] = Config::get(Config::HTTP_PROXY);
 			}
 
 			$context = stream_context_create($context_options);
@@ -158,27 +167,14 @@ class UrlHelper {
 	public static function fetch($options /* previously: 0: $url , 1: $type = false, 2: $login = false, 3: $pass = false,
 				4: $post_query = false, 5: $timeout = false, 6: $timestamp = 0, 7: $useragent = false*/) {
 
-		global $fetch_last_error;
-		global $fetch_last_error_code;
-		global $fetch_last_error_content;
-		global $fetch_last_content_type;
-		global $fetch_last_modified;
-		global $fetch_effective_url;
-		global $fetch_effective_ip_addr;
-		global $fetch_curl_used;
-		global $fetch_domain_hits;
-
-		$fetch_last_error = false;
-		$fetch_last_error_code = -1;
-		$fetch_last_error_content = "";
-		$fetch_last_content_type = "";
-		$fetch_curl_used = false;
-		$fetch_last_modified = "";
-		$fetch_effective_url = "";
-		$fetch_effective_ip_addr = "";
-
-		if (!is_array($fetch_domain_hits))
-			$fetch_domain_hits = [];
+		self::$fetch_last_error = false;
+		self::$fetch_last_error_code = -1;
+		self::$fetch_last_error_content = "";
+		self::$fetch_last_content_type = "";
+		self::$fetch_curl_used = false;
+		self::$fetch_last_modified = "";
+		self::$fetch_effective_url = "";
+		self::$fetch_effective_ip_addr = "";
 
 		if (!is_array($options)) {
 
@@ -213,7 +209,7 @@ class UrlHelper {
 		$last_modified = isset($options["last_modified"]) ? $options["last_modified"] : "";
 		$useragent = isset($options["useragent"]) ? $options["useragent"] : false;
 		$followlocation = isset($options["followlocation"]) ? $options["followlocation"] : true;
-		$max_size = isset($options["max_size"]) ? $options["max_size"] : MAX_DOWNLOAD_FILE_SIZE; // in bytes
+		$max_size = isset($options["max_size"]) ? $options["max_size"] : Config::get(Config::MAX_DOWNLOAD_FILE_SIZE); // in bytes
 		$http_accept = isset($options["http_accept"]) ? $options["http_accept"] : false;
 		$http_referrer = isset($options["http_referrer"]) ? $options["http_referrer"] : false;
 
@@ -223,7 +219,7 @@ class UrlHelper {
 		$url = self::validate($url, true);
 
 		if (!$url) {
-			$fetch_last_error = "Requested URL failed extended validation.";
+			self::$fetch_last_error = "Requested URL failed extended validation.";
 			return false;
 		}
 
@@ -231,22 +227,17 @@ class UrlHelper {
 		$ip_addr = gethostbyname($url_host);
 
 		if (!$ip_addr || strpos($ip_addr, "127.") === 0) {
-			$fetch_last_error = "URL hostname failed to resolve or resolved to a loopback address ($ip_addr)";
+			self::$fetch_last_error = "URL hostname failed to resolve or resolved to a loopback address ($ip_addr)";
 			return false;
 		}
 
-		$fetch_domain_hits[$url_host] += 1;
+		if (function_exists('curl_init') && !ini_get("open_basedir")) {
 
-		/*if ($fetch_domain_hits[$url_host] > MAX_FETCH_REQUESTS_PER_HOST) {
-			user_error("Exceeded fetch request quota for $url_host: " . $fetch_domain_hits[$url_host], E_USER_WARNING);
-			#return false;
-		}*/
-
-		if (!defined('NO_CURL') && function_exists('curl_init') && !ini_get("open_basedir")) {
-
-			$fetch_curl_used = true;
+			self::$fetch_curl_used = true;
 
 			$ch = curl_init($url);
+
+			if (!$ch) return false;
 
 			$curl_http_headers = [];
 
@@ -259,8 +250,8 @@ class UrlHelper {
 			if (count($curl_http_headers) > 0)
 				curl_setopt($ch, CURLOPT_HTTPHEADER, $curl_http_headers);
 
-			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout ? $timeout : FILE_FETCH_CONNECT_TIMEOUT);
-			curl_setopt($ch, CURLOPT_TIMEOUT, $timeout ? $timeout : FILE_FETCH_TIMEOUT);
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout ? $timeout : Config::get(Config::FILE_FETCH_CONNECT_TIMEOUT));
+			curl_setopt($ch, CURLOPT_TIMEOUT, $timeout ? $timeout : Config::get(Config::FILE_FETCH_TIMEOUT));
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, !ini_get("open_basedir") && $followlocation);
 			curl_setopt($ch, CURLOPT_MAXREDIRS, 20);
 			curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
@@ -280,10 +271,15 @@ class UrlHelper {
 
 				// holy shit closures in php
 				// download & upload are *expected* sizes respectively, could be zero
-				curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($curl_handle, $download_size, $downloaded, $upload_size, $uploaded) use( &$max_size) {
-					Debug::log("[curl progressfunction] $downloaded $max_size", Debug::$LOG_EXTENDED);
+				curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($curl_handle, $download_size, $downloaded, $upload_size, $uploaded) use(&$max_size, $url) {
+					//Debug::log("[curl progressfunction] $downloaded $max_size", Debug::$LOG_EXTENDED);
 
-					return ($downloaded > $max_size) ? 1 : 0; // if max size is set, abort when exceeding it
+					if ($downloaded > $max_size) {
+						Debug::log("curl: reached max size of $max_size bytes requesting $url, aborting.", Debug::LOG_VERBOSE);
+						return 1;
+					}
+
+					return 0;
 				});
 
 			}
@@ -292,8 +288,8 @@ class UrlHelper {
 				curl_setopt($ch, CURLOPT_COOKIEJAR, "/dev/null");
 			}
 
-			if (defined('_HTTP_PROXY')) {
-				curl_setopt($ch, CURLOPT_PROXY, _HTTP_PROXY);
+			if (Config::get(Config::HTTP_PROXY)) {
+				curl_setopt($ch, CURLOPT_PROXY, Config::get(Config::HTTP_PROXY));
 			}
 
 			if ($post_query) {
@@ -315,13 +311,13 @@ class UrlHelper {
 					list ($key, $value) = explode(": ", $header);
 
 					if (strtolower($key) == "last-modified") {
-						$fetch_last_modified = $value;
+						self::$fetch_last_modified = $value;
 					}
 				}
 
 				if (substr(strtolower($header), 0, 7) == 'http/1.') {
-					$fetch_last_error_code = (int) substr($header, 9, 3);
-					$fetch_last_error = $header;
+					self::$fetch_last_error_code = (int) substr($header, 9, 3);
+					self::$fetch_last_error = $header;
 				}
 			}
 
@@ -331,39 +327,39 @@ class UrlHelper {
 			}
 
 			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$fetch_last_content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+			self::$fetch_last_content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 
-			$fetch_effective_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+			self::$fetch_effective_url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 
-			if (!self::validate($fetch_effective_url, true)) {
-				$fetch_last_error = "URL received after redirection failed extended validation.";
-
-				return false;
-			}
-
-			$fetch_effective_ip_addr = gethostbyname(parse_url($fetch_effective_url, PHP_URL_HOST));
-
-			if (!$fetch_effective_ip_addr || strpos($fetch_effective_ip_addr, "127.") === 0) {
-				$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address ($fetch_effective_ip_addr)";
+			if (!self::validate(self::$fetch_effective_url, true)) {
+				self::$fetch_last_error = "URL received after redirection failed extended validation.";
 
 				return false;
 			}
 
-			$fetch_last_error_code = $http_code;
+			self::$fetch_effective_ip_addr = gethostbyname(parse_url(self::$fetch_effective_url, PHP_URL_HOST));
 
-			if ($http_code != 200 || $type && strpos($fetch_last_content_type, "$type") === false) {
+			if (!self::$fetch_effective_ip_addr || strpos(self::$fetch_effective_ip_addr, "127.") === 0) {
+				self::$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address (".self::$fetch_effective_ip_addr.")";
+
+				return false;
+			}
+
+			self::$fetch_last_error_code = $http_code;
+
+			if ($http_code != 200 || $type && strpos(self::$fetch_last_content_type, "$type") === false) {
 
 				if (curl_errno($ch) != 0) {
-					$fetch_last_error .=  "; " . curl_errno($ch) . " " . curl_error($ch);
+					self::$fetch_last_error .=  "; " . curl_errno($ch) . " " . curl_error($ch);
 				}
 
-				$fetch_last_error_content = $contents;
+				self::$fetch_last_error_content = $contents;
 				curl_close($ch);
 				return false;
 			}
 
 			if (!$contents) {
-				$fetch_last_error = curl_errno($ch) . " " . curl_error($ch);
+				self::$fetch_last_error = curl_errno($ch) . " " . curl_error($ch);
 				curl_close($ch);
 				return false;
 			}
@@ -372,7 +368,7 @@ class UrlHelper {
 
 			$is_gzipped = RSSUtils::is_gzipped($contents);
 
-			if ($is_gzipped) {
+			if ($is_gzipped && is_string($contents)) {
 				$tmp = @gzdecode($contents);
 
 				if ($tmp) $contents = $tmp;
@@ -381,7 +377,7 @@ class UrlHelper {
 			return $contents;
 		} else {
 
-			$fetch_curl_used = false;
+			self::$fetch_curl_used = false;
 
 			if ($login && $pass){
 				$url_parts = array();
@@ -404,7 +400,7 @@ class UrlHelper {
 						),
 						'method' => 'GET',
 						'ignore_errors' => true,
-						'timeout' => $timeout ? $timeout : FILE_FETCH_TIMEOUT,
+						'timeout' => $timeout ? $timeout : Config::get(Config::FILE_FETCH_TIMEOUT),
 						'protocol_version'=> 1.1)
 				  );
 
@@ -417,73 +413,71 @@ class UrlHelper {
 			if ($http_referrer)
 				array_push($context_options['http']['header'], "Referer: $http_referrer");
 
-			if (defined('_HTTP_PROXY')) {
+			if (Config::get(Config::HTTP_PROXY)) {
 				$context_options['http']['request_fulluri'] = true;
-				$context_options['http']['proxy'] = _HTTP_PROXY;
+				$context_options['http']['proxy'] = Config::get(Config::HTTP_PROXY);
 			}
 
 			$context = stream_context_create($context_options);
 
 			$old_error = error_get_last();
 
-			$fetch_effective_url = self::resolve_redirects($url, $timeout ? $timeout : FILE_FETCH_CONNECT_TIMEOUT);
+			self::$fetch_effective_url = self::resolve_redirects($url, $timeout ? $timeout : Config::get(Config::FILE_FETCH_CONNECT_TIMEOUT));
 
-			if (!self::validate($fetch_effective_url, true)) {
-				$fetch_last_error = "URL received after redirection failed extended validation.";
+			if (!self::validate(self::$fetch_effective_url, true)) {
+				self::$fetch_last_error = "URL received after redirection failed extended validation.";
 
 				return false;
 			}
 
-			$fetch_effective_ip_addr = gethostbyname(parse_url($fetch_effective_url, PHP_URL_HOST));
+			self::$fetch_effective_ip_addr = gethostbyname(parse_url(self::$fetch_effective_url, PHP_URL_HOST));
 
-			if (!$fetch_effective_ip_addr || strpos($fetch_effective_ip_addr, "127.") === 0) {
-				$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address ($fetch_effective_ip_addr)";
+			if (!self::$fetch_effective_ip_addr || strpos(self::$fetch_effective_ip_addr, "127.") === 0) {
+				self::$fetch_last_error = "URL hostname received after redirection failed to resolve or resolved to a loopback address (".self::$fetch_effective_ip_addr.")";
 
 				return false;
 			}
 
 			$data = @file_get_contents($url, false, $context);
 
-			if (isset($http_response_header) && is_array($http_response_header)) {
-				foreach ($http_response_header as $header) {
-					if (strstr($header, ": ") !== false) {
-						list ($key, $value) = explode(": ", $header);
+			foreach ($http_response_header as $header) {
+				if (strstr($header, ": ") !== false) {
+					list ($key, $value) = explode(": ", $header);
 
-						$key = strtolower($key);
+					$key = strtolower($key);
 
-						if ($key == 'content-type') {
-							$fetch_last_content_type = $value;
-							// don't abort here b/c there might be more than one
-							// e.g. if we were being redirected -- last one is the right one
-						} else if ($key == 'last-modified') {
-							$fetch_last_modified = $value;
-						} else if ($key == 'location') {
-							$fetch_effective_url = $value;
-						}
+					if ($key == 'content-type') {
+						self::$fetch_last_content_type = $value;
+						// don't abort here b/c there might be more than one
+						// e.g. if we were being redirected -- last one is the right one
+					} else if ($key == 'last-modified') {
+						self::$fetch_last_modified = $value;
+					} else if ($key == 'location') {
+						self::$fetch_effective_url = $value;
 					}
+				}
 
-					if (substr(strtolower($header), 0, 7) == 'http/1.') {
-						$fetch_last_error_code = (int) substr($header, 9, 3);
-						$fetch_last_error = $header;
-					}
+				if (substr(strtolower($header), 0, 7) == 'http/1.') {
+					self::$fetch_last_error_code = (int) substr($header, 9, 3);
+					self::$fetch_last_error = $header;
 				}
 			}
 
-			if ($fetch_last_error_code != 200) {
+			if (self::$fetch_last_error_code != 200) {
 				$error = error_get_last();
 
-				if ($error['message'] != $old_error['message']) {
-					$fetch_last_error .= "; " . $error["message"];
+				if (($error['message'] ?? '') != ($old_error['message'] ?? '')) {
+					self::$fetch_last_error .= "; " . $error["message"];
 				}
 
-				$fetch_last_error_content = $data;
+				self::$fetch_last_error_content = $data;
 
 				return false;
 			}
 
 			$is_gzipped = RSSUtils::is_gzipped($data);
 
-			if ($is_gzipped) {
+			if ($is_gzipped && $data) {
 				$tmp = @gzdecode($data);
 
 				if ($tmp) $data = $tmp;
@@ -492,5 +486,27 @@ class UrlHelper {
 			return $data;
 		}
 	}
+
+	public static function url_to_youtube_vid($url) {
+		$url = str_replace("youtube.com", "youtube-nocookie.com", $url);
+
+		$regexps = [
+			"/\/\/www\.youtube-nocookie\.com\/v\/([\w-]+)/",
+			"/\/\/www\.youtube-nocookie\.com\/embed\/([\w-]+)/",
+			"/\/\/www\.youtube-nocookie\.com\/watch?v=([\w-]+)/",
+			"/\/\/youtu.be\/([\w-]+)/",
+		];
+
+		foreach ($regexps as $re) {
+			$matches = [];
+
+			if (preg_match($re, $url, $matches)) {
+				return $matches[1];
+			}
+		}
+
+		return false;
+	}
+
 
 }

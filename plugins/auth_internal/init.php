@@ -1,10 +1,10 @@
 <?php
-class Auth_Internal extends Plugin implements IAuthModule {
+class Auth_Internal extends Auth_Base {
 
 	private $host;
 
 	function about() {
-		return array(1.0,
+		return array(null,
 			"Authenticates against internal tt-rss database",
 			"fox",
 			true);
@@ -13,88 +13,118 @@ class Auth_Internal extends Plugin implements IAuthModule {
 	/* @var PluginHost $host */
 	function init($host) {
 		$this->host = $host;
-		$this->pdo = Db::pdo();
 
 		$host->add_hook($host::HOOK_AUTH_USER, $this);
 	}
 
 	function authenticate($login, $password, $service = '') {
 
-		$pwd_hash1 = encrypt_password($password);
-		$pwd_hash2 = encrypt_password($password, $login);
-		$otp = (int)$_REQUEST["otp"];
+		$otp = (int) ($_REQUEST["otp"] ?? 0);
 
-		if (get_schema_version() > 96) {
+		// don't bother with null/null logins for auth_external etc
+		if ($login && get_schema_version() > 96) {
 
-			$sth = $this->pdo->prepare("SELECT otp_enabled,salt FROM ttrss_users WHERE
-				login = ?");
-			$sth->execute([$login]);
+			$user_id = UserHelper::find_user_by_login($login);
 
-			if ($row = $sth->fetch()) {
-				$otp_enabled = $row['otp_enabled'];
+			if ($user_id && UserHelper::is_otp_enabled($user_id)) {
 
-				if ($otp_enabled) {
+				// only allow app passwords for service logins if OTP is enabled
+				if ($service && get_schema_version() > 138) {
+					return $this->check_app_password($login, $password, $service);
+				}
 
-					// only allow app password checking if OTP is enabled
-					if ($service && get_schema_version() > 138) {
-						return $this->check_app_password($login, $password, $service);
-					}
+				if ($otp) {
 
-					if ($otp) {
-						$base32 = new \OTPHP\Base32();
+					/*$base32 = new \OTPHP\Base32();
 
-						$secret = $base32->encode(mb_substr(sha1($row["salt"]), 0, 12), false);
-						$secret_legacy = $base32->encode(sha1($row["salt"]));
+					$secret = $base32->encode(mb_substr(sha1($row["salt"]), 0, 12), false);
+					$secret_legacy = $base32->encode(sha1($row["salt"]));
 
-						$totp = new \OTPHP\TOTP($secret);
-						$otp_check = $totp->now();
+					$totp = new \OTPHP\TOTP($secret);
+					$otp_check = $totp->now();
 
-						$totp_legacy = new \OTPHP\TOTP($secret_legacy);
-						$otp_check_legacy = $totp_legacy->now();
+					$totp_legacy = new \OTPHP\TOTP($secret_legacy);
+					$otp_check_legacy = $totp_legacy->now();
 
-						if ($otp !== $otp_check && $otp !== $otp_check_legacy) {
-							return false;
-						}
-					} else {
-						$return = urlencode($_REQUEST["return"]);
-						?>
-						<!DOCTYPE html>
-						<html>
-							<head>
-								<title>Tiny Tiny RSS</title>
-								<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+					if ($otp !== $otp_check && $otp !== $otp_check_legacy) {
+						return false;
+					} */
+
+					if ($this->check_password($user_id, $password) && UserHelper::check_otp($user_id, $otp))
+						return $user_id;
+					else
+						return false;
+
+				} else {
+					$return = urlencode($_REQUEST["return"]);
+					?>
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<title>Tiny Tiny RSS</title>
+							<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+							<?php foreach (["lib/dojo/dojo.js",
+								"lib/dojo/tt-rss-layer.js",
+								"js/common.js",
+								"js/utility.js"] as $jsfile) {
+									echo javascript_tag($jsfile);
+								} ?>
+								<style type="text/css">
+									@media (prefers-color-scheme: dark) {
+										body {
+											background : #303030;
+										}
+									}
+
+									body.css_loading * {
+										display : none;
+									}
+								</style>
+
+								<script type="text/javascript">
+									require({cache:{}});
+
+									const UtilityApp = {
+										init: function() {
+											require(['dojo/parser', "dojo/ready", 'dijit/form/Button', 'dijit/form/Form',
+													'dijit/form/TextBox','dijit/form/ValidationTextBox'],function(parser, ready){
+	                						ready(function() {
+													parser.parse();
+													dijit.byId("otp").focus();
+												});
+											});
+										},
+									};
+								</script>
 							</head>
-							<?php echo stylesheet_tag("themes/light.css") ?>
-						<body class="ttrss_utility otp">
-						<h1><?php echo __("Authentication") ?></h1>
-						<div class="content">
-						<form action="public.php?return=<?php echo $return ?>"
-								method="POST" class="otpform">
-							<input type="hidden" name="op" value="login">
-							<input type="hidden" name="login" value="<?php echo htmlspecialchars($login) ?>">
-							<input type="hidden" name="password" value="<?php echo htmlspecialchars($password) ?>">
-							<input type="hidden" name="bw_limit" value="<?php echo htmlspecialchars($_POST["bw_limit"]) ?>">
-							<input type="hidden" name="remember_me" value="<?php echo htmlspecialchars($_POST["remember_me"]) ?>">
-							<input type="hidden" name="profile" value="<?php echo htmlspecialchars($_POST["profile"]) ?>">
+							<body class="flat ttrss_utility otp css_loading">
+								<h1><?= __("Authentication") ?></h1>
+								<div class="content">
+									<form dojoType="dijit.form.Form" action="public.php?return=<?= urlencode(with_trailing_slash($return)) ?>" method="post" class="otpform">
 
-							<fieldset>
-								<label><?php echo __("Please enter your one time password:") ?></label>
-								<input autocomplete="off" size="6" name="otp" value=""/>
-								<input type="submit" value="Continue"/>
-							</fieldset>
-						</form></div>
-						<script type="text/javascript">
-							document.forms[0].otp.focus();
-						</script>
-						<?php
-						exit;
-					}
+										<?php foreach (["login", "password", "bw_limit", "safe_mode", "remember_me", "profile"] as $key) {
+											print \Controls\hidden_tag($key, $_POST[$key] ?? "");
+										} ?>
+
+										<?= \Controls\hidden_tag("op", "login") ?>
+
+										<fieldset>
+											<label><?= __("Please enter verification code (OTP):") ?></label>
+											<input id="otp" dojoType="dijit.form.ValidationTextBox" required="1" autocomplete="off" size="6" name="otp" value=""/>
+											<?= \Controls\submit_tag(__("Continue")) ?>
+										</fieldset>
+									</form>
+								</div>
+							</body>
+						</html>
+					<?php
+					exit;
 				}
 			}
 		}
 
-		// check app passwords first but allow regular password as a fallback for the time being
-		// if OTP is not enabled
+		// service logins: check app passwords first but allow regular password
+		// as a fallback if OTP is not enabled
 
 		if ($service && get_schema_version() > 138) {
 			$user_id = $this->check_app_password($login, $password, $service);
@@ -103,112 +133,74 @@ class Auth_Internal extends Plugin implements IAuthModule {
 				return $user_id;
 		}
 
-		if (get_schema_version() > 87) {
+		if ($login) {
+			$try_user_id = $this->find_user_by_login($login);
 
-			$sth = $this->pdo->prepare("SELECT salt FROM ttrss_users WHERE login = ?");
-			$sth->execute([$login]);
-
-			if ($row = $sth->fetch()) {
-				$salt = $row['salt'];
-
-				if ($salt == "") {
-
-					$sth = $this->pdo->prepare("SELECT id FROM ttrss_users WHERE
-						login = ? AND (pwd_hash = ? OR pwd_hash = ?)");
-
-					$sth->execute([$login, $pwd_hash1, $pwd_hash2]);
-
-					// verify and upgrade password to new salt base
-
-					if ($row = $sth->fetch()) {
-						// upgrade password to MODE2
-
-						$user_id = $row['id'];
-
-						$salt = substr(bin2hex(get_random_bytes(125)), 0, 250);
-						$pwd_hash = encrypt_password($password, $salt, true);
-
-						$sth = $this->pdo->prepare("UPDATE ttrss_users SET
-							pwd_hash = ?, salt = ? WHERE login = ?");
-
-						$sth->execute([$pwd_hash, $salt, $login]);
-
-						return $user_id;
-
-					} else {
-						return false;
-					}
-
-				} else {
-					$pwd_hash = encrypt_password($password, $salt, true);
-
-					$sth = $this->pdo->prepare("SELECT id
-						  FROM ttrss_users WHERE
-						  login = ? AND pwd_hash = ?");
-					$sth->execute([$login, $pwd_hash]);
-
-					if ($row = $sth->fetch()) {
-						return $row['id'];
-					}
-				}
-
-			} else {
-				$sth = $this->pdo->prepare("SELECT id
-					FROM ttrss_users WHERE
-					  login = ? AND (pwd_hash = ? OR pwd_hash = ?)");
-
-				$sth->execute([$login, $pwd_hash1, $pwd_hash2]);
-
-				if ($row = $sth->fetch()) {
-					return $row['id'];
-				}
-			}
-		} else {
-			$sth = $this->pdo->prepare("SELECT id
-					FROM ttrss_users WHERE
-					  login = ? AND (pwd_hash = ? OR pwd_hash = ?)");
-
-			$sth->execute([$login, $pwd_hash1, $pwd_hash2]);
-
-			if ($row = $sth->fetch()) {
-				return $row['id'];
+			if ($try_user_id) {
+				return $this->check_password($try_user_id, $password);
 			}
 		}
 
 		return false;
 	}
 
-	function check_password($owner_uid, $password) {
+	function check_password(int $owner_uid, string $password, string $service = '') {
 
-		$sth = $this->pdo->prepare("SELECT salt,login,otp_enabled FROM ttrss_users WHERE
-			id = ?");
-		$sth->execute([$owner_uid]);
+		$user = ORM::for_table('ttrss_users')->find_one($owner_uid);
 
-		if ($row = $sth->fetch()) {
+		if ($user) {
 
-			$salt = $row['salt'];
-			$login = $row['login'];
+			// don't throttle app passwords
+			if (!$service && get_schema_version() >= 145) {
 
-			if (!$salt) {
-				$password_hash1 = encrypt_password($password);
-				$password_hash2 = encrypt_password($password, $login);
+				if ($user->last_auth_attempt) {
+					$last_auth_attempt = strtotime($user->last_auth_attempt);
 
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_users WHERE
-					id = ? AND (pwd_hash = ? OR pwd_hash = ?)");
+					if ($last_auth_attempt && time() - $last_auth_attempt < Config::get(Config::AUTH_MIN_INTERVAL)) {
+						Logger::log(E_USER_NOTICE, "Too many authentication attempts for {$user->login}, throttled.");
 
-				$sth->execute([$owner_uid, $password_hash1, $password_hash2]);
+						// start an empty session to deliver login error message
+						if (session_status() != PHP_SESSION_ACTIVE)
+							session_start();
 
-				return $sth->fetch();
+						$_SESSION["login_error_msg"] = __("Too many authentication attempts, throttled.");
 
-			} else {
-				$password_hash = encrypt_password($password, $salt, true);
+						$user->last_auth_attempt = Db::NOW();
+						$user->save();
 
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_users WHERE
-					id = ? AND pwd_hash = ?");
+						return false;
+					}
+				}
 
-				$sth->execute([$owner_uid, $password_hash]);
+				$user->last_auth_attempt = Db::NOW();
+				$user->save();
+			}
 
-				return $sth->fetch();
+			$salt = $user['salt'] ?? "";
+			$login = $user['login'];
+			$pwd_hash = $user['pwd_hash'];
+
+			list ($pwd_algo, $raw_hash) = explode(":", $pwd_hash, 2);
+
+			// check app password only if service is specified
+			if ($service && get_schema_version() > 138) {
+				return $this->check_app_password($login, $password, $service);
+			}
+
+			$test_hash = UserHelper::hash_password($password, $salt, $pwd_algo);
+
+			if (hash_equals($pwd_hash, $test_hash)) {
+				if ($pwd_algo != UserHelper::HASH_ALGOS[0]) {
+					Logger::log(E_USER_NOTICE, "Upgrading password of user $login to " . UserHelper::HASH_ALGOS[0]);
+
+					$new_hash = UserHelper::hash_password($password, $salt, UserHelper::HASH_ALGOS[0]);
+
+					if ($new_hash) {
+						$usth = $this->pdo->prepare("UPDATE ttrss_users SET pwd_hash = ? WHERE id = ?");
+						$usth->execute([$new_hash, $owner_uid]);
+					}
+				}
+				return $owner_uid;
 			}
 		}
 
@@ -219,35 +211,34 @@ class Auth_Internal extends Plugin implements IAuthModule {
 
 		if ($this->check_password($owner_uid, $old_password)) {
 
-			$new_salt = substr(bin2hex(get_random_bytes(125)), 0, 250);
-			$new_password_hash = encrypt_password($new_password, $new_salt, true);
+			$new_salt = UserHelper::get_salt();
+			$new_password_hash = UserHelper::hash_password($new_password, $new_salt, UserHelper::HASH_ALGOS[0]);
 
-			$sth = $this->pdo->prepare("UPDATE ttrss_users SET
-				pwd_hash = ?, salt = ?, otp_enabled = false
-					WHERE id = ?");
-			$sth->execute([$new_password_hash, $new_salt, $owner_uid]);
+			$user = ORM::for_table('ttrss_users')->find_one($owner_uid);
 
-			$_SESSION["pwd_hash"] = $new_password_hash;
+			$user->salt = $new_salt;
+			$user->pwd_hash = $new_password_hash;
+			$user->save();
 
-			$sth = $this->pdo->prepare("SELECT email, login FROM ttrss_users WHERE id = ?");
-			$sth->execute([$owner_uid]);
+			if ($_SESSION["uid"] ?? 0 == $owner_uid)
+				$_SESSION["pwd_hash"] = $new_password_hash;
 
-			if ($row = $sth->fetch()) {
+			if ($user->email) {
 				$mailer = new Mailer();
 
 				$tpl = new Templator();
 
 				$tpl->readTemplateFromFile("password_change_template.txt");
 
-				$tpl->setVariable('LOGIN', $row["login"]);
-				$tpl->setVariable('TTRSS_HOST', SELF_URL_PATH);
+				$tpl->setVariable('LOGIN', $user->login);
+				$tpl->setVariable('TTRSS_HOST', Config::get(Config::SELF_URL_PATH));
 
 				$tpl->addBlock('message');
 
 				$tpl->generateOutputToString($message);
 
-				$mailer->mail(["to_name" => $row["login"],
-					"to_address" => $row["email"],
+				$mailer->mail(["to_name" => $user->login,
+					"to_address" => $user->email,
 					"subject" => "[tt-rss] Password change notification",
 					"message" => $message]);
 
@@ -262,23 +253,32 @@ class Auth_Internal extends Plugin implements IAuthModule {
 	private function check_app_password($login, $password, $service) {
 		$sth = $this->pdo->prepare("SELECT p.id, p.pwd_hash, u.id AS uid
 			FROM ttrss_app_passwords p, ttrss_users u
-			WHERE p.owner_uid = u.id AND u.login = ? AND service = ?");
+			WHERE p.owner_uid = u.id AND LOWER(u.login) = LOWER(?) AND service = ?");
 		$sth->execute([$login, $service]);
 
 		while ($row = $sth->fetch()) {
-			list ($algo, $hash, $salt) = explode(":", $row["pwd_hash"]);
+			list ($pwd_algo, $raw_hash, $salt) = explode(":", $row["pwd_hash"]);
 
-			if ($algo == "SSHA-512") {
-				$test_hash = hash('sha512', $salt . $password);
+			$test_hash = UserHelper::hash_password($password, $salt, $pwd_algo);
 
-				if ($test_hash == $hash) {
-					$usth = $this->pdo->prepare("UPDATE ttrss_app_passwords SET last_used = NOW() WHERE id = ?");
-					$usth->execute([$row['id']]);
+			if (hash_equals("$pwd_algo:$raw_hash", $test_hash)) {
+				$pass = ORM::for_table('ttrss_app_passwords')->find_one($row["id"]);
+				$pass->last_used = Db::NOW();
 
-					return $row['uid'];
+				if ($pwd_algo != UserHelper::HASH_ALGOS[0]) {
+					// upgrade password to current algo
+					Logger::log(E_USER_NOTICE, "Upgrading app password of user $login to " . UserHelper::HASH_ALGOS[0]);
+
+					$new_hash = UserHelper::hash_password($password, $salt);
+
+					if ($new_hash) {
+						$pass->pwd_hash = "$new_hash:$salt";
+					}
 				}
-			} else {
-				user_error("Got unknown algo of app password for user $login: $algo");
+
+				$pass->save();
+
+				return $row['uid'];
 			}
 		}
 

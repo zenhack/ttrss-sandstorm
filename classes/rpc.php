@@ -1,110 +1,41 @@
 <?php
 class RPC extends Handler_Protected {
 
-	function csrf_ignore($method) {
-		$csrf_ignored = array("completelabels", "saveprofile");
+	/*function csrf_ignore($method) {
+		$csrf_ignored = array("completelabels");
 
 		return array_search($method, $csrf_ignored) !== false;
-	}
+	}*/
 
-	function setprofile() {
-		$_SESSION["profile"] = (int) clean($_REQUEST["id"]);
+	private function _translations_as_array() {
 
-		// default value
-		if (!$_SESSION["profile"]) $_SESSION["profile"] = null;
-	}
+		global $text_domains;
 
-	function remprofiles() {
-		$ids = explode(",", trim(clean($_REQUEST["ids"])));
+		$rv = [];
 
-		foreach ($ids as $id) {
-			if ($_SESSION["profile"] != $id) {
-				$sth = $this->pdo->prepare("DELETE FROM ttrss_settings_profiles WHERE id = ? AND
-							owner_uid = ?");
-				$sth->execute([$id, $_SESSION['uid']]);
-			}
-		}
-	}
+		foreach (array_keys($text_domains) as $domain) {
 
-	// Silent
-	function addprofile() {
-		$title = trim(clean($_REQUEST["title"]));
+			/** @var gettext_reader $l10n */
+			$l10n = _get_reader($domain);
 
-		if ($title) {
-			$this->pdo->beginTransaction();
+			for ($i = 0; $i < $l10n->total; $i++) {
+				if (isset($l10n->table_originals[$i * 2 + 2]) && $orig = $l10n->get_original_string($i)) {
+					if(strpos($orig, "\000") !== false) { // Plural forms
+						$key = explode(chr(0), $orig);
 
-			$sth = $this->pdo->prepare("SELECT id FROM ttrss_settings_profiles
-				WHERE title = ? AND owner_uid = ?");
-			$sth->execute([$title, $_SESSION['uid']]);
-
-			if (!$sth->fetch()) {
-
-				$sth = $this->pdo->prepare("INSERT INTO ttrss_settings_profiles (title, owner_uid)
-							VALUES (?, ?)");
-
-				$sth->execute([$title, $_SESSION['uid']]);
-
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_settings_profiles WHERE
-					title = ? AND owner_uid = ?");
-				$sth->execute([$title, $_SESSION['uid']]);
-
-				if ($row = $sth->fetch()) {
-					$profile_id = $row['id'];
-
-					if ($profile_id) {
-						Pref_Prefs::initialize_user_prefs($_SESSION["uid"], $profile_id);
+						$rv[$key[0]] = _ngettext($key[0], $key[1], 1); // Singular
+						$rv[$key[1]] = _ngettext($key[0], $key[1], 2); // Plural
+					} else {
+						$translation = _dgettext($domain,$orig);
+						$rv[$orig] = $translation;
 					}
 				}
 			}
-
-			$this->pdo->commit();
-		}
-	}
-
-	function saveprofile() {
-		$id = clean($_REQUEST["id"]);
-		$title = trim(clean($_REQUEST["value"]));
-
-		if ($id == 0) {
-			print __("Default profile");
-			return;
 		}
 
-		if ($title) {
-			$sth = $this->pdo->prepare("UPDATE ttrss_settings_profiles
-				SET title = ? WHERE id = ? AND
-					owner_uid = ?");
-
-			$sth->execute([$title, $id, $_SESSION['uid']]);
-			print $title;
-		}
+		return $rv;
 	}
 
-	// Silent
-	function remarchive() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
-
-		$sth = $this->pdo->prepare("DELETE FROM ttrss_archived_feeds WHERE
-		  		(SELECT COUNT(*) FROM ttrss_user_entries
-					WHERE orig_feed_id = :id) = 0 AND
-						id = :id AND owner_uid = :uid");
-
-		foreach ($ids as $id) {
-			$sth->execute([":id" => $id, ":uid" => $_SESSION['uid']]);
-		}
-	}
-
-	function addfeed() {
-		$feed = clean($_REQUEST['feed']);
-		$cat = clean($_REQUEST['cat']);
-		$need_auth = isset($_REQUEST['need_auth']);
-		$login = $need_auth ? clean($_REQUEST['login']) : '';
-		$pass = $need_auth ? trim(clean($_REQUEST['pass'])) : '';
-
-		$rc = Feeds::subscribe_to_feed($feed, $cat, $login, $pass);
-
-		print json_encode(array("result" => $rc));
-	}
 
 	function togglepref() {
 		$key = clean($_REQUEST["key"]);
@@ -119,7 +50,7 @@ class RPC extends Handler_Protected {
 		$key = clean($_REQUEST['key']);
 		$value = $_REQUEST['value'];
 
-		set_pref($key, $value, false, $key != 'USER_STYLESHEET');
+		set_pref($key, $value, $_SESSION["uid"], $key != 'USER_STYLESHEET');
 
 		print json_encode(array("param" =>$key, "value" => $value));
 	}
@@ -145,116 +76,9 @@ class RPC extends Handler_Protected {
 			WHERE ref_id IN ($ids_qmarks) AND owner_uid = ?");
 		$sth->execute(array_merge($ids, [$_SESSION['uid']]));
 
-		Article::purge_orphans();
+		Article::_purge_orphans();
 
 		print json_encode(array("message" => "UPDATE_COUNTERS"));
-	}
-
-	function unarchive() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
-
-		foreach ($ids as $id) {
-			$this->pdo->beginTransaction();
-
-			$sth = $this->pdo->prepare("SELECT feed_url,site_url,title FROM ttrss_archived_feeds
-				WHERE id = (SELECT orig_feed_id FROM ttrss_user_entries WHERE ref_id = :id
-				AND owner_uid = :uid) AND owner_uid = :uid");
-			$sth->execute([":uid" => $_SESSION['uid'], ":id" => $id]);
-
-			if ($row = $sth->fetch()) {
-				$feed_url = $row['feed_url'];
-				$site_url = $row['site_url'];
-				$title = $row['title'];
-
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_feeds WHERE feed_url = ?
-					AND owner_uid = ?");
-				$sth->execute([$feed_url, $_SESSION['uid']]);
-
-				if ($row = $sth->fetch()) {
-					$feed_id = $row["id"];
-				} else {
-					if (!$title) $title = '[Unknown]';
-
-					$sth = $this->pdo->prepare("INSERT INTO ttrss_feeds
-							(owner_uid,feed_url,site_url,title,cat_id,auth_login,auth_pass,update_method)
-							VALUES (?, ?, ?, ?, NULL, '', '', 0)");
-					$sth->execute([$_SESSION['uid'], $feed_url, $site_url, $title]);
-
-					$sth = $this->pdo->prepare("SELECT id FROM ttrss_feeds WHERE feed_url = ?
-						AND owner_uid = ?");
-					$sth->execute([$feed_url, $_SESSION['uid']]);
-
-					if ($row = $sth->fetch()) {
-						$feed_id = $row['id'];
-					}
-				}
-
-				if ($feed_id) {
-					$sth = $this->pdo->prepare("UPDATE ttrss_user_entries
-						SET feed_id = ?, orig_feed_id = NULL
-						WHERE ref_id = ? AND owner_uid = ?");
-					$sth->execute([$feed_id, $id, $_SESSION['uid']]);
-				}
-			}
-
-			$this->pdo->commit();
-		}
-
-		print json_encode(array("message" => "UPDATE_COUNTERS"));
-	}
-
-	function archive() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
-
-		foreach ($ids as $id) {
-			$this->archive_article($id, $_SESSION["uid"]);
-		}
-
-		print json_encode(array("message" => "UPDATE_COUNTERS"));
-	}
-
-	private function archive_article($id, $owner_uid) {
-		$this->pdo->beginTransaction();
-
-		if (!$owner_uid) $owner_uid = $_SESSION['uid'];
-
-		$sth = $this->pdo->prepare("SELECT feed_id FROM ttrss_user_entries
-			WHERE ref_id = ? AND owner_uid = ?");
-		$sth->execute([$id, $owner_uid]);
-
-		if ($row = $sth->fetch()) {
-
-			/* prepare the archived table */
-
-			$feed_id = (int) $row['feed_id'];
-
-			if ($feed_id) {
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_archived_feeds
-					WHERE id = ? AND owner_uid = ?");
-				$sth->execute([$feed_id, $owner_uid]);
-
-				if ($row = $sth->fetch()) {
-					$new_feed_id = $row['id'];
-				} else {
-					$row = $this->pdo->query("SELECT MAX(id) AS id FROM ttrss_archived_feeds")->fetch();
-					$new_feed_id = (int)$row['id'] + 1;
-
-					$sth = $this->pdo->prepare("INSERT INTO ttrss_archived_feeds
-						(id, owner_uid, title, feed_url, site_url, created)
-							SELECT ?, owner_uid, title, feed_url, site_url, NOW() from ttrss_feeds
-							  	WHERE id = ?");
-
-					$sth->execute([$new_feed_id, $feed_id]);
-				}
-
-				$sth = $this->pdo->prepare("UPDATE ttrss_user_entries
-					SET orig_feed_id = ?, feed_id = NULL
-					WHERE ref_id = ? AND owner_uid = ?");
-				$sth->execute([$new_feed_id, $id, $owner_uid]);
-			}
-		}
-
-		$this->pdo->commit();
 	}
 
 	function publ() {
@@ -270,67 +94,116 @@ class RPC extends Handler_Protected {
 		print json_encode(array("message" => "UPDATE_COUNTERS"));
 	}
 
+	function getRuntimeInfo() {
+		$reply = [
+			'runtime-info' => $this->_make_runtime_info()
+		];
+
+		print json_encode($reply);
+	}
+
 	function getAllCounters() {
 		@$seq = (int) $_REQUEST['seq'];
 
+		$feed_id_count = (int)$_REQUEST["feed_id_count"];
+		$label_id_count = (int)$_REQUEST["label_id_count"];
+
+		// it seems impossible to distinguish empty array [] from a null - both become unset in $_REQUEST
+		// so, count is >= 0 means we had an array, -1 means null
+		// we need null because it means "return all counters"; [] would return nothing
+		if ($feed_id_count == -1)
+			$feed_ids = null;
+		else
+			$feed_ids = array_map("intval", clean($_REQUEST["feed_ids"] ?? []));
+
+		if ($label_id_count == -1)
+			$label_ids = null;
+		else
+			$label_ids = array_map("intval", clean($_REQUEST["label_ids"] ?? []));
+
+		$counters = is_array($feed_ids) && !get_pref(Prefs::DISABLE_CONDITIONAL_COUNTERS) ?
+			Counters::get_conditional($feed_ids, $label_ids) : Counters::get_all();
+
 		$reply = [
-			'counters' => Counters::getAllCounters(),
+			'counters' => $counters,
 			'seq' => $seq
 		];
-
-		if ($seq % 2 == 0)
-			$reply['runtime-info'] = $this->make_runtime_info();
 
 		print json_encode($reply);
 	}
 
 	/* GET["cmode"] = 0 - mark as read, 1 - as unread, 2 - toggle */
 	function catchupSelected() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
+		$ids = array_map("intval", clean($_REQUEST["ids"] ?? []));
 		$cmode = (int)clean($_REQUEST["cmode"]);
 
-		Article::catchupArticlesById($ids, $cmode);
+		if (count($ids) > 0)
+			Article::_catchup_by_id($ids, $cmode);
 
-		print json_encode(array("message" => "UPDATE_COUNTERS", "ids" => $ids));
+		print json_encode(["message" => "UPDATE_COUNTERS",
+			"labels" => Article::_labels_of($ids),
+			"feeds" => Article::_feeds_of($ids)]);
 	}
 
 	function markSelected() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
+		$ids = array_map("intval", clean($_REQUEST["ids"] ?? []));
 		$cmode = (int)clean($_REQUEST["cmode"]);
 
-		$this->markArticlesById($ids, $cmode);
+		if (count($ids) > 0)
+			$this->markArticlesById($ids, $cmode);
 
-		print json_encode(array("message" => "UPDATE_COUNTERS"));
+		print json_encode(["message" => "UPDATE_COUNTERS",
+		"labels" => Article::_labels_of($ids),
+			"feeds" => Article::_feeds_of($ids)]);
 	}
 
 	function publishSelected() {
-		$ids = explode(",", clean($_REQUEST["ids"]));
+		$ids = array_map("intval", clean($_REQUEST["ids"] ?? []));
 		$cmode = (int)clean($_REQUEST["cmode"]);
 
-		$this->publishArticlesById($ids, $cmode);
+		if (count($ids) > 0)
+			$this->publishArticlesById($ids, $cmode);
 
-		print json_encode(array("message" => "UPDATE_COUNTERS"));
+		print json_encode(["message" => "UPDATE_COUNTERS",
+			"labels" => Article::_labels_of($ids),
+			"feeds" => Article::_feeds_of($ids)]);
 	}
 
 	function sanityCheck() {
-		$_SESSION["hasAudio"] = clean($_REQUEST["hasAudio"]) === "true";
 		$_SESSION["hasSandbox"] = clean($_REQUEST["hasSandbox"]) === "true";
-		$_SESSION["hasMp3"] = clean($_REQUEST["hasMp3"]) === "true";
 		$_SESSION["clientTzOffset"] = clean($_REQUEST["clientTzOffset"]);
 
-		$reply = array();
+		$client_location = $_REQUEST["clientLocation"];
 
-		$reply['error'] = sanity_check();
+		$error = Errors::E_SUCCESS;
+		$error_params = [];
 
-		if ($reply['error']['code'] == 0) {
-			$reply['init-params'] = $this->make_init_params();
-			$reply['runtime-info'] = $this->make_runtime_info();
+		$client_scheme = parse_url($client_location, PHP_URL_SCHEME);
+		$server_scheme = parse_url(Config::get_self_url(), PHP_URL_SCHEME);
+
+		if (Config::is_migration_needed()) {
+			$error = Errors::E_SCHEMA_MISMATCH;
+		} else if ($client_scheme != $server_scheme) {
+			$error = Errors::E_URL_SCHEME_MISMATCH;
+			$error_params["client_scheme"] = $client_scheme;
+			$error_params["server_scheme"] = $server_scheme;
+			$error_params["self_url_path"] = Config::get_self_url();
 		}
 
-		print json_encode($reply);
+		if ($error == Errors::E_SUCCESS) {
+			$reply = [];
+
+			$reply['init-params'] = $this->_make_init_params();
+			$reply['runtime-info'] = $this->_make_runtime_info();
+			$reply['translations'] = $this->_translations_as_array();
+
+			print json_encode($reply);
+		} else {
+			print Errors::to_json($error, $error_params);
+		}
 	}
 
-	function completeLabels() {
+	/*function completeLabels() {
 		$search = clean($_REQUEST["search"]);
 
 		$sth = $this->pdo->prepare("SELECT DISTINCT caption FROM
@@ -345,118 +218,69 @@ class RPC extends Handler_Protected {
 			print "<li>" . $line["caption"] . "</li>";
 		}
 		print "</ul>";
-	}
-
-	// Silent
-	function massSubscribe() {
-
-		$payload = json_decode(clean($_REQUEST["payload"]), false);
-		$mode = clean($_REQUEST["mode"]);
-
-		if (!$payload || !is_array($payload)) return;
-
-		if ($mode == 1) {
-			foreach ($payload as $feed) {
-
-				$title = $feed[0];
-				$feed_url = $feed[1];
-
-				$sth = $this->pdo->prepare("SELECT id FROM ttrss_feeds WHERE
-					feed_url = ? AND owner_uid = ?");
-				$sth->execute([$feed_url, $_SESSION['uid']]);
-
-				if (!$sth->fetch()) {
-					$sth = $this->pdo->prepare("INSERT INTO ttrss_feeds
-									(owner_uid,feed_url,title,cat_id,site_url)
-									VALUES (?, ?, ?, NULL, '')");
-
-					$sth->execute([$_SESSION['uid'], $feed_url, $title]);
-				}
-			}
-		} else if ($mode == 2) {
-			// feed archive
-			foreach ($payload as $id) {
-				$sth = $this->pdo->prepare("SELECT * FROM ttrss_archived_feeds
-					WHERE id = ? AND owner_uid = ?");
-				$sth->execute([$id, $_SESSION['uid']]);
-
-				if ($row = $sth->fetch()) {
-					$site_url = $row['site_url'];
-					$feed_url = $row['feed_url'];
-					$title = $row['title'];
-
-					$sth = $this->pdo->prepare("SELECT id FROM ttrss_feeds WHERE
-						feed_url = ? AND owner_uid = ?");
-					$sth->execute([$feed_url, $_SESSION['uid']]);
-
-					if (!$sth->fetch()) {
-						$sth = $this->pdo->prepare("INSERT INTO ttrss_feeds
-								(owner_uid,feed_url,title,cat_id,site_url)
-									VALUES (?, ?, ?, NULL, ?)");
-
-						$sth->execute([$_SESSION['uid'], $feed_url, $title, $site_url]);
-					}
-				}
-			}
-		}
-	}
+	}*/
 
 	function catchupFeed() {
 		$feed_id = clean($_REQUEST['feed_id']);
 		$is_cat = clean($_REQUEST['is_cat']) == "true";
-		$mode = clean($_REQUEST['mode']);
+		$mode = clean($_REQUEST['mode'] ?? '');
 		$search_query = clean($_REQUEST['search_query']);
 		$search_lang = clean($_REQUEST['search_lang']);
 
-		Feeds::catchup_feed($feed_id, $is_cat, false, $mode, [$search_query, $search_lang]);
+		Feeds::_catchup($feed_id, $is_cat, false, $mode, [$search_query, $search_lang]);
 
 		// return counters here synchronously so that frontend can figure out next unread feed properly
-		print json_encode(['counters' => Counters::getAllCounters()]);
+		print json_encode(['counters' => Counters::get_all()]);
 
 		//print json_encode(array("message" => "UPDATE_COUNTERS"));
 	}
 
-	function setpanelmode() {
+	function setWidescreen() {
 		$wide = (int) clean($_REQUEST["wide"]);
 
-		setcookie("ttrss_widescreen", $wide,
-			time() + COOKIE_LIFETIME_LONG);
+		set_pref(Prefs::WIDESCREEN_MODE, $wide);
 
-		print json_encode(array("wide" => $wide));
+		print json_encode(["wide" => $wide]);
 	}
 
 	static function updaterandomfeed_real() {
 
+		$default_interval = (int) Prefs::get_default(Prefs::DEFAULT_UPDATE_INTERVAL);
+
 		// Test if the feed need a update (update interval exceded).
-		if (DB_TYPE == "pgsql") {
+		if (Config::get(Config::DB_TYPE) == "pgsql") {
 			$update_limit_qpart = "AND ((
-					ttrss_feeds.update_interval = 0
-					AND ttrss_feeds.last_updated < NOW() - CAST((ttrss_user_prefs.value || ' minutes') AS INTERVAL)
+					update_interval = 0
+						AND (p.value IS NULL OR p.value != '-1')
+						AND last_updated < NOW() - CAST((COALESCE(p.value, '$default_interval') || ' minutes') AS INTERVAL)
 				) OR (
-					ttrss_feeds.update_interval > 0
-					AND ttrss_feeds.last_updated < NOW() - CAST((ttrss_feeds.update_interval || ' minutes') AS INTERVAL)
+					update_interval > 0
+						AND last_updated < NOW() - CAST((update_interval || ' minutes') AS INTERVAL)
 				) OR (
-					ttrss_feeds.update_interval >= 0
-					AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
+					update_interval >= 0
+						AND (p.value IS NULL OR p.value != '-1')
+						AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
 				))";
 		} else {
 			$update_limit_qpart = "AND ((
-					ttrss_feeds.update_interval = 0
-					AND ttrss_feeds.last_updated < DATE_SUB(NOW(), INTERVAL CONVERT(ttrss_user_prefs.value, SIGNED INTEGER) MINUTE)
+					update_interval = 0
+						AND (p.value IS NULL OR p.value != '-1')
+						AND last_updated < DATE_SUB(NOW(), INTERVAL CONVERT(COALESCE(p.value, '$default_interval'), SIGNED INTEGER) MINUTE)
 				) OR (
-					ttrss_feeds.update_interval > 0
-					AND ttrss_feeds.last_updated < DATE_SUB(NOW(), INTERVAL ttrss_feeds.update_interval MINUTE)
+					update_interval > 0
+						AND last_updated < DATE_SUB(NOW(), INTERVAL update_interval MINUTE)
 				) OR (
-					ttrss_feeds.update_interval >= 0
-					AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
+					update_interval >= 0
+						AND (p.value IS NULL OR p.value != '-1')
+						AND (last_updated = '1970-01-01 00:00:00' OR last_updated IS NULL)
 				))";
 		}
 
 		// Test if feed is currently being updated by another process.
-		if (DB_TYPE == "pgsql") {
-			$updstart_thresh_qpart = "AND (ttrss_feeds.last_update_started IS NULL OR ttrss_feeds.last_update_started < NOW() - INTERVAL '5 minutes')";
+		if (Config::get(Config::DB_TYPE) == "pgsql") {
+			$updstart_thresh_qpart = "AND (last_update_started IS NULL OR last_update_started < NOW() - INTERVAL '5 minutes')";
 		} else {
-			$updstart_thresh_qpart = "AND (ttrss_feeds.last_update_started IS NULL OR ttrss_feeds.last_update_started < DATE_SUB(NOW(), INTERVAL 5 MINUTE))";
+			$updstart_thresh_qpart = "AND (last_update_started IS NULL OR last_update_started < DATE_SUB(NOW(), INTERVAL 5 MINUTE))";
 		}
 
 		$random_qpart = Db::sql_random_function();
@@ -464,24 +288,24 @@ class RPC extends Handler_Protected {
 		$pdo = Db::pdo();
 
 		// we could be invoked from public.php with no active session
-		if ($_SESSION["uid"]) {
-			$owner_check_qpart = "AND ttrss_feeds.owner_uid = ".$pdo->quote($_SESSION["uid"]);
+		if (!empty($_SESSION["uid"])) {
+			$owner_check_qpart = "AND f.owner_uid = ".$pdo->quote($_SESSION["uid"]);
 		} else {
 			$owner_check_qpart = "";
 		}
 
-		// We search for feed needing update.
-		$res = $pdo->query("SELECT ttrss_feeds.feed_url,ttrss_feeds.id
+		$query = "SELECT f.feed_url,f.id
 			FROM
-				ttrss_feeds, ttrss_users, ttrss_user_prefs
+				ttrss_feeds f, ttrss_users u LEFT JOIN ttrss_user_prefs2 p ON
+					(p.owner_uid = u.id AND profile IS NULL AND pref_name = 'DEFAULT_UPDATE_INTERVAL')
 			WHERE
-				ttrss_feeds.owner_uid = ttrss_users.id
-				AND ttrss_users.id = ttrss_user_prefs.owner_uid
-				AND ttrss_user_prefs.pref_name = 'DEFAULT_UPDATE_INTERVAL'
+				f.owner_uid = u.id
 				$owner_check_qpart
 				$update_limit_qpart
 				$updstart_thresh_qpart
-			ORDER BY $random_qpart LIMIT 30");
+			ORDER BY $random_qpart LIMIT 30";
+
+		$res = $pdo->query($query);
 
 		$num_updated = 0;
 
@@ -499,7 +323,7 @@ class RPC extends Handler_Protected {
 		}
 
 		// Purge orphans and cleanup tags
-		Article::purge_orphans();
+		Article::_purge_orphans();
 		//cleanup_tags(14, 50000);
 
 		if ($num_updated > 0) {
@@ -557,49 +381,29 @@ class RPC extends Handler_Protected {
 		$sth->execute(array_merge($ids, [$_SESSION['uid']]));
 	}
 
-	function getlinktitlebyid() {
-		$id = clean($_REQUEST['id']);
-
-		$sth = $this->pdo->prepare("SELECT link, title FROM ttrss_entries, ttrss_user_entries
-			WHERE ref_id = ? AND ref_id = id AND owner_uid = ?");
-		$sth->execute([$id, $_SESSION['uid']]);
-
-		if ($row = $sth->fetch()) {
-			$link = $row['link'];
-			$title = $row['title'];
-
-			echo json_encode(array("link" => $link, "title" => $title));
-		} else {
-			echo json_encode(array("error" => "ARTICLE_NOT_FOUND"));
-		}
-	}
-
 	function log() {
-		$msg = clean($_REQUEST['msg']);
-		$file = basename(clean($_REQUEST['file']));
-		$line = (int) clean($_REQUEST['line']);
-		$context = clean($_REQUEST['context']);
+		$msg = clean($_REQUEST['msg'] ?? "");
+		$file = basename(clean($_REQUEST['file'] ?? ""));
+		$line = (int) clean($_REQUEST['line'] ?? 0);
+		$context = clean($_REQUEST['context'] ?? "");
 
 		if ($msg) {
-			Logger::get()->log_error(E_USER_WARNING,
+			Logger::log_error(E_USER_WARNING,
 				$msg, 'client-js:' . $file, $line, $context);
 
 			echo json_encode(array("message" => "HOST_ERROR_LOGGED"));
-		} else {
-			echo json_encode(array("error" => "MESSAGE_NOT_FOUND"));
 		}
-
 	}
 
 	function checkforupdates() {
-		$rv = [];
+		$rv = ["changeset" => [], "plugins" => []];
 
-		$git_timestamp = false;
-		$git_commit = false;
+		$version = Config::get_version(false);
 
-		get_version($git_commit, $git_timestamp);
+		$git_timestamp = $version["timestamp"] ?? false;
+		$git_commit = $version["commit"] ?? false;
 
-		if (defined('CHECK_FOR_UPDATES') && CHECK_FOR_UPDATES && $_SESSION["access_level"] >= 10 && $git_timestamp) {
+		if (Config::get(Config::CHECK_FOR_UPDATES) && $_SESSION["access_level"] >= 10 && $git_timestamp) {
 			$content = @UrlHelper::fetch(["url" => "https://tt-rss.org/version.json"]);
 
 			if ($content) {
@@ -609,37 +413,41 @@ class RPC extends Handler_Protected {
 					if ($git_timestamp < (int)$content["changeset"]["timestamp"] &&
 						$git_commit != $content["changeset"]["id"]) {
 
-						$rv = $content["changeset"];
+						$rv["changeset"] = $content["changeset"];
 					}
 				}
 			}
+
+			$rv["plugins"] = Pref_Prefs::_get_updated_plugins();
 		}
 
 		print json_encode($rv);
 	}
 
-	private function make_init_params() {
+	private function _make_init_params() {
 		$params = array();
 
-		foreach (array("ON_CATCHUP_SHOW_NEXT_FEED", "HIDE_READ_FEEDS",
-					 "ENABLE_FEED_CATS", "FEEDS_SORT_BY_UNREAD", "CONFIRM_FEED_CATCHUP",
-					 "CDM_AUTO_CATCHUP", "FRESH_ARTICLE_MAX_AGE",
-					 "HIDE_READ_SHOWS_SPECIAL", "COMBINED_DISPLAY_MODE") as $param) {
+		foreach ([Prefs::ON_CATCHUP_SHOW_NEXT_FEED, Prefs::HIDE_READ_FEEDS,
+			Prefs::ENABLE_FEED_CATS, Prefs::FEEDS_SORT_BY_UNREAD,
+			Prefs::CONFIRM_FEED_CATCHUP,  Prefs::CDM_AUTO_CATCHUP,
+			Prefs::FRESH_ARTICLE_MAX_AGE, Prefs::HIDE_READ_SHOWS_SPECIAL,
+			Prefs::COMBINED_DISPLAY_MODE, Prefs::DEBUG_HEADLINE_IDS, Prefs::CDM_ENABLE_GRID] as $param) {
 
 			$params[strtolower($param)] = (int) get_pref($param);
 		}
 
-		$params["check_for_updates"] = CHECK_FOR_UPDATES;
-		$params["icons_url"] = ICONS_URL;
-		$params["cookie_lifetime"] = SESSION_COOKIE_LIFETIME;
-		$params["default_view_mode"] = get_pref("_DEFAULT_VIEW_MODE");
-		$params["default_view_limit"] = (int) get_pref("_DEFAULT_VIEW_LIMIT");
-		$params["default_view_order_by"] = get_pref("_DEFAULT_VIEW_ORDER_BY");
-		$params["bw_limit"] = (int) $_SESSION["bw_limit"];
-		$params["is_default_pw"] = Pref_Prefs::isdefaultpassword();
-		$params["label_base_index"] = (int) LABEL_BASE_INDEX;
+		$params["safe_mode"] = !empty($_SESSION["safe_mode"]);
+		$params["check_for_updates"] = Config::get(Config::CHECK_FOR_UPDATES);
+		$params["icons_url"] = Config::get(Config::ICONS_URL);
+		$params["cookie_lifetime"] = Config::get(Config::SESSION_COOKIE_LIFETIME);
+		$params["default_view_mode"] = get_pref(Prefs::_DEFAULT_VIEW_MODE);
+		$params["default_view_limit"] = (int) get_pref(Prefs::_DEFAULT_VIEW_LIMIT);
+		$params["default_view_order_by"] = get_pref(Prefs::_DEFAULT_VIEW_ORDER_BY);
+		$params["bw_limit"] = (int) ($_SESSION["bw_limit"] ?? false);
+		$params["is_default_pw"] = UserHelper::is_default_password();
+		$params["label_base_index"] = LABEL_BASE_INDEX;
 
-		$theme = get_pref( "USER_CSS_THEME", false, false);
+		$theme = get_pref(Prefs::USER_CSS_THEME);
 		$params["theme"] = theme_exists($theme) ? $theme : "";
 
 		$params["plugins"] = implode(", ", PluginHost::getInstance()->get_plugin_names());
@@ -657,19 +465,17 @@ class RPC extends Handler_Protected {
 		$max_feed_id = $row["mid"];
 		$num_feeds = $row["nf"];
 
-		$params["self_url_prefix"] = get_self_url_prefix();
+		$params["self_url_prefix"] = Config::get_self_url();
 		$params["max_feed_id"] = (int) $max_feed_id;
 		$params["num_feeds"] = (int) $num_feeds;
-
 		$params["hotkeys"] = $this->get_hotkeys_map();
-
-		$params["widescreen"] = (int) $_COOKIE["ttrss_widescreen"];
-
-		$params['simple_update'] = defined('SIMPLE_UPDATE_MODE') && SIMPLE_UPDATE_MODE;
-
+		$params["widescreen"] = (int) get_pref(Prefs::WIDESCREEN_MODE);
+		$params['simple_update'] = Config::get(Config::SIMPLE_UPDATE_MODE);
 		$params["icon_indicator_white"] = $this->image_to_base64("images/indicator_white.gif");
-
-		$params["labels"] = Labels::get_all_labels($_SESSION["uid"]);
+		$params["icon_oval"] = $this->image_to_base64("images/oval.svg");
+		$params["icon_three_dots"] = $this->image_to_base64("images/three-dots.svg");
+		$params["icon_blank"] = $this->image_to_base64("images/blank_icon.gif");
+		$params["labels"] = Labels::get_all($_SESSION["uid"]);
 
 		return $params;
 	}
@@ -678,13 +484,15 @@ class RPC extends Handler_Protected {
 		if (file_exists($filename)) {
 			$ext = pathinfo($filename, PATHINFO_EXTENSION);
 
-			return "data:image/$ext;base64," . base64_encode(file_get_contents($filename));
+			if ($ext == "svg") $ext = "svg+xml";
+
+			return "data:image/$ext;base64," . base64_encode((string)file_get_contents($filename));
 		} else {
 			return "";
 		}
 	}
 
-	static function make_runtime_info() {
+	static function _make_runtime_info() {
 		$data = array();
 
 		$pdo = Db::pdo();
@@ -699,17 +507,22 @@ class RPC extends Handler_Protected {
 
 		$data["max_feed_id"] = (int) $max_feed_id;
 		$data["num_feeds"] = (int) $num_feeds;
-		$data['cdm_expanded'] = get_pref('CDM_EXPANDED');
-		$data["labels"] = Labels::get_all_labels($_SESSION["uid"]);
+		$data['cdm_expanded'] = get_pref(Prefs::CDM_EXPANDED);
+		$data["labels"] = Labels::get_all($_SESSION["uid"]);
 
-		if (LOG_DESTINATION == 'sql' && $_SESSION['access_level'] >= 10) {
-			if (DB_TYPE == 'pgsql') {
+		if (Config::get(Config::LOG_DESTINATION) == 'sql' && $_SESSION['access_level'] >= 10) {
+			if (Config::get(Config::DB_TYPE) == 'pgsql') {
 				$log_interval = "created_at > NOW() - interval '1 hour'";
 			} else {
 				$log_interval = "created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)";
 			}
 
-			$sth = $pdo->prepare("SELECT COUNT(id) AS cid FROM ttrss_error_log WHERE errno != 1024 AND $log_interval");
+			$sth = $pdo->prepare("SELECT COUNT(id) AS cid
+				FROM ttrss_error_log
+			WHERE
+				errno NOT IN (".E_USER_NOTICE.", ".E_USER_DEPRECATED.") AND
+				$log_interval AND
+				errstr NOT LIKE '%imagecreatefromstring(): Data is not in a recognized format%'");
 			$sth->execute();
 
 			if ($row = $sth->fetch()) {
@@ -717,13 +530,13 @@ class RPC extends Handler_Protected {
 			}
 		}
 
-		if (file_exists(LOCK_DIRECTORY . "/update_daemon.lock")) {
+		if (file_exists(Config::get(Config::LOCK_DIRECTORY) . "/update_daemon.lock")) {
 
 			$data['daemon_is_running'] = (int) file_is_locked("update_daemon.lock");
 
-			if (time() - $_SESSION["daemon_stamp_check"] > 30) {
+			if (time() - ($_SESSION["daemon_stamp_check"] ?? 0) > 30) {
 
-				$stamp = (int) @file_get_contents(LOCK_DIRECTORY . "/update_daemon.stamp");
+				$stamp = (int) @file_get_contents(Config::get(Config::LOCK_DIRECTORY) . "/update_daemon.stamp");
 
 				if ($stamp) {
 					$stamp_delta = time() - $stamp;
@@ -795,6 +608,7 @@ class RPC extends Handler_Protected {
 				"feed_catchup" => __("Mark as read"),
 				"feed_reverse" => __("Reverse headlines"),
 				"feed_toggle_vgroup" => __("Toggle headline grouping"),
+				"feed_toggle_grid" => __("Toggle grid view"),
 				"feed_debug_update" => __("Debug feed update"),
 				"feed_debug_viewfeed" => __("Debug viewfeed()"),
 				"catchup_all" => __("Mark all feeds as read"),
@@ -807,7 +621,6 @@ class RPC extends Handler_Protected {
 				"goto_marked" => __("Starred"),
 				"goto_published" => __("Published"),
 				"goto_read" => __("Recently read"),
-				"goto_tagcloud" => __("Tag cloud"),
 				"goto_prefs" => __("Preferences")),
 			__("Other") => array(
 				"create_label" => __("Create label"),
@@ -816,9 +629,11 @@ class RPC extends Handler_Protected {
 				"help_dialog" => __("Show help dialog"))
 		);
 
-		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HOTKEY_INFO) as $plugin) {
-			$hotkeys = $plugin->hook_hotkey_info($hotkeys);
-		}
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_HOTKEY_INFO,
+			function ($result) use (&$hotkeys) {
+				$hotkeys = $result;
+			},
+			$hotkeys);
 
 		return $hotkeys;
 	}
@@ -854,6 +669,7 @@ class RPC extends Handler_Protected {
 			"a e" => "toggle_full_text",
 			"e" => "email_article",
 			"a q" => "close_article",
+			"a s" => "article_span_grid",
 			"a a" => "select_all",
 			"a u" => "select_unread",
 			"a U" => "select_marked",
@@ -867,8 +683,9 @@ class RPC extends Handler_Protected {
 			"f q" => "feed_catchup",
 			"f x" => "feed_reverse",
 			"f g" => "feed_toggle_vgroup",
+			"f G" => "feed_toggle_grid",
 			"f D" => "feed_debug_update",
-			"f G" => "feed_debug_viewfeed",
+			"f %" => "feed_debug_viewfeed",
 			"f C" => "toggle_combined_mode",
 			"f c" => "toggle_cdm_expanded",
 			"Q" => "catchup_all",
@@ -878,7 +695,6 @@ class RPC extends Handler_Protected {
 			"g s" => "goto_marked",
 			"g p" => "goto_published",
 			"g r" => "goto_read",
-			"g t" => "goto_tagcloud",
 			"g P" => "goto_prefs",
 			"r" => "select_article_cursor",
 			"c l" => "create_label",
@@ -887,14 +703,16 @@ class RPC extends Handler_Protected {
 			"?" => "help_dialog",
 		);
 
-		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HOTKEY_MAP) as $plugin) {
-			$hotkeys = $plugin->hook_hotkey_map($hotkeys);
-		}
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_HOTKEY_MAP,
+			function ($result) use (&$hotkeys) {
+				$hotkeys = $result;
+			},
+			$hotkeys);
 
 		$prefixes = array();
 
 		foreach (array_keys($hotkeys) as $hotkey) {
-			$pair = explode(" ", $hotkey, 2);
+			$pair = explode(" ", (string)$hotkey, 2);
 
 			if (count($pair) > 1 && !in_array($pair[0], $prefixes)) {
 				array_push($prefixes, $pair[0]);
@@ -904,4 +722,73 @@ class RPC extends Handler_Protected {
 		return array($prefixes, $hotkeys);
 	}
 
+	function hotkeyHelp() {
+		$info = self::get_hotkeys_info();
+		$imap = self::get_hotkeys_map();
+		$omap = array();
+
+		foreach ($imap[1] as $sequence => $action) {
+			if (!isset($omap[$action])) $omap[$action] = array();
+
+			array_push($omap[$action], $sequence);
+		}
+
+		?>
+		<ul class='panel panel-scrollable hotkeys-help' style='height : 300px'>
+		<?php
+
+		foreach ($info as $section => $hotkeys) {
+			?>
+			<li><h3><?= $section ?></h3></li>
+			<?php
+
+			foreach ($hotkeys as $action => $description) {
+
+				if (!empty($omap[$action])) {
+					foreach ($omap[$action] as $sequence) {
+						if (strpos($sequence, "|") !== false) {
+							$sequence = substr($sequence,
+								strpos($sequence, "|")+1,
+								strlen($sequence));
+						} else {
+							$keys = explode(" ", $sequence);
+
+							for ($i = 0; $i < count($keys); $i++) {
+								if (strlen($keys[$i]) > 1) {
+									$tmp = '';
+									foreach (str_split($keys[$i]) as $c) {
+										switch ($c) {
+											case '*':
+												$tmp .= __('Shift') . '+';
+												break;
+											case '^':
+												$tmp .= __('Ctrl') . '+';
+												break;
+											default:
+												$tmp .= $c;
+										}
+									}
+									$keys[$i] = $tmp;
+								}
+							}
+							$sequence = join(" ", $keys);
+						}
+
+						?>
+						<li>
+							<div class='hk'><code><?= $sequence ?></code></div>
+							<div class='desc'><?= $description ?></div>
+						</li>
+						<?php
+					}
+				}
+			}
+		}
+		?>
+		</ul>
+	<footer class='text-center'>
+		<?= \Controls\submit_tag(__('Close this window')) ?>
+	</footer>
+	<?php
+	}
 }

@@ -1,16 +1,18 @@
 'use strict'
 
-/* global __  */
-/* global xhrPost, dojo, dijit, Notify, Tables */
+/* global __, xhr, dijit, Notify, Tables, App, fox */
 
 const	Users = {
 	reload: function(sort) {
-		const user_search = $("user_search");
-		const search = user_search ? user_search.value : "";
+		return new Promise((resolve, reject) => {
+			const user_search = App.byId("user_search");
+			const search = user_search ? user_search.value : "";
 
-		xhrPost("backend.php", { op: "pref-users", sort: sort, search: search }, (transport) => {
-			dijit.byId('userConfigTab').attr('content', transport.responseText);
-			Notify.close();
+			xhr.post("backend.php", { op: "pref-users", sort: sort, search: search }, (reply) => {
+				dijit.byId('usersTab').attr('content', reply);
+				Notify.close();
+				resolve();
+			}, (e) => { reject(e) });
 		});
 	},
 	add: function() {
@@ -19,38 +21,113 @@ const	Users = {
 		if (login) {
 			Notify.progress("Adding user...");
 
-			xhrPost("backend.php", {op: "pref-users", method: "add", login: login}, (transport) => {
-				alert(transport.responseText);
-				Users.reload();
+			xhr.post("backend.php", {op: "pref-users", method: "add", login: login}, (reply) => {
+				Users.reload().then(() => {
+					Notify.info(reply);
+				})
 			});
 
 		}
 	},
 	edit: function(id) {
-		const query = "backend.php?op=pref-users&method=edit&id=" +
-			encodeURIComponent(id);
+		xhr.json('backend.php', {op: 'pref-users', method: 'edit', id: id}, (reply) => {
+			const user = reply.user;
+			const admin_disabled = (user.id == 1);
 
-		if (dijit.byId("userEditDlg"))
-			dijit.byId("userEditDlg").destroyRecursive();
+			const dialog = new fox.SingleUseDialog({
+				id: "userEditDlg",
+				title: __("Edit user"),
+				execute: function () {
+					if (this.validate()) {
+						Notify.progress("Saving data...", true);
 
-		const dialog = new dijit.Dialog({
-			id: "userEditDlg",
-			title: __("User Editor"),
-			style: "width: 600px",
-			execute: function () {
-				if (this.validate()) {
-					Notify.progress("Saving data...", true);
+						xhr.post("backend.php", this.attr('value'), (reply) => {
+							dialog.hide();
+							Users.reload().then(() => {
+								Notify.info(reply);
+							});
+						});
+					}
+				},
+				content: `
+					<form onsubmit='return false'>
 
-					xhrPost("backend.php", dojo.formToObject("user_edit_form"), (/* transport */) => {
-						dialog.hide();
-						Users.reload();
-					});
-				}
-			},
-			href: query
+						${App.FormFields.hidden_tag('id', user.id.toString())}
+						${App.FormFields.hidden_tag('op', 'pref-users')}
+						${App.FormFields.hidden_tag('method', 'editSave')}
+
+						<div dojoType="dijit.layout.TabContainer" style="height : 400px">
+							<div dojoType="dijit.layout.ContentPane" title="${__('Edit user')}">
+
+								<section>
+									<fieldset>
+										<label>${__("Login:")}</label>
+										<input style='font-size : 16px'
+											${admin_disabled ? "disabled='1'" : ''}
+											dojoType='dijit.form.ValidationTextBox' required='1'
+											name='login' value="${App.escapeHtml(user.login)}">
+
+										${admin_disabled ? App.FormFields.hidden_tag("login", user.login) : ''}
+									</fieldset>
+
+									<hr/>
+
+									<fieldset>
+										<label>${__('Access level: ')}</label>
+										${App.FormFields.select_hash("access_level",
+											user.access_level, reply.access_level_names, {disabled: admin_disabled.toString()})}
+
+										${admin_disabled ? App.FormFields.hidden_tag("access_level",
+											user.access_level.toString()) : ''}
+									</fieldset>
+									<fieldset>
+										<label>${__("New password:")}</label>
+										<input dojoType='dijit.form.TextBox' type='password' size='20'
+											placeholder='${__("Change password")}' name='password'>
+									</fieldset>
+									<fieldset>
+									<label></label>
+									<label class="checkbox">
+										${App.FormFields.checkbox_tag("otp_enabled", user.otp_enabled)}
+										${__('OTP enabled')}
+									</fieldset>
+
+									<hr/>
+
+									<fieldset>
+										<label>${__("E-mail:")}</label>
+										<input dojoType='dijit.form.TextBox' size='30' name='email'
+											value="${App.escapeHtml(user.email)}">
+									</fieldset>
+								</section>
+							</div>
+							<div dojoType="dijit.layout.ContentPane" title="${__('User details')}">
+								<script type='dojo/method' event='onShow' args='evt'>
+									if (this.domNode.querySelector('.loading')) {
+										xhr.post("backend.php", {op: 'pref-users', method: 'userdetails', id: ${user.id}}, (reply) => {
+											this.attr('content', reply);
+										});
+									}
+								</script>
+								<span class='loading'>${__("Loading, please wait...")}</span>
+							</div>
+						</div>
+
+						<footer>
+							<button dojoType='dijit.form.Button' class='alt-primary' type='submit' onclick='App.dialogOf(this).execute()'>
+								${App.FormFields.icon("save")}
+								${__('Save')}
+							</button>
+							<button dojoType='dijit.form.Button' onclick='App.dialogOf(this).hide()'>
+								${__('Cancel')}
+							</button>
+						</footer>
+					</form>
+				`
+			});
+
+			dialog.show();
 		});
-
-		dialog.show();
 	},
 	resetSelected: function() {
 		const rows = this.getSelection();
@@ -70,9 +147,9 @@ const	Users = {
 
 			const id = rows[0];
 
-			xhrPost("backend.php", {op: "pref-users", method: "resetPass", id: id}, (transport) => {
+			xhr.post("backend.php", {op: "pref-users", method: "resetPass", id: id}, (reply) => {
 				Notify.close();
-				Notify.info(transport.responseText, true);
+				Notify.info(reply, true);
 			});
 
 		}
@@ -89,7 +166,7 @@ const	Users = {
 					ids: sel_rows.toString()
 				};
 
-				xhrPost("backend.php", query, () => {
+				xhr.post("backend.php", query, () => {
 					this.reload();
 				});
 			}
@@ -98,23 +175,8 @@ const	Users = {
 			alert(__("No users selected."));
 		}
 	},
-	editSelected: function() {
-		const rows = this.getSelection();
-
-		if (rows.length == 0) {
-			alert(__("No users selected."));
-			return;
-		}
-
-		if (rows.length > 1) {
-			alert(__("Please select one user."));
-			return;
-		}
-
-		this.edit(rows[0]);
-	},
 	getSelection :function() {
-		return Tables.getSelected("prefUserList");
+		return Tables.getSelected("users-list");
 	}
 }
 
