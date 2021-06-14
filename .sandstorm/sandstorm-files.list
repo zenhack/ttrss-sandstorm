@@ -223,6 +223,7 @@ opt/app/classes/feeditem/rss.php
 opt/app/classes/feedparser.php
 opt/app/classes/feeds.php
 opt/app/classes/handler.php
+opt/app/classes/handler/administrative.php
 opt/app/classes/handler/protected.php
 opt/app/classes/handler/public.php
 opt/app/classes/iauthmodule.php
@@ -253,6 +254,8 @@ opt/app/feed-icons/index.html
 opt/app/images/blank_icon.gif
 opt/app/images/indicator_tiny.gif
 opt/app/images/indicator_white.gif
+opt/app/images/oval.svg
+opt/app/images/three-dots.svg
 opt/app/include/autoload.php
 opt/app/include/colors.php
 opt/app/include/controls.php
@@ -278,11 +281,13 @@ opt/app/js/PrefFilterTree.js
 opt/app/js/PrefHelpers.js
 opt/app/js/PrefLabelTree.js
 opt/app/js/PrefUsers.js
+opt/app/js/SingleUseDialog.js
 opt/app/js/Toolbar.js
 opt/app/js/common.js
 opt/app/js/form/ComboButton.js
 opt/app/js/form/DropDownButton.js
 opt/app/js/form/Select.js
+opt/app/js/form/ValidationMultiSelect.js
 opt/app/js/form/ValidationTextArea.js
 opt/app/js/prefs.js
 opt/app/js/sandstorm-offer-template.js
@@ -342,6 +347,11 @@ opt/app/plugins/toggle_sidebar/init.php
 opt/app/prefs.php
 opt/app/public.php
 opt/app/schema/ttrss_schema_mysql.sql
+opt/app/sql/mysql/migrations/141.sql
+opt/app/sql/mysql/migrations/142.sql
+opt/app/sql/mysql/migrations/143.sql
+opt/app/sql/mysql/migrations/144.sql
+opt/app/sql/mysql/migrations/145.sql
 opt/app/sql/mysql/schema.sql
 opt/app/themes
 opt/app/themes.local
@@ -359,6 +369,7 @@ opt/app/vendor/composer/autoload_real.php
 opt/app/vendor/composer/autoload_static.php
 opt/app/vendor/composer/platform_check.php
 opt/app/vendor/j4mie/idiorm/idiorm.php
+opt/app/vendor/mervick/material-design-icons/fonts/MaterialIcons-Regular.woff2
 opt/app/vendor/thecodingmachine/safe/deprecated/apc.php
 opt/app/vendor/thecodingmachine/safe/deprecated/libevent.php
 opt/app/vendor/thecodingmachine/safe/deprecated/mssql.php

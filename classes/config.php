@@ -397,7 +397,12 @@ class Config {
 
 	/** this returns Config::SELF_URL_PATH sans trailing slash */
 	static function get_self_url() : string {
-		$self_url_path = self::get(Config::SELF_URL_PATH);
+		$self_url_path =
+			// SANDSTORM EDIT: this changes dynamically per session,
+			// so we can't just set the value in the config.
+			((!empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] != 'off')) || $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' ? "https" : "http")
+				. "://"
+				. $_SERVER["HTTP_HOST"];
 
 		if (substr($self_url_path, -1) === "/") {
 			return substr($self_url_path, 0, -1);
