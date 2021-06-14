@@ -129,5 +129,26 @@ const myCommand :Spk.Manifest.Command = (
 
     (key = "MYSQL_USER", value = "root"),
     (key = "MYSQL_DATABASE", value = "app"),
+
+
+    # TTRSS config:
+    (key = "TTRSS_DB_TYPE", value = "mysql"),
+    (key = "TTRSS_DB_HOST", value = ""),
+    (key = "TTRSS_DB_USER", value = "root"),
+    (key = "TTRSS_DB_NAME", value = "app"),
+
+    # TODO: SELF_URL_PATH?
+
+    (key = "TTRSS_SINGLE_USER_MODE", value = "true"),
+    (key = "TTRSS_SIMPLE_UPDATE_MODE", value = "false"),
+
+    (key = "TTRSS_LOCK_DIRECTORY", value = "/var/lock"),
+    (key = "TTRSS_CACHE_DIR", value = "/var/cache"),
+    (key = "TTRSS_ICONS_DIR", value = "/var/feed-icons"),
+    (key = "TTRSS_ICONS_URL", value = "feed-icons"),
+
+    (key = "TTRSS_CHECK_FOR_UPDATES", value = "false"),
+    (key = "TTRSS_PLUGINS", value = "auth_internal, note, updater"),
+    (key = "TTRSS_LOG_DESTINATION", value = "sql"),
   ]
 );

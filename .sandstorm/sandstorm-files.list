@@ -205,6 +205,7 @@ opt/app/.sandstorm/powerbox-http-proxy/build/index.js
 opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy
 opt/app/backend.php
 opt/app/classes/article.php
+opt/app/classes/auth/base.php
 opt/app/classes/config.php
 opt/app/classes/counters.php
 opt/app/classes/db.php
@@ -213,6 +214,7 @@ opt/app/classes/db/prefs.php
 opt/app/classes/debug.php
 opt/app/classes/digest.php
 opt/app/classes/diskcache.php
+opt/app/classes/errors.php
 opt/app/classes/feedenclosure.php
 opt/app/classes/feeditem.php
 opt/app/classes/feeditem/atom.php
@@ -238,13 +240,13 @@ opt/app/classes/pref/mobile.php
 opt/app/classes/pref/prefs.php
 opt/app/classes/pref/system.php
 opt/app/classes/pref/users.php
+opt/app/classes/prefs.php
 opt/app/classes/rpc.php
 opt/app/classes/rssutils.php
 opt/app/classes/sanitizer.php
 opt/app/classes/timehelper.php
 opt/app/classes/urlhelper.php
 opt/app/classes/userhelper.php
-opt/app/config.php
 opt/app/feed-icons
 opt/app/feed-icons/.empty
 opt/app/feed-icons/index.html
