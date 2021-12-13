@@ -1,11 +1,17 @@
 <?php
 class Cache_Starred_Images extends Plugin {
 
-	/* @var PluginHost $host */
+	/** @var PluginHost $host */
 	private $host;
-	/* @var DiskCache $cache */
+
+	/** @var DiskCache $cache */
 	private $cache;
-	private $max_cache_attempts = 5; // per-article
+
+	/** @var DiskCache $cache_status */
+	private $cache_status;
+
+	/** @var int $max_cache_attempts (per article) */
+	private $max_cache_attempts = 5;
 
 	function about() {
 		return array(null,
@@ -16,24 +22,31 @@ class Cache_Starred_Images extends Plugin {
 	function init($host) {
 		$this->host = $host;
 		$this->cache = new DiskCache("starred-images");
+		$this->cache_status = new DiskCache("starred-images.status-files");
 
 		if ($this->cache->make_dir())
 			chmod($this->cache->get_dir(), 0777);
 
+		if ($this->cache_status->make_dir())
+			chmod($this->cache_status->get_dir(), 0777);
+
 		if (!$this->cache->exists(".no-auto-expiry"))
 			$this->cache->touch(".no-auto-expiry");
 
-		if ($this->cache->is_writable()) {
+		if (!$this->cache_status->exists(".no-auto-expiry"))
+			$this->cache_status->touch(".no-auto-expiry");
+
+		if ($this->cache->is_writable() && $this->cache_status->is_writable()) {
 			$host->add_hook($host::HOOK_HOUSE_KEEPING, $this);
 			$host->add_hook($host::HOOK_ENCLOSURE_ENTRY, $this);
 			$host->add_hook($host::HOOK_SANITIZE, $this);
 		} else {
-			user_error("Starred cache directory ".$this->cache->get_dir()." is not writable.", E_USER_WARNING);
+			user_error("Starred cache directory ".$this->cache->get_dir()." (or status cache subdir in status-files/) is not writable.", E_USER_WARNING);
 		}
 	}
 
+	/** since HOOK_UPDATE_TASK is not available to user plugins, this hook is a next best thing */
 	function hook_house_keeping() {
-		/* since HOOK_UPDATE_TASK is not available to user plugins, this hook is a next best thing */
 
 		Debug::log("caching media of starred articles for user " . $this->host->get_owner_uid() . "...");
 
@@ -53,7 +66,7 @@ class Cache_Starred_Images extends Plugin {
 			$usth = $this->pdo->prepare("UPDATE ttrss_entries SET plugin_data = ? WHERE id = ?");
 
 			while ($line = $sth->fetch()) {
-				Debug::log("processing article " . $line["title"], Debug::$LOG_VERBOSE);
+				Debug::log("processing article " . $line["title"], Debug::LOG_VERBOSE);
 
 				if ($line["site_url"]) {
 					$success = $this->cache_article_images($line["content"], $line["site_url"], $line["owner_uid"], $line["id"]);
@@ -69,12 +82,15 @@ class Cache_Starred_Images extends Plugin {
 
 		/* actual housekeeping */
 
-		Debug::log("expiring " . $this->cache->get_dir() . "...");
+		Debug::log("expiring {$this->cache->get_dir()} and {$this->cache_status->get_dir()}...");
 
 		$files = array_merge(
 				glob($this->cache->get_dir() . "/*.png"),
 				glob($this->cache->get_dir() . "/*.mp4"),
+				glob($this->cache_status->get_dir() . "/*.status"),
 				glob($this->cache->get_dir() . "/*.status"));
+
+		asort($files);
 
 		$last_article_id = 0;
 		$article_exists = 1;
@@ -97,7 +113,7 @@ class Cache_Starred_Images extends Plugin {
 		}
 	}
 
-	function hook_enclosure_entry($enc, $article_id) {
+	function hook_enclosure_entry($enc, $article_id, $rv) {
 		$local_filename = $article_id . "-" . sha1($enc["content_url"]);
 
 		if ($this->cache->exists($local_filename)) {
@@ -115,7 +131,7 @@ class Cache_Starred_Images extends Plugin {
 
 			foreach ($entries as $entry) {
 				if ($entry->hasAttribute('src')) {
-					$src = rewrite_relative_url($site_url, $entry->getAttribute('src'));
+					$src = UrlHelper::rewrite_relative($site_url, $entry->getAttribute('src'));
 
 					$local_filename = $article_id . "-" . sha1($src);
 
@@ -130,11 +146,11 @@ class Cache_Starred_Images extends Plugin {
 		return $doc;
 	}
 
-	private function cache_url($article_id, $url) {
+	private function cache_url(int $article_id, string $url) : bool {
 		$local_filename = $article_id . "-" . sha1($url);
 
 		if (!$this->cache->exists($local_filename)) {
-			Debug::log("cache_images: downloading: $url to $local_filename", Debug::$LOG_VERBOSE);
+			Debug::log("cache_images: downloading: $url to $local_filename", Debug::LOG_VERBOSE);
 
 			$data = UrlHelper::fetch(["url" => $url, "max_size" => Config::get(Config::MAX_CACHE_FILE_SIZE)]);
 
@@ -150,19 +166,19 @@ class Cache_Starred_Images extends Plugin {
 		return false;
 	}
 
-	private function cache_article_images($content, $site_url, $owner_uid, $article_id) {
+	private function cache_article_images(string $content, string $site_url, int $owner_uid, int $article_id) : bool {
 		$status_filename = $article_id . "-" . sha1($site_url) . ".status";
 
 		/* housekeeping might run as a separate user, in this case status/media might not be writable */
-		if (!$this->cache->is_writable($status_filename)) {
-			Debug::log("status not writable: $status_filename", Debug::$LOG_VERBOSE);
+		if (!$this->cache_status->is_writable($status_filename)) {
+			Debug::log("status not writable: $status_filename", Debug::LOG_VERBOSE);
 			return false;
 		}
 
-		Debug::log("status: $status_filename", Debug::$LOG_VERBOSE);
+		Debug::log("status: $status_filename", Debug::LOG_VERBOSE);
 
-		if ($this->cache->exists($status_filename))
-			$status = json_decode($this->cache->get($status_filename), true);
+		if ($this->cache_status->exists($status_filename))
+			$status = json_decode($this->cache_status->get($status_filename), true);
 		else
 			$status = ["attempt" => 0];
 
@@ -170,11 +186,11 @@ class Cache_Starred_Images extends Plugin {
 
 		// only allow several download attempts for article
 		if ($status["attempt"] > $this->max_cache_attempts) {
-			Debug::log("too many attempts for $site_url", Debug::$LOG_VERBOSE);
+			Debug::log("too many attempts for $site_url", Debug::LOG_VERBOSE);
 			return false;
 		}
 
-		if (!$this->cache->put($status_filename, json_encode($status))) {
+		if (!$this->cache_status->put($status_filename, json_encode($status))) {
 			user_error("unable to write status file: $status_filename", E_USER_WARNING);
 			return false;
 		}
@@ -194,7 +210,7 @@ class Cache_Starred_Images extends Plugin {
 
 					$has_images = true;
 
-					$src = rewrite_relative_url($site_url, $entry->getAttribute('src'));
+					$src = UrlHelper::rewrite_relative($site_url, $entry->getAttribute('src'));
 
 					if ($this->cache_url($article_id, $src)) {
 						$success = true;
@@ -210,7 +226,7 @@ class Cache_Starred_Images extends Plugin {
 			while ($enc = $esth->fetch()) {
 
 				$has_images = true;
-				$url = rewrite_relative_url($site_url, $enc["content_url"]);
+				$url = UrlHelper::rewrite_relative($site_url, $enc["content_url"]);
 
 				if ($this->cache_url($article_id, $url)) {
 					$success = true;

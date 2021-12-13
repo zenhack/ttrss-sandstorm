@@ -490,6 +490,7 @@ const Headlines = {
 						id="RROW-${hl.id}"
 						data-article-id="${hl.id}"
 						data-orig-feed-id="${hl.feed_id}"
+						data-orig-feed-title="${App.escapeHtml(hl.feed_title)}"
 						data-is-packed="1"
 						data-content="${App.escapeHtml(hl.content)}"
 						data-rendered-enclosures="${App.escapeHtml(Article.renderEnclosures(hl.enclosures))}"
@@ -514,10 +515,8 @@ const Headlines = {
 								${hl.cdm_excerpt ? hl.cdm_excerpt : ""}
 							</span>
 
-							<div class="feed">
-								<a href="#" style="background-color: ${hl.feed_bg_color}"
-									onclick="Feeds.open({feed:${hl.feed_id}})">${hl.feed_title}</a>
-							</div>
+							<a href="#" class="feed vfeedMenuAttach" style="background-color: ${hl.feed_bg_color}" data-feed-id="${hl.feed_id}"
+								onclick="Feeds.open({feed:${hl.feed_id}})">${hl.feed_title}</a>
 
 							<span class="updated" title="${hl.imported}">${hl.updated}</span>
 
@@ -566,6 +565,7 @@ const Headlines = {
 			row = `<div class="hl ${row_class} ${Article.getScoreClass(hl.score)}"
 				id="RROW-${hl.id}"
 				data-orig-feed-id="${hl.feed_id}"
+				data-orig-feed-title="${App.escapeHtml(hl.feed_title)}"
 				data-article-id="${hl.id}"
 				data-score="${hl.score}"
 				data-article-title="${App.escapeHtml(hl.title)}"
@@ -584,9 +584,9 @@ const Headlines = {
 					${Article.renderLabels(hl.id, hl.labels)}
 				</span>
 			</div>
-					<span class="feed">
-					<a style="background : ${hl.feed_bg_color}" href="#" onclick="Feeds.open({feed:${hl.feed_id}})">${hl.feed_title}</a>
-					</span>
+			<span class="feed vfeedMenuAttach" data-feed-id="${hl.feed_id}">
+				<a style="background : ${hl.feed_bg_color}" href="#" onclick="Feeds.open({feed:${hl.feed_id}})">${hl.feed_title}</a>
+			</span>
 			<div title="${hl.imported}">
 				<span class="updated">${hl.updated}</span>
 			</div>
@@ -1497,6 +1497,48 @@ const Headlines = {
 			});
 
 			this.headlinesMenuCommon(menu);
+
+			menu.startup();
+		}
+
+		/* vfeed menu */
+
+		if (!dijit.byId("vfeedMenu")) {
+
+			const menu = new dijit.Menu({
+				id: "vfeedMenu",
+				targetNodeIds: ["headlines-frame"],
+				selector: ".vfeedMenuAttach"
+			});
+
+			menu.addChild(new dijit.MenuItem({
+				label: __("Mark as read"),
+				onClick: function() {
+					Feeds.catchupFeed(this.getParent().currentTarget.getAttribute("data-feed-id"));
+				}}));
+
+			menu.addChild(new dijit.MenuItem({
+				label: __("Edit feed"),
+				onClick: function() {
+					CommonDialogs.editFeed(this.getParent().currentTarget.getAttribute("data-feed-id"), false);
+				}}));
+
+			menu.addChild(new dijit.MenuItem({
+				label: __("Open site"),
+				onClick: function() {
+					App.postOpenWindow("backend.php", {op: "feeds", method: "opensite",
+						feed_id: this.getParent().currentTarget.getAttribute("data-feed-id"), csrf_token: __csrf_token});
+				}}));
+
+			menu.addChild(new dijit.MenuSeparator());
+
+			menu.addChild(new dijit.MenuItem({
+				label: __("Debug feed"),
+				onClick: function() {
+					/* global __csrf_token */
+					App.postOpenWindow("backend.php", {op: "feeds", method: "updatedebugger",
+						feed_id: this.getParent().currentTarget.getAttribute("data-feed-id"), csrf_token: __csrf_token});
+				}}));
 
 			menu.startup();
 		}

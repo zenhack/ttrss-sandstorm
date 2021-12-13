@@ -3,10 +3,20 @@ class Af_RedditImgur extends Plugin {
 
 	/** @var PluginHost $host */
 	private $host;
+
+	/** @var array<string> */
 	private $domain_blacklist = [ "github.com" ];
+
+	/** @var bool */
 	private $dump_json_data = false;
+
+	/** @var array<string> */
 	private $fallback_preview_urls = [];
+
+	/** @var int */
 	private $default_max_score = 100;
+
+	/** @var array<int, array<int, string|null>> */
 	private $generated_enclosures = [];
 
 	function about() {
@@ -28,11 +38,24 @@ class Af_RedditImgur extends Plugin {
 		$host->add_hook($host::HOOK_RENDER_ARTICLE, $this);
 		$host->add_hook($host::HOOK_RENDER_ARTICLE_CDM, $this);
 		$host->add_hook($host::HOOK_RENDER_ARTICLE_API, $this);
+
+		$host->add_hook($host::HOOK_PRE_SUBSCRIBE, $this);
+	}
+
+	function hook_pre_subscribe(&$url, $auth_login, $auth_pass) {
+		$reddit_to_teddit = $this->host->get($this, "reddit_to_teddit");
+
+		if ($reddit_to_teddit) {
+			$url = $this->rewrite_to_reddit($url);
+
+			return true;
+		}
+
+		return false;
 	}
 
 	function hook_prefs_tab($args) {
 		if ($args != "prefFeeds") return;
-
 			$enable_readability = $this->host->get($this, "enable_readability");
 			$enable_content_dupcheck = $this->host->get($this, "enable_content_dupcheck");
 			$reddit_to_teddit = $this->host->get($this, "reddit_to_teddit");
@@ -105,7 +128,7 @@ class Af_RedditImgur extends Plugin {
 		<?php
 	}
 
-	function save() {
+	function save() : void {
 		$enable_readability = checkbox_to_sql_bool($_POST["enable_readability"] ?? "");
 		$enable_content_dupcheck = checkbox_to_sql_bool($_POST["enable_content_dupcheck"] ?? "");
 		$reddit_to_teddit = checkbox_to_sql_bool($_POST["reddit_to_teddit"] ?? "");
@@ -125,7 +148,14 @@ class Af_RedditImgur extends Plugin {
 		echo __("Configuration saved");
 	}
 
-	private function process_post_media($data, $doc, $xpath, $anchor) {
+	/**
+	 * @param array<string,mixed> $data (this is a huge blob of random crap returned by reddit API)
+	 * @param DOMDocument $doc
+	 * @param DOMXPath $xpath
+	 * @param DOMElement $anchor
+	 * @return bool
+	 */
+	private function process_post_media(array $data, DOMDocument $doc, DOMXPath $xpath, DOMElement $anchor) : bool {
 		$found = 0;
 
 		if (isset($data["media_metadata"])) {
@@ -229,14 +259,21 @@ class Af_RedditImgur extends Plugin {
 			}
 		}
 
-		return $found;
+		return $found > 0;
 	}
 
 	/* function score_convert(int $value, int $from1, int $from2, int $to1, int $to2) {
 		return ($value - $from1) / ($from2 - $from1) * ($to2 - $to1) + $to1;
 	} */
 
-	private function inline_stuff(&$article, &$doc, $xpath) {
+	/**
+	 * @param array<string, mixed> $article
+	 * @param DOMDocument $doc
+	 * @param DOMXPath $xpath
+	 * @return bool
+	 * @throws PDOException
+	 */
+	private function inline_stuff(array &$article, DOMDocument &$doc, DOMXpath $xpath) : bool {
 
 		$max_score = (int) $this->host->get($this, "max_score", $this->default_max_score);
 		$import_score = (bool) $this->host->get($this, "import_score", $this->default_max_score);
@@ -250,7 +287,7 @@ class Af_RedditImgur extends Plugin {
 
 		$this->generated_enclosures = [];
 
-		// embed anchor element, before reddit <table> post layout
+		/** @var DOMElement|null $anchor -- embed anchor element, before reddit <table> post layout */
 		$anchor = $xpath->query('//body/*')->item(0);
 
 		// deal with json-provided media content first
@@ -459,29 +496,38 @@ class Af_RedditImgur extends Plugin {
 
 				Debug::log("handling as imgur page/whatever", Debug::LOG_VERBOSE);
 
-				$content = UrlHelper::fetch(["url" => $entry_href,
-					"http_accept" => "text/*"]);
+				$content_type = $this->get_content_type($entry_href);
 
-				if ($content) {
-					$cdoc = new DOMDocument();
+				if ($content_type && strpos($content_type, "text/html") !== false) {
 
-					if (@$cdoc->loadHTML($content)) {
-						$cxpath = new DOMXPath($cdoc);
+					$content = UrlHelper::fetch(["url" => $entry_href,
+						"http_accept" => "text/*"]);
 
-						$rel_image = $cxpath->query("//link[@rel='image_src']")->item(0);
+					if ($content) {
+						$cdoc = new DOMDocument();
 
-						if ($rel_image) {
+						if (@$cdoc->loadHTML($content)) {
+							$cxpath = new DOMXPath($cdoc);
 
-							$img = $doc->createElement('img');
-							$img->setAttribute("src", $rel_image->getAttribute("href"));
+							/** @var ?DOMElement $rel_image */
+							$rel_image = $cxpath->query("//link[@rel='image_src']")->item(0);
 
-							$br = $doc->createElement('br');
-							$entry->parentNode->insertBefore($img, $entry);
-							$entry->parentNode->insertBefore($br, $entry);
+							if ($rel_image) {
 
-							$found = true;
+								$img = $doc->createElement('img');
+								$img->setAttribute("src", $rel_image->getAttribute("href"));
+
+								$br = $doc->createElement('br');
+								$entry->parentNode->insertBefore($img, $entry);
+								$entry->parentNode->insertBefore($br, $entry);
+
+								$found = true;
+							}
 						}
 					}
+
+				} else {
+					Debug::log("skipping imgur $entry_href because of content type: $content_type", Debug::LOG_VERBOSE);
 				}
 			}
 
@@ -505,50 +551,60 @@ class Af_RedditImgur extends Plugin {
 			if (!$found) {
 				Debug::log("looking for meta og:image", Debug::LOG_VERBOSE);
 
-				$content = UrlHelper::fetch(["url" => $entry_href,
-					"http_accept" => "text/*"]);
+				$content_type = $this->get_content_type($entry_href);
 
-				if ($content) {
-					$cdoc = new DOMDocument();
+				if ($content_type && strpos($content_type, "text/html") !== false) {
 
-					if (@$cdoc->loadHTML($content)) {
-						$cxpath = new DOMXPath($cdoc);
+					$content = UrlHelper::fetch(["url" => $entry_href,
+						"http_accept" => "text/*"]);
 
-						$og_image = $cxpath->query("//meta[@property='og:image']")->item(0);
-						$og_video = $cxpath->query("//meta[@property='og:video']")->item(0);
+					if ($content) {
+						$cdoc = new DOMDocument();
 
-						if ($og_video) {
+						if (@$cdoc->loadHTML($content)) {
+							$cxpath = new DOMXPath($cdoc);
 
-							$source_stream = $og_video->getAttribute("content");
+							/** @var ?DOMElement $og_image */
+							$og_image = $cxpath->query("//meta[@property='og:image']")->item(0);
 
-							if ($source_stream) {
+							/** @var ?DOMElement $og_video */
+							$og_video = $cxpath->query("//meta[@property='og:video']")->item(0);
 
-								if ($og_image) {
-									$poster_url = $og_image->getAttribute("content");
-								} else {
-									$poster_url = false;
+							if ($og_video) {
+
+								$source_stream = $og_video->getAttribute("content");
+
+								if ($source_stream) {
+
+									if ($og_image) {
+										$poster_url = $og_image->getAttribute("content");
+									} else {
+										$poster_url = false;
+									}
+
+									$this->handle_as_video($doc, $entry, $source_stream, $poster_url);
+									$found = true;
 								}
 
-								$this->handle_as_video($doc, $entry, $source_stream, $poster_url);
-								$found = true;
-							}
+							} else if ($og_image) {
 
-						} else if ($og_image) {
+								$og_src = $og_image->getAttribute("content");
 
-							$og_src = $og_image->getAttribute("content");
+								if ($og_src) {
+									$img = $doc->createElement('img');
+									$img->setAttribute("src", $og_src);
 
-							if ($og_src) {
-								$img = $doc->createElement('img');
-								$img->setAttribute("src", $og_src);
+									$br = $doc->createElement('br');
+									$entry->parentNode->insertBefore($img, $entry);
+									$entry->parentNode->insertBefore($br, $entry);
 
-								$br = $doc->createElement('br');
-								$entry->parentNode->insertBefore($img, $entry);
-								$entry->parentNode->insertBefore($br, $entry);
-
-								$found = true;
+									$found = true;
+								}
 							}
 						}
 					}
+				} else {
+					Debug::log("BODY: skipping $entry_href because of content type: $content_type", Debug::LOG_VERBOSE);
 				}
 			}
 		}
@@ -566,7 +622,7 @@ class Af_RedditImgur extends Plugin {
 		if ($found)
 			$this->remove_post_thumbnail($doc, $xpath);
 
-		return $found;
+		return $found > 0;
 	}
 
 	function hook_article_filter($article) {
@@ -577,6 +633,7 @@ class Af_RedditImgur extends Plugin {
 			if (@$doc->loadHTML($article["content"])) {
 				$xpath = new DOMXPath($doc);
 
+				/** @var ?DOMElement $content_link */
 				$content_link = $xpath->query("(//a[contains(., '[link]')])")->item(0);
 
 				if ($this->host->get($this, "enable_content_dupcheck")) {
@@ -633,14 +690,14 @@ class Af_RedditImgur extends Plugin {
 		return 2;
 	}
 
-	private function remove_post_thumbnail($doc, $xpath) {
+	private function remove_post_thumbnail(DOMDocument $doc, DOMXpath $xpath) : void {
 		$thumb = $xpath->query("//td/a/img[@src]")->item(0);
 
 		if ($thumb)
 			$thumb->parentNode->parentNode->removeChild($thumb->parentNode);
 	}
 
-	private function handle_as_image($doc, $entry, $image_url, $link_url = false) {
+	private function handle_as_image(DOMDocument $doc, DOMElement $entry, string $image_url, string $link_url = "") : void {
 		$img = $doc->createElement("img");
 		$img->setAttribute("src", $image_url);
 
@@ -659,7 +716,7 @@ class Af_RedditImgur extends Plugin {
 		$entry->parentNode->insertBefore($p, $entry);
 	}
 
-	private function handle_as_video($doc, $entry, $source_stream, $poster_url = false) {
+	private function handle_as_video(DOMDocument $doc, DOMElement $entry, string $source_stream, string $poster_url = "") : void {
 
 		Debug::log("handle_as_video: $source_stream", Debug::LOG_VERBOSE);
 
@@ -691,7 +748,7 @@ class Af_RedditImgur extends Plugin {
 		return $method === "testurl";
 	}
 
-	function testurl() {
+	function testurl() : void {
 
 		$url = clean($_POST["url"] ?? "");
 		$article_url = clean($_POST["article_url"] ?? "");
@@ -785,8 +842,9 @@ class Af_RedditImgur extends Plugin {
 
 	}
 
-	private function get_header($url, $header, $useragent = SELF_USER_AGENT) {
-		$ret = false;
+	/** $useragent defaults to Config::get_user_agent() */
+	private function get_header(string $url, int $header, string $useragent = "") : string {
+		$ret = "";
 
 		if (function_exists("curl_init")) {
 			$ch = curl_init($url);
@@ -795,7 +853,7 @@ class Af_RedditImgur extends Plugin {
 			curl_setopt($ch, CURLOPT_HEADER, true);
 			curl_setopt($ch, CURLOPT_NOBODY, true);
 			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, !ini_get("open_basedir"));
-			curl_setopt($ch, CURLOPT_USERAGENT, $useragent);
+			curl_setopt($ch, CURLOPT_USERAGENT, $useragent ? $useragent : Config::get_user_agent());
 
 			@curl_exec($ch);
 			$ret = curl_getinfo($ch, $header);
@@ -804,15 +862,24 @@ class Af_RedditImgur extends Plugin {
 		return $ret;
 	}
 
-	private function get_content_type($url, $useragent = SELF_USER_AGENT) {
+	private function get_content_type(string $url, string $useragent = "") : string {
 		return $this->get_header($url, CURLINFO_CONTENT_TYPE, $useragent);
 	}
 
-	private function get_location($url, $useragent = SELF_USER_AGENT) {
+	/*private function get_location(string $url, string $useragent = "") : string {
 		return $this->get_header($url, CURLINFO_EFFECTIVE_URL, $useragent);
-	}
+	}*/
 
-	private function readability($article, $url, $doc, $xpath, $debug = false) {
+	/**
+	 * @param array<string,mixed> $article
+	 * @param string $url
+	 * @param DOMDocument $doc
+	 * @param DOMXPath $xpath
+	 * @param bool $debug
+	 * @return array<string,mixed>
+	 * @throws PDOException
+	 */
+	private function readability(array $article, string $url, DOMDocument $doc, DOMXpath $xpath, bool $debug = false) : array {
 
 		if (function_exists("curl_init") && $this->host->get($this, "enable_readability") &&
 			mb_strlen(strip_tags($article["content"])) <= 150) {
@@ -844,7 +911,12 @@ class Af_RedditImgur extends Plugin {
 		return $article;
 	}
 
-	private function is_blacklisted($src, $also_blacklist = []) {
+	/**
+	 * @param string $src
+	 * @param array<string> $also_blacklist
+	 * @return bool
+	 */
+	private function is_blacklisted(string $src, array $also_blacklist = []) : bool {
 		$src_domain = parse_url($src, PHP_URL_HOST);
 
 		foreach (array_merge($this->domain_blacklist, $also_blacklist) as $domain) {
@@ -860,9 +932,20 @@ class Af_RedditImgur extends Plugin {
 		return $this->hook_render_article_cdm($article);
 	}
 
-	private function rewrite_to_teddit($str) {
+	private function rewrite_to_teddit(string $str) : string {
 		if (strpos($str, "reddit.com") !== false) {
 			return preg_replace("/https?:\/\/([a-z]+\.)?reddit\.com/", "https://teddit.net", $str);
+		}
+
+		return $str;
+	}
+
+	private function rewrite_to_reddit(string $str) : string {
+		if (strpos($str, "teddit.net") !== false) {
+			$str = preg_replace("/https?:\/\/teddit.net/", "https://reddit.com", $str);
+
+			if (strpos($str, "/.rss") === false)
+				$str .= "/.rss";
 		}
 
 		return $str;

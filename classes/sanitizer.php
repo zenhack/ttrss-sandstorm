@@ -1,6 +1,10 @@
 <?php
 class Sanitizer {
-	private static function strip_harmful_tags($doc, $allowed_elements, $disallowed_attributes) {
+	/**
+	 * @param array<int, string> $allowed_elements
+	 * @param array<int, string> $disallowed_attributes
+	 */
+	private static function strip_harmful_tags(DOMDocument $doc, array $allowed_elements, $disallowed_attributes): DOMDocument {
 		$xpath = new DOMXPath($doc);
 		$entries = $xpath->query('//*');
 
@@ -40,7 +44,7 @@ class Sanitizer {
 		return $doc;
 	}
 
-	public static function iframe_whitelisted($entry) {
+	public static function iframe_whitelisted(DOMElement $entry): bool {
 		$src = parse_url($entry->getAttribute("src"), PHP_URL_HOST);
 
 		if (!empty($src))
@@ -49,11 +53,16 @@ class Sanitizer {
 		return false;
 	}
 
-	private static function is_prefix_https() {
+	private static function is_prefix_https(): bool {
 		return parse_url(Config::get(Config::SELF_URL_PATH), PHP_URL_SCHEME) == 'https';
 	}
 
-	public static function sanitize($str, $force_remove_images = false, $owner = false, $site_url = false, $highlight_words = false, $article_id = false) {
+	/**
+	 * @param array<int, string>|null $highlight_words Words to highlight in the HTML output.
+	 *
+	 * @return false|string The HTML, or false if an error occurred.
+	 */
+	public static function sanitize(string $str, ?bool $force_remove_images = false, int $owner = null, string $site_url = null, array $highlight_words = null, int $article_id = null) {
 
 		if (!$owner && isset($_SESSION["uid"]))
 			$owner = $_SESSION["uid"];
@@ -68,13 +77,13 @@ class Sanitizer {
 		// $rewrite_base_url = $site_url ? $site_url : Config::get_self_url();
 		$rewrite_base_url = $site_url ? $site_url : "http://domain.invalid/";
 
-		$entries = $xpath->query('(//a[@href]|//img[@src]|//source[@srcset|@src])');
+		$entries = $xpath->query('(//a[@href]|//img[@src]|//source[@srcset|@src]|//video[@poster])');
 
 		foreach ($entries as $entry) {
 
 			if ($entry->hasAttribute('href')) {
 				$entry->setAttribute('href',
-					rewrite_relative_url($rewrite_base_url, $entry->getAttribute('href')));
+					UrlHelper::rewrite_relative($rewrite_base_url, $entry->getAttribute('href'), $entry->tagName, "href"));
 
 				$entry->setAttribute('rel', 'noopener noreferrer');
 				$entry->setAttribute("target", "_blank");
@@ -82,7 +91,7 @@ class Sanitizer {
 
 			if ($entry->hasAttribute('src')) {
 				$entry->setAttribute('src',
-					rewrite_relative_url($rewrite_base_url, $entry->getAttribute('src')));
+					UrlHelper::rewrite_relative($rewrite_base_url, $entry->getAttribute('src'), $entry->tagName, "src"));
 			}
 
 			if ($entry->nodeName == 'img') {
@@ -94,10 +103,15 @@ class Sanitizer {
 				$matches = RSSUtils::decode_srcset($entry->getAttribute('srcset'));
 
 				for ($i = 0; $i < count($matches); $i++) {
-					$matches[$i]["url"] = rewrite_relative_url($rewrite_base_url, $matches[$i]["url"]);
+					$matches[$i]["url"] = UrlHelper::rewrite_relative($rewrite_base_url, $matches[$i]["url"]);
 				}
 
 				$entry->setAttribute("srcset", RSSUtils::encode_srcset($matches));
+			}
+
+			if ($entry->hasAttribute('poster')) {
+				$entry->setAttribute('poster',
+					UrlHelper::rewrite_relative($rewrite_base_url, $entry->getAttribute('poster'), $entry->tagName, "poster"));
 			}
 
 			if ($entry->hasAttribute('src') &&
@@ -178,7 +192,7 @@ class Sanitizer {
 			$div->appendChild($entry);
 		}
 
-		if ($highlight_words && is_array($highlight_words)) {
+		if (is_array($highlight_words)) {
 			foreach ($highlight_words as $word) {
 
 				// http://stackoverflow.com/questions/4081372/highlight-keywords-in-a-paragraph

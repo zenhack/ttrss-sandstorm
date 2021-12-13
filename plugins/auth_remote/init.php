@@ -1,23 +1,29 @@
 <?php
 class Auth_Remote extends Auth_Base {
 
-	private $host;
+	/** redirect user to this URL after logout; .env:
+	 * TTRSS_AUTH_REMOTE_POST_LOGOUT_URL=http://127.0.0.1/logout-redirect
+	 */
+	const AUTH_REMOTE_POST_LOGOUT_URL = "AUTH_REMOTE_POST_LOGOUT_URL";
 
 	function about() {
 		return array(null,
-			"Authenticates against remote password (e.g. supplied by Apache)",
+			"Authenticates against external passwords (HTTP Authentication, SSL certificates)",
 			"fox",
 			true);
 	}
 
-	/* @var PluginHost $host */
 	function init($host) {
-		$this->host = $host;
-
 		$host->add_hook($host::HOOK_AUTH_USER, $this);
+
+		Config::add(self::AUTH_REMOTE_POST_LOGOUT_URL, "", Config::T_STRING);
+
+		if (Config::get(self::AUTH_REMOTE_POST_LOGOUT_URL) != "") {
+			$host->add_hook($host::HOOK_POST_LOGOUT, $this);
+		}
 	}
 
-	function get_login_by_ssl_certificate() {
+	function get_login_by_ssl_certificate() : string {
 		$cert_serial = Pref_Prefs::_get_ssl_certificate_id();
 
 		if ($cert_serial) {
@@ -34,7 +40,7 @@ class Auth_Remote extends Auth_Base {
 		return "";
 	}
 
-	function authenticate($login, $password) {
+	function authenticate($login, $password, $service = '') {
 		$try_login = "";
 
 		foreach (["REMOTE_USER", "HTTP_REMOTE_USER", "REDIRECT_REMOTE_USER", "PHP_AUTH_USER"] as $hdr) {
@@ -76,6 +82,12 @@ class Auth_Remote extends Auth_Base {
 		}
 
 		return false;
+	}
+
+	function hook_post_logout($login, $user_id) {
+		return [
+			Config::get(self::AUTH_REMOTE_POST_LOGOUT_URL)
+			];
 	}
 
 	function api_version() {

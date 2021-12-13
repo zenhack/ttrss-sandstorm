@@ -43,6 +43,7 @@ body.ttrss_main .post .header {
 body.ttrss_main .post .header .left,
 body.ttrss_main .post .header .right {
   display: flex;
+  align-items: center;
 }
 body.ttrss_main .post .header .row {
   display: flex;
@@ -1257,6 +1258,7 @@ body.ttrss_utility hr {
 }
 .cdm .header .titleWrap {
   flex-grow: 2;
+  width: 0;
 }
 .cdm .header .updated {
   color: black;
@@ -1268,22 +1270,17 @@ body.ttrss_utility hr {
   margin: 0px 4px;
 }
 .cdm .header .feed {
-  float: right;
-  font-weight: normal;
-  font-style: italic;
-}
-.cdm .header .feed a {
-  border-radius: 4px;
-  display: inline-block;
-  padding: 1px 4px 1px 4px;
-}
-.cdm .header .feed,
-.cdm .header .feed a {
-  vertical-align: middle;
-  color: black;
   font-weight: normal;
   font-style: italic;
   font-size: 11px;
+  display: inline-block;
+  max-width: 25%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-right: 4px;
+  color: black;
 }
 .cdm .header .author {
   white-space: nowrap;
@@ -1302,8 +1299,19 @@ body.ttrss_utility hr {
 .cdm .footer i.material-icons {
   color: #777;
 }
+.cdm .footer .left,
+.cdm .footer .right {
+  display: flex;
+  align-items: center;
+}
 .cdm .footer .left {
   flex-grow: 2;
+}
+.cdm .footer .left > * {
+  margin-right: 4px;
+}
+.cdm .footer .right > * {
+  margin-left: 4px;
 }
 .cdm .content-inner {
   margin: 10px;

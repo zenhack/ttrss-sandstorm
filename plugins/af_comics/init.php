@@ -1,7 +1,7 @@
 <?php
 class Af_Comics extends Plugin {
 
-	private $host;
+	/** @var array<object> $filters */
 	private $filters = array();
 
 	function about() {
@@ -11,8 +11,6 @@ class Af_Comics extends Plugin {
 	}
 
 	function init($host) {
-		$this->host = $host;
-
 		$host->add_hook($host::HOOK_FETCH_FEED, $this);
 		$host->add_hook($host::HOOK_FEED_BASIC_INFO, $this);
 		$host->add_hook($host::HOOK_SUBSCRIBE_FEED, $this);
@@ -34,7 +32,7 @@ class Af_Comics extends Plugin {
 
 				array_push($names, $filter_name);
 
-				$filter = new $filter_name();
+				$filter = new $filter_name($host);
 
 				if (is_subclass_of($filter, "Af_ComicFilter")) {
 					array_push($this->filters, $filter);

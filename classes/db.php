@@ -4,9 +4,7 @@ class Db
 	/** @var Db $instance */
 	private static $instance;
 
-	private $link;
-
-	/** @var PDO $pdo */
+	/** @var PDO|null $pdo */
 	private $pdo;
 
 	function __construct() {
@@ -19,7 +17,7 @@ class Db
 		}
 	}
 
-	static function NOW() {
+	static function NOW(): string {
 		return date("Y-m-d H:i:s", time());
 	}
 
@@ -27,7 +25,7 @@ class Db
 		//
 	}
 
-	public static function get_dsn() {
+	public static function get_dsn(): string {
 		$db_port = Config::get(Config::DB_PORT) ? ';port=' . Config::get(Config::DB_PORT) : '';
 		$db_host = Config::get(Config::DB_HOST) ? ';host=' . Config::get(Config::DB_HOST) : '';
 		if (Config::get(Config::DB_TYPE) == "mysql" && Config::get(Config::MYSQL_CHARSET)) {
@@ -90,12 +88,11 @@ class Db
 		return self::$instance->pdo;
 	}
 
-	public static function sql_random_function() {
+	public static function sql_random_function(): string {
 		if (Config::get(Config::DB_TYPE) == "mysql") {
 			return "RAND()";
-		} else {
-			return "RANDOM()";
 		}
+		return "RANDOM()";
 	}
 
 }

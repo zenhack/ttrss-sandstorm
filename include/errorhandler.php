@@ -1,5 +1,8 @@
 <?php
-function format_backtrace($trace) {
+/**
+ * @param array<int, array<string, mixed>> $trace
+ */
+function format_backtrace($trace): string {
 	$rv = "";
 	$idx = 1;
 
@@ -8,7 +11,7 @@ function format_backtrace($trace) {
 			if (isset($e["file"]) && isset($e["line"])) {
 				$fmt_args = [];
 
-				if (is_array($e["args"])) {
+				if (is_array($e["args"] ?? false)) {
 					foreach ($e["args"] as $a) {
 						if (is_object($a)) {
 							array_push($fmt_args, "{" . get_class($a) . "}");
@@ -16,7 +19,7 @@ function format_backtrace($trace) {
 							array_push($fmt_args, "[" . truncate_string(json_encode($a), 256, "...")) . "]";
 						} else if (is_resource($a)) {
 							array_push($fmt_args, truncate_string(get_resource_type($a), 256, "..."));
-						} else {
+						} else if (is_string($a)) {
 							array_push($fmt_args, truncate_string($a, 256, "..."));
 						}
 					}
@@ -39,7 +42,7 @@ function format_backtrace($trace) {
 	return $rv;
 }
 
-function ttrss_error_handler($errno, $errstr, $file, $line) {
+function ttrss_error_handler(int $errno, string $errstr, string $file, int $line): bool {
 	/*if (version_compare(PHP_VERSION, '8.0.0', '<')) {
 		if (error_reporting() == 0 || !$errno) return false;
 	} else {
@@ -59,7 +62,7 @@ function ttrss_error_handler($errno, $errstr, $file, $line) {
 		return false;
 }
 
-function ttrss_fatal_handler() {
+function ttrss_fatal_handler(): bool {
 	$error = error_get_last();
 
 	if ($error !== NULL) {

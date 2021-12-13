@@ -45,6 +45,7 @@
 
 		.titleWrap {
 			flex-grow : 2;
+			width : 0;
 		}
 
 		.updated {
@@ -59,23 +60,17 @@
 		}
 
 		.feed {
-			float: right;
-			font-weight: normal;
-			font-style: italic;
-
-			a {
-				border-radius : 4px;
-				display : inline-block;
-				padding : 1px 4px 1px 4px;
-			}
-		}
-
-		.feed, .feed a {
-			vertical-align: middle;
-			color: @default-text;
 			font-weight: normal;
 			font-style: italic;
 			font-size: @font-size-small;
+			display : inline-block;
+			max-width : 25%;
+			overflow : hidden;
+			text-overflow : ellipsis;
+			border-radius : 4px;
+			padding : 1px 4px;
+			margin-right : 4px;
+			color: @default-text;
 		}
 
 		.author {
@@ -98,8 +93,23 @@
 			color : @color-icon;
 		}
 
+		.left, .right {
+			display : flex;
+			align-items : center;
+		}
+
 		.left {
 			flex-grow : 2;
+
+			> * {
+				margin-right : 4px;
+			}
+		}
+
+		.right {
+			> * {
+				margin-left : 4px;
+			}
 		}
 	}
 

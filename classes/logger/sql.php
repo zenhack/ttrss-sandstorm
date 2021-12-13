@@ -1,8 +1,6 @@
 <?php
 class Logger_SQL implements Logger_Adapter {
 
-	private $pdo;
-
 	function __construct() {
 		$conn = get_class($this);
 
@@ -12,7 +10,7 @@ class Logger_SQL implements Logger_Adapter {
 		ORM::configure('return_result_sets', true, $conn);
 	}
 
-	function log_error(int $errno, string $errstr, string $file, int $line, $context) {
+	function log_error(int $errno, string $errstr, string $file, int $line, string $context): bool {
 
 		if (Config::get_schema_version() > 117) {
 

@@ -86,10 +86,13 @@
 		1440 => __("Daily"),
 		10080 => __("Weekly"));
 
-	$access_level_names = array(
-		0 => __("User"),
-		5 => __("Power User"),
-		10 => __("Administrator"));
+	$access_level_names = [
+		UserHelper::ACCESS_LEVEL_DISABLED 	=> __("Disabled"),
+		UserHelper::ACCESS_LEVEL_READONLY 	=> __("Read Only"),
+		UserHelper::ACCESS_LEVEL_USER			=> __("User"),
+		UserHelper::ACCESS_LEVEL_POWERUSER	=> __("Power User"),
+		UserHelper::ACCESS_LEVEL_ADMIN		=> __("Administrator")
+	];
 
 	// shortcut syntax for plugin methods (?op=plugin--pmethod&...params)
 	/* if (strpos($op, PluginHost::PUBLIC_METHOD_DELIMITER) !== false) {
@@ -121,7 +124,7 @@
 			$handler = $reflection->newInstanceWithoutConstructor();
 		}
 
-		if ($handler && implements_interface($handler, 'IHandler')) {
+		if (implements_interface($handler, 'IHandler')) {
 			$handler->__construct($_REQUEST);
 
 			if (validate_csrf($csrf_token) || $handler->csrf_ignore($method)) {
@@ -161,6 +164,6 @@
 	}
 
 	header("Content-Type: text/json");
-	print Errors::to_json(Errors::E_UNKNOWN_METHOD, [ "info" => (isset($handler) ? get_class($handler) : "UNKNOWN:".$_REQUEST["op"]) . "->$method"]);
+	print Errors::to_json(Errors::E_UNKNOWN_METHOD, [ "info" => (isset($handler) ? get_class($handler) : "UNKNOWN:".$op) . "->$method"]);
 
 ?>

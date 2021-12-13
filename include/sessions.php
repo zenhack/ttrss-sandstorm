@@ -1,6 +1,8 @@
 <?php
 	namespace Sessions;
 
+	use UserHelper;
+
 	require_once "autoload.php";
 	require_once "functions.php";
 	require_once "errorhandler.php";
@@ -19,7 +21,17 @@
 	ini_set("session.gc_maxlifetime", $session_expire);
 	ini_set("session.cookie_lifetime", "0");
 
-	function validate_session() {
+	// prolong PHP session cookie
+	if (isset($_COOKIE[$session_name]))
+		setcookie($session_name,
+			$_COOKIE[$session_name],
+			time() + $session_expire,
+			ini_get("session.cookie_path"),
+			ini_get("session.cookie_domain"),
+			ini_get("session.cookie_secure"),
+			ini_get("session.cookie_httponly"));
+
+	function validate_session(): bool {
 		if (\Config::get(\Config::SINGLE_USER_MODE)) return true;
 
 		$pdo = \Db::pdo();
@@ -32,6 +44,11 @@
 					$_SESSION["login_error_msg"] = __("Session failed to validate (password changed)");
 					return false;
 				}
+
+				if ($user->access_level == UserHelper::ACCESS_LEVEL_DISABLED) {
+					$_SESSION["login_error_msg"] = __("Session failed to validate (account is disabled)");
+					return false;
+				}
 			} else {
 				$_SESSION["login_error_msg"] = __("Session failed to validate (user not found)");
 				return false;
@@ -41,11 +58,11 @@
 		return true;
 	}
 
-	function ttrss_open ($s, $n) {
+	function ttrss_open(string $savePath, string $sessionName): bool {
 		return true;
 	}
 
-	function ttrss_read ($id){
+	function ttrss_read(string $id): string {
 		global $session_expire;
 
 		$sth = \Db::pdo()->prepare("SELECT data FROM ttrss_sessions WHERE id=?");
@@ -67,7 +84,7 @@
 
 	}
 
-	function ttrss_write ($id, $data) {
+	function ttrss_write(string $id, string $data): bool {
 		global $session_expire;
 
 		$data = base64_encode($data);
@@ -88,18 +105,18 @@
 		return true;
 	}
 
-	function ttrss_close () {
+	function ttrss_close(): bool {
 		return true;
 	}
 
-	function ttrss_destroy($id) {
+	function ttrss_destroy(string $id): bool {
 		$sth = \Db::pdo()->prepare("DELETE FROM ttrss_sessions WHERE id = ?");
 		$sth->execute([$id]);
 
 		return true;
 	}
 
-	function ttrss_gc ($expire) {
+	function ttrss_gc(int $lifetime): bool {
 		\Db::pdo()->query("DELETE FROM ttrss_sessions WHERE expire < " . time());
 
 		return true;
@@ -109,7 +126,10 @@
 		session_set_save_handler('\Sessions\ttrss_open',
 			'\Sessions\ttrss_close', '\Sessions\ttrss_read',
 			'\Sessions\ttrss_write', '\Sessions\ttrss_destroy',
-			'\Sessions\ttrss_gc');
+			'\Sessions\ttrss_gc'); // @phpstan-ignore-line
+			// PHPStan complains about '\Sessions\ttrss_gc' if its $lifetime param isn't marked as string,
+			// but the docs say it's an int.  If it is actually a string it'll get coerced to an int.
+
 		register_shutdown_function('session_write_close');
 
 		if (!defined('NO_SESSION_AUTOSTART')) {

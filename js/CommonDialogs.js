@@ -11,6 +11,21 @@ const	CommonDialogs = {
 			const dialog = dijit.byId("infoBox");
 			if (dialog)	dialog.hide();
 		},
+		safeModeWarning: function() {
+			const dialog = new fox.SingleUseDialog({
+				title: __("Safe mode"),
+				content: `<div class='alert alert-info'>
+						${__('Tiny Tiny RSS is running in safe mode. All themes and plugins are disabled. You will need to log out and back in to disable it.')}
+					</div>
+					<footer class='text-center'>
+						<button dojoType='dijit.form.Button' type='submit' class='alt-primary'>
+							${__('Close this window')}
+						</button>
+					</footer>`
+			});
+
+			dialog.show();
+		},
 		subscribeToFeed: function() {
 			xhr.json("backend.php",
 					{op: "feeds", method: "subscribeToFeed"},
@@ -131,6 +146,9 @@ const	CommonDialogs = {
 											console.log(rc);
 
 											switch (parseInt(rc['code'])) {
+												case 0:
+													dialog.show_error(__("You are already subscribed to this feed."));
+													break;
 												case 1:
 													dialog.hide();
 													Notify.info(__("Subscribed to %s").replace("%s", feed_url));
@@ -175,8 +193,11 @@ const	CommonDialogs = {
 												case 6:
 													dialog.show_error(__("XML validation failed: %s").replace("%s", rc['message']));
 													break;
-												case 0:
-													dialog.show_error(__("You are already subscribed to this feed."));
+												case 7:
+													dialog.show_error(__("Error while creating feed database entry."));
+													break;
+												case 8:
+													dialog.show_error(__("You are not allowed to perform this operation."));
 													break;
 											}
 
@@ -451,6 +472,7 @@ const	CommonDialogs = {
 
 				xhr.json("backend.php", {op: "pref-feeds", method: "editfeed", id: feed_id}, (reply) => {
 					const feed = reply.feed;
+					const is_readonly = reply.user.access_level == App.UserAccessLevels.ACCESS_LEVEL_READONLY;
 
 					// for unsub prompt
 					dialog.feed_title = feed.title;
@@ -524,7 +546,9 @@ const	CommonDialogs = {
 
 									<fieldset>
 										<label>${__("Update interval:")}</label>
-										${App.FormFields.select_hash("update_interval", feed.update_interval, reply.intervals.update)}
+										${App.FormFields.select_hash("update_interval", is_readonly ? -1 : feed.update_interval,
+											reply.intervals.update,
+											{disabled: is_readonly})}
 									</fieldset>
 									<fieldset>
 										<label>${__('Article purging:')}</label>

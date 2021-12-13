@@ -1,9 +1,6 @@
 <?php
 class Note extends Plugin {
 
-	/* @var PluginHost $host */
-	private $host;
-
 	function about() {
 		return array(null,
 			"Adds support for setting article notes",
@@ -11,8 +8,6 @@ class Note extends Plugin {
 	}
 
 	function init($host) {
-		$this->host = $host;
-
 		$host->add_hook($host::HOOK_ARTICLE_BUTTON, $this);
 	}
 
@@ -26,7 +21,7 @@ class Note extends Plugin {
 			style='cursor : pointer' title='".__('Edit article note')."'>note</i>";
 	}
 
-	function edit() {
+	function edit() : void {
 		$id = clean($_REQUEST['id']);
 
 		$sth = $this->pdo->prepare("SELECT note FROM ttrss_user_entries WHERE
@@ -54,7 +49,7 @@ class Note extends Plugin {
 		<?php
 	}
 
-	function setNote() {
+	function setNote() : void {
 		$id = (int)clean($_REQUEST["id"]);
 		$note = clean($_REQUEST["note"]);
 

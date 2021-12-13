@@ -1,6 +1,5 @@
 <?php
 class Af_Youtube_Embed extends Plugin {
-	private $host;
 
 	function about() {
 		return array(null,
@@ -9,8 +8,6 @@ class Af_Youtube_Embed extends Plugin {
 	}
 
 	function init($host) {
-		$this->host = $host;
-
 		$host->add_hook($host::HOOK_RENDER_ENCLOSURE, $this);
 		$host->add_hook($host::HOOK_IFRAME_WHITELISTED, $this);
 	}
@@ -21,7 +18,7 @@ class Af_Youtube_Embed extends Plugin {
 			"youtu.be"]);
 	}
 
-	function hook_render_enclosure($entry, $hide_images) {
+	function hook_render_enclosure($entry, $id, $rv) {
 
 		$url = $entry["content_url"];
 
@@ -35,6 +32,8 @@ class Af_Youtube_Embed extends Plugin {
 				</div>";
 
 		}
+
+		return "";
 	}
 
 	function api_version() {

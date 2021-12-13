@@ -1,6 +1,5 @@
 <?php
 class No_Iframes extends Plugin {
-	private $host;
 
 	function about() {
 		return array(null,
@@ -9,12 +8,10 @@ class No_Iframes extends Plugin {
 	}
 
 	function init($host) {
-		$this->host = $host;
-
 		$host->add_hook($host::HOOK_SANITIZE, $this);
 	}
 
-	function hook_sanitize($doc, $site_url, $allowed_elements, $disallowed_attributes) {
+	function hook_sanitize($doc, $site_url, $allowed_elements, $disallowed_attributes, $article_id) {
 
 		$xpath = new DOMXpath($doc);
 		$entries = $xpath->query('//iframe');
