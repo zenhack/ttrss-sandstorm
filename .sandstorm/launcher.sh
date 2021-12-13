@@ -96,6 +96,9 @@ export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 # Wait for it to start:
 wait_for php-fpm7.3 /var/run/php/php7.3-fpm.sock
 
+# Update the schema if needed:
+/usr/bin/php7.3 /opt/app/update.php --update-schema=force-yes
+
 # Try to update feeds once immediately on startup, then start the
 # background daemon. If it dies, wait a couple seconds and re-try.
 (
