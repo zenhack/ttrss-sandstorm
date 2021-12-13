@@ -137,7 +137,8 @@ const myCommand :Spk.Manifest.Command = (
     (key = "TTRSS_DB_USER", value = "root"),
     (key = "TTRSS_DB_NAME", value = "app"),
 
-    # TODO: SELF_URL_PATH?
+    # We don't set SELF_URL_PATH here, since it changes dynamically;
+    # instead we patch ttrss itself to hack around the changing.
 
     (key = "TTRSS_SINGLE_USER_MODE", value = "true"),
     (key = "TTRSS_SIMPLE_UPDATE_MODE", value = "false"),
