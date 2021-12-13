@@ -71,13 +71,20 @@ HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
 # Wait until mysql has bound its socket, indicating readiness
 wait_for mysql $mysql_socket
 
+update_schema() {
+    /usr/bin/php7.3 /opt/app/update.php --update-schema=force-yes
+}
+
 if [ ! -e /var/.db-created ]; then
     mysql --user "$MYSQL_USER" -e "CREATE DATABASE $MYSQL_DATABASE"
     mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" < /opt/app/sql/mysql/schema.sql
+    update_schema
     # Delete the TTRSS project's feeds from the db; otherwise the user will
     # get a bunch of powerbox requests immediately on startup, which is not great UX:
     mysql --user "$MYSQL_USER" --database "$MYSQL_DATABASE" -e "DELETE FROM ttrss_feeds"
     touch /var/.db-created
+else
+    update_schema
 fi
 
 # Start our powerbox proxy server, and wait for it to write the cert:
@@ -95,9 +102,6 @@ export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 /usr/sbin/php-fpm7.3 --nodaemonize --fpm-config /etc/php/7.3/fpm/php-fpm.conf &
 # Wait for it to start:
 wait_for php-fpm7.3 /var/run/php/php7.3-fpm.sock
-
-# Update the schema if needed:
-/usr/bin/php7.3 /opt/app/update.php --update-schema=force-yes
 
 # Try to update feeds once immediately on startup, then start the
 # background daemon. If it dies, wait a couple seconds and re-try.
