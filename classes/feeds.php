@@ -133,7 +133,7 @@ class Feeds extends Handler_Protected {
 		$reply['vfeed_group_enabled'] = $vfeed_group_enabled;
 
 		$plugin_menu_items = "";
-		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_HEADLINE_TOOLBAR_SELECT_MENU_ITEM,
+		PluginHost::getInstance()->chain_hooks_callback(PluginHost::HOOK_HEADLINE_TOOLBAR_SELECT_MENU_ITEM2,
 			function ($result) use (&$plugin_menu_items) {
 				$plugin_menu_items .= $result;
 			},
@@ -955,7 +955,8 @@ class Feeds extends Handler_Protected {
 			$sth->execute([$owner_uid, $feed]);
 			$row = $sth->fetch();
 
-			return $row["count"];
+			// Handle 'SUM()' returning null if there are no results
+			return $row["count"] ?? 0;
 
 		} else if ($n_feed == -1) {
 			$match_part = "marked = true";
@@ -1359,7 +1360,8 @@ class Feeds extends Handler_Protected {
 		$sth->execute([$user_id]);
 		$row = $sth->fetch();
 
-		return $row["count"];
+		// Handle 'SUM()' returning null if there are no articles/results (e.g. admin user with no feeds)
+		return $row["count"] ?? 0;
 	}
 
 	static function _get_cat_title(int $cat_id): string {
