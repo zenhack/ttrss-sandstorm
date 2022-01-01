@@ -367,9 +367,9 @@ opt/app/vendor/beberlei/assert/lib/Assert/functions.php
 opt/app/vendor/composer/ClassLoader.php
 opt/app/vendor/composer/autoload_real.php
 opt/app/vendor/composer/autoload_static.php
-opt/app/vendor/composer/platform_check.php
 opt/app/vendor/j4mie/idiorm/idiorm.php
 opt/app/vendor/mervick/material-design-icons/fonts/MaterialIcons-Regular.woff2
+opt/app/vendor/phpstan/phpstan/bootstrap.php
 opt/app/vendor/thecodingmachine/safe/deprecated/apc.php
 opt/app/vendor/thecodingmachine/safe/deprecated/libevent.php
 opt/app/vendor/thecodingmachine/safe/deprecated/mssql.php
