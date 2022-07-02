@@ -1,6 +1,6 @@
 <?php
 class Pref_Mobile extends Handler_Protected {
-    function csrf_ignore($method) {
+    function csrf_ignore(string $method) {
         return $method === "index";
     }
 
