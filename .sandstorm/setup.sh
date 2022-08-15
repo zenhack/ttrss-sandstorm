@@ -8,7 +8,7 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 # Install Go, for the powerbox server:
-curl -sL https://dl.google.com/go/go1.14.3.linux-amd64.tar.gz -o /usr/local/go.tar.gz
+curl -sL https://dl.google.com/go/go1.19.linux-amd64.tar.gz -o /usr/local/go.tar.gz
 (cd /usr/local && tar -xvf go.tar.gz)
 cat > /etc/profile.d/go.sh <<"EOF"
 export PATH="$PATH:/usr/local/go/bin"
@@ -17,7 +17,7 @@ EOF
 # Install node, to build the client-side part of the powerbox server:
 apt-get update
 apt-get install -y apt-transport-https
-curl -sL https://deb.nodesource.com/setup_12.x | bash -
+curl -sL https://deb.nodesource.com/setup_16.x | bash -
 
 echo -e "deb http://repo.mysql.com/apt/debian/ buster mysql-5.7\ndeb-src http://repo.mysql.com/apt/debian/ buster mysql-5.7" > /etc/apt/sources.list.d/mysql.list
 wget -O /tmp/RPM-GPG-KEY-mysql https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
