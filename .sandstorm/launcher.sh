@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+php_version=81
+
 mysql_socket=/var/run/mysqld/mysqld.sock
 
 wait_for() {
@@ -72,7 +74,9 @@ HOME=/etc/mysql /usr/sbin/mysqld --skip-grant-tables &
 wait_for mysql $mysql_socket
 
 update_schema() {
-    /usr/bin/php7.3 /opt/app/update.php --update-schema=force-yes
+    /usr/local/php${php_version}/bin/php /opt/app/update.php \
+        --php-ini /etc/php/php.ini \
+        --update-schema=force-yes
 }
 
 if [ ! -e /var/.db-created ]; then
@@ -99,15 +103,20 @@ export http_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 export https_proxy=http://127.0.0.1:$POWERBOX_PROXY_PORT
 
 # Spawn php:
-/usr/sbin/php-fpm7.3 --nodaemonize --fpm-config /etc/php/7.3/fpm/php-fpm.conf &
+/usr/local/php${php_version}/php-fpm \
+    --php-ini /etc/php/php.ini \
+    --nodaemonize \
+    --fpm-config /etc/php/7.3/fpm/php-fpm.conf &
 # Wait for it to start:
-wait_for php-fpm7.3 /var/run/php/php7.3-fpm.sock
+wait_for php-fpm /var/run/php/php7.3-fpm.sock
 
 # Try to update feeds once immediately on startup, then start the
 # background daemon. If it dies, wait a couple seconds and re-try.
 (
     while true; do
-        /usr/bin/php7.3 /opt/app/update.php --feeds --daemon || true
+        /usr/local/php${php_version}/bin/php /opt/app/update.php \
+            --php-ini /etc/php/php.ini \
+            --feeds --daemon || true
         echo 'Update daemon exited; waiting 2 seconds before re-starting.'
         sleep 2
     done

@@ -20,12 +20,15 @@ if [ ! -d /nix/store ]; then
 fi
 . /home/vagrant/.nix-profile/etc/profile.d/nix.sh
 cd /home/vagrant
+
 if [ ! -d nixpkgs ]; then
 	git clone https://github.com/nixos/nixpkgs
-	cd nixpkgs
-	# Last version of nixpkgs that shipped mysql 5.5
-	git checkout 880bc93fc0ad44ea5b973e532c338afeb70d2a71
 fi
+cd nixpkgs
+git fetch
+
+# Last version of nixpkgs that shipped mysql 5.5
+git checkout 880bc93fc0ad44ea5b973e532c338afeb70d2a71
 sudo ln -sf \
 	$(nix-shell \
 		-p mysql55 \
@@ -34,6 +37,16 @@ sudo ln -sf \
 	) \
 	/usr/local/mysql55
 
+# master as of 2022-08-19
+git checkout 1ab9224ebe9bc8fd732ff305b7c6c0e07dd9acb0
+php_version=81
+sudo ln -sf \
+	$(nix-shell \
+		-p php${php_version} \
+		-I nixpkgs=$HOME/nixpkgs \
+		--command 'dirname $(dirname $(which php))' \
+	) \
+	/usr/local/php${php_version}
 
 cd /opt/app/.sandstorm/powerbox-http-proxy
 go build
