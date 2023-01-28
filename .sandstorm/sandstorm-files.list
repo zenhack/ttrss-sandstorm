@@ -162,6 +162,7 @@ opt/app/.sandstorm/apphooks/ttrss-apphooks
 opt/app/.sandstorm/launcher.sh
 opt/app/.sandstorm/powerbox-http-proxy/build/index.js
 opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy
+opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy.js
 opt/app/backend.php
 opt/app/classes/article.php
 opt/app/classes/auth/base.php
