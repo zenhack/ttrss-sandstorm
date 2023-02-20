@@ -1,1 +1,1 @@
-/opt/app/.sandstorm/powerbox-http-proxy/build/index.js
+/opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy.js

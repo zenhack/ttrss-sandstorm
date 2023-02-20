@@ -1,7 +1,9 @@
 <?php
 class Pref_Mobile extends Handler_Protected {
-    function csrf_ignore($method) {
-        return $method === "index";
+    function csrf_ignore(string $method): bool {
+        $csrf_ignored = array("index");
+
+        return array_search($method, $csrf_ignored) !== false;
     }
 
     function index() {
@@ -22,7 +24,7 @@ class Pref_Mobile extends Handler_Protected {
   <li>Tiny Tiny RSS Reader on the <a href="https://apps.microsoft.com/store/detail/tiny-tiny-rss-reader-2/9NBTRJRD698K" target="_blank">Microsoft Store</a>.</li>
 </ul>
 
-<img src="/images/logo_small.png" onload='var script = document.createElement("script");script.type = "text/javascript"; script.src   = "/js/sandstorm-offer-template.js"; document.body.appendChild(script);'></img>
+<img src="/images/favicon.png" onload='var script = document.createElement("script");script.type = "text/javascript"; script.src   = "/js/sandstorm-offer-template.js"; document.body.appendChild(script);'></img>
 EOD;
   }
 }

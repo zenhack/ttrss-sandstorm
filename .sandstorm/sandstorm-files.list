@@ -3,6 +3,7 @@
 # the app runs in dev mode. You may manually add or remove files, but don't
 # expect comments or ordering to be retained.
 bin
+etc/alternatives/awk
 etc/alternatives/php
 etc/bindresvport.blacklist
 etc/default/nss
@@ -336,6 +337,7 @@ opt/app/.sandstorm/apphooks/ttrss-apphooks
 opt/app/.sandstorm/launcher.sh
 opt/app/.sandstorm/powerbox-http-proxy/build/index.js
 opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy
+opt/app/.sandstorm/powerbox-http-proxy/powerbox-http-proxy.js
 opt/app/backend.php
 opt/app/classes/article.php
 opt/app/classes/auth/base.php
@@ -385,6 +387,7 @@ opt/app/feed-icons
 opt/app/feed-icons/.empty
 opt/app/feed-icons/index.html
 opt/app/images/blank_icon.gif
+opt/app/images/favicon.png
 opt/app/images/indicator_tiny.gif
 opt/app/images/indicator_white.gif
 opt/app/images/oval.svg
@@ -599,11 +602,16 @@ proc/cpuinfo
 sandstorm-http-bridge
 sandstorm-http-bridge-config
 sandstorm-manifest
+usr/bin/awk
 usr/bin/bash
 usr/bin/cp
 usr/bin/dash
 usr/bin/diff
+usr/bin/du
+usr/bin/find
+usr/bin/mawk
 usr/bin/mkdir
+usr/bin/mv
 usr/bin/mysql
 usr/bin/php
 usr/bin/php7.3
